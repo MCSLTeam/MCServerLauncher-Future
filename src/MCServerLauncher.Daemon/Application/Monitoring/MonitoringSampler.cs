@@ -37,9 +37,6 @@ internal sealed class MonitoringSampler : IDisposable, IAsyncDisposable
     /// Guards the cross-tick lifecycle memory below. <see cref="SampleOnceAsync" /> is reachable
     /// from the tick loop and directly, so the two must not interleave over it.
     /// </summary>
-    private readonly object _lifecycleGate = new();
-    private readonly Dictionary<Guid, InstanceStatus> _lastStatuses = new();
-    private readonly HashSet<Guid> _reportedReadyTimeouts = [];
     private readonly BoundedJsonlLog<MonitoringSample> _log;
     private readonly IInstanceManager _instances;
     private readonly IAsyncTimedLazyCell<SystemInfo> _systemInfo;
@@ -47,6 +44,7 @@ internal sealed class MonitoringSampler : IDisposable, IAsyncDisposable
     private readonly TimeSpan _interval;
     private readonly ILogger<MonitoringSampler>? _logger;
     private MonitoringSample? _latest;
+    private readonly InstanceLifecycleEventBuffer _lifecycleEvents;
     private readonly object _pendingGapGate = new();
     private DateTimeOffset? _pendingGapFrom;
     private DateTimeOffset? _pendingGapTo;
@@ -61,11 +59,20 @@ internal sealed class MonitoringSampler : IDisposable, IAsyncDisposable
         TimeProvider? timeProvider = null,
         string? rootDirectory = null,
         ILogger<MonitoringSampler>? logger = null,
-        TimeSpan? interval = null)
+        TimeSpan? interval = null,
+        InstanceLifecycleEventBuffer? lifecycleEvents = null)
     {
         ArgumentNullException.ThrowIfNull(config);
         ArgumentNullException.ThrowIfNull(instances);
         ArgumentNullException.ThrowIfNull(systemInfo);
+        // Taken from the manager rather than wired through the container, because the alternative is
+        // an optional dependency that silently leaves the history eventless if a registration is ever
+        // missed, and IInstanceManager cannot carry it — that interface is the packaged API boundary
+        // and this buffer is a daemon internal. A caller may still supply one, which is what lets a
+        // test drive transitions without a real manager.
+        _lifecycleEvents = lifecycleEvents
+            ?? (instances as InstanceManager)?.LifecycleEvents
+            ?? new InstanceLifecycleEventBuffer(timeProvider);
         config.Validate();
         _instances = instances;
         _systemInfo = systemInfo;
@@ -163,8 +170,10 @@ internal sealed class MonitoringSampler : IDisposable, IAsyncDisposable
         {
             var now = _timeProvider.GetUtcNow();
             var info = await _systemInfo.Value.ConfigureAwait(false);
+            // Drained before the instances are walked, so an event committed during this tick belongs
+            // to the next sample rather than arriving after its own status was already recorded.
+            var lifecycle = _lifecycleEvents.Drain();
             var instanceSamples = ImmutableArray.CreateBuilder<MonitoringInstanceSample>();
-            var observed = new List<(Guid InstanceId, InstanceStatus Status, bool ReadyTimedOut)>();
             foreach (var instance in _instances.Instances.Values.OrderBy(static entry => entry.Config.Uuid))
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -175,7 +184,6 @@ internal sealed class MonitoringSampler : IDisposable, IAsyncDisposable
                     ? await monitor.GetMonitorData().ConfigureAwait(false)
                     : default;
                 var status = instance.Status;
-                observed.Add((instance.Config.Uuid, status, process?.ReadyTimedOut == true));
                 instanceSamples.Add(new MonitoringInstanceSample(
                     instance.Config.Uuid,
                     instance.Config.Name,
@@ -199,7 +207,12 @@ internal sealed class MonitoringSampler : IDisposable, IAsyncDisposable
                 // from a fresh filesystem call, so a wider record costs the tick nothing.
                 info.Drive.TotalBytes,
                 info.Drive.FreeBytes,
-                CollectSignificantEvents(observed));
+                // Taken from the buffer rather than derived by comparing this tick with the last one.
+                // The commit that produced a transition is the only place that sees it: a diff of two
+                // ticks reports the net change, so a sequence returning to its starting status
+                // vanished and the intermediate states of a longer one were always lost.
+                lifecycle.Events,
+                lifecycle.Dropped);
 
             // Before the record itself, so the hole is ordered ahead of the sample that proves the
             // log is writable again.
@@ -345,62 +358,6 @@ internal sealed class MonitoringSampler : IDisposable, IAsyncDisposable
 
         var silence = (now - lastOutput).TotalSeconds;
         return silence > 0 ? silence : 0;
-    }
-
-    /// <summary>
-    /// Lifecycle transitions observed since the previous tick, plus ready-timeout observations.
-    /// Nothing derived from log content is recorded here: the plan keeps full console logs out of
-    /// the metrics history. The first tick that sees an instance establishes its baseline and
-    /// reports no transition, so a daemon restart does not manufacture a burst of fake events.
-    /// </summary>
-    private ImmutableArray<MonitoringInstanceEvent> CollectSignificantEvents(
-        List<(Guid InstanceId, InstanceStatus Status, bool ReadyTimedOut)> observed)
-    {
-        var events = ImmutableArray.CreateBuilder<MonitoringInstanceEvent>();
-        lock (_lifecycleGate)
-        {
-            var present = new HashSet<Guid>(observed.Count);
-            foreach (var (instanceId, status, readyTimedOut) in observed)
-            {
-                present.Add(instanceId);
-                if (_lastStatuses.TryGetValue(instanceId, out var previous) && previous != status)
-                {
-                    events.Add(new MonitoringInstanceEvent(
-                        instanceId,
-                        MonitoringEventKind.StatusChanged,
-                        status,
-                        previous));
-                }
-
-                _lastStatuses[instanceId] = status;
-
-                // A ready timeout latches on the process, so record the edge only: repeating it on
-                // every later tick would drown the history in one stuck start.
-                if (readyTimedOut)
-                {
-                    if (_reportedReadyTimeouts.Add(instanceId))
-                    {
-                        events.Add(new MonitoringInstanceEvent(
-                            instanceId,
-                            MonitoringEventKind.ReadyTimeout,
-                            status,
-                            null));
-                    }
-                }
-                else
-                {
-                    _reportedReadyTimeouts.Remove(instanceId);
-                }
-            }
-
-            // An instance that is gone must not keep a status behind it: were it re-added later, the
-            // stale entry would report a transition that no running process ever made.
-            foreach (var stale in _lastStatuses.Keys.Except(present).ToArray())
-                _lastStatuses.Remove(stale);
-            _reportedReadyTimeouts.RemoveWhere(id => !present.Contains(id));
-        }
-
-        return events.ToImmutable();
     }
 
     /// <summary>

@@ -5,6 +5,7 @@ using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.ApplicationCore;
 using MCServerLauncher.Daemon.ApplicationCore.Events;
+using MCServerLauncher.Daemon.ApplicationCore.Monitoring;
 using MCServerLauncher.Daemon.API.Protocol;
 using MCServerLauncher.Daemon.Management;
 using MCServerLauncher.Daemon.Management.Communicate;
@@ -111,6 +112,39 @@ public sealed class InstanceCatalogCommitFeedTests
         await drain.WaitAsync(TimeSpan.FromSeconds(10));
         await handled.Task.WaitAsync(TimeSpan.FromSeconds(10));
         domainEvents.Port.DisposeOwner(owner);
+    }
+
+    /// <summary>
+    /// The commit is the only point that observes every transition, so it is where lifecycle events
+    /// are recorded. A sampler comparing one tick with the next sees the net change, which is why a
+    /// sequence returning to its starting status used to leave no trace at all.
+    /// </summary>
+    [Fact]
+    public void Upsert_RecordsEveryTransitionIntoTheLifecycleBuffer()
+    {
+        var feed = new InstanceCatalogCommitFeed();
+        var events = new InstanceLifecycleEventBuffer();
+        var source = new AuthoritativeInstanceSnapshotSource([], feed, events);
+        var instance = new StubInstance(CreateConfig(1));
+
+        // A first publication is a baseline: there is no previous status to attribute a change to.
+        source.Upsert(instance, new InstanceReportFact(InstanceStatus.Running, ReadyTimedOut: false));
+        Assert.Empty(events.Drain().Events);
+
+        source.Upsert(instance, new InstanceReportFact(InstanceStatus.Crashed, ReadyTimedOut: false));
+        source.Upsert(instance, new InstanceReportFact(InstanceStatus.Starting, ReadyTimedOut: false));
+        source.Upsert(instance, new InstanceReportFact(InstanceStatus.Running, ReadyTimedOut: false));
+
+        var drained = events.Drain();
+        Assert.Equal(0, drained.Dropped);
+        Assert.Equal(
+            new[]
+            {
+                (InstanceStatus.Running, InstanceStatus.Crashed),
+                (InstanceStatus.Crashed, InstanceStatus.Starting),
+                (InstanceStatus.Starting, InstanceStatus.Running)
+            },
+            drained.Events.Select(entry => (entry.PreviousStatus!.Value, entry.Status)));
     }
 
     [Fact]

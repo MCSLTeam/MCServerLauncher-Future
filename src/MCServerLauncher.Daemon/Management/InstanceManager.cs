@@ -6,6 +6,7 @@ using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.API.State;
 using MCServerLauncher.Daemon.ApplicationCore;
 using MCServerLauncher.Daemon.ApplicationCore.Events;
+using MCServerLauncher.Daemon.ApplicationCore.Monitoring;
 using MCServerLauncher.Daemon.Management.Communicate;
 using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils;
@@ -31,6 +32,7 @@ internal class InstanceManager : IInstanceManager
     private readonly Lock _mutationLock = new();
     private readonly Dictionary<Guid, InstanceCreationReservation> _creationReservations = [];
     private readonly InstanceCatalogCommitFeed _catalogCommitFeed = new();
+    private readonly InstanceLifecycleEventBuffer _lifecycleEvents = new();
     private readonly InstanceMutationAdmissionGate _mutationAdmission = new();
     private AuthoritativeInstanceSnapshotSource _snapshotSource;
 
@@ -49,6 +51,13 @@ internal class InstanceManager : IInstanceManager
 
     internal IInstanceSnapshotSource InstanceSnapshotSource => _snapshotSource;
     internal InstanceCatalogCommitFeed CatalogCommitFeed => _catalogCommitFeed;
+
+    /// <summary>
+    /// Lifecycle transitions recorded where the catalog commits them, for the monitoring sampler to
+    /// persist. Survives the snapshot source being rebuilt on reload, so a transition is not lost to
+    /// a catalog rebuild.
+    /// </summary>
+    internal InstanceLifecycleEventBuffer LifecycleEvents => _lifecycleEvents;
     internal InstanceMutationAdmissionGate MutationAdmission => _mutationAdmission;
 
     public InstanceManager()
@@ -71,7 +80,7 @@ internal class InstanceManager : IInstanceManager
         ArgumentNullException.ThrowIfNull(applyInstanceFactory);
         _instanceFactory = instanceFactory;
         _applyInstanceFactory = applyInstanceFactory;
-        _snapshotSource = new AuthoritativeInstanceSnapshotSource(Instances, _catalogCommitFeed);
+        _snapshotSource = new AuthoritativeInstanceSnapshotSource(Instances, _catalogCommitFeed, _lifecycleEvents);
         _instanceUpdateCoordinator = new InstanceUpdateCoordinator(this, instanceFactory);
     }
 
@@ -960,7 +969,7 @@ internal class InstanceManager : IInstanceManager
 
     private void ReinitializeSnapshotSource()
     {
-        _snapshotSource = new AuthoritativeInstanceSnapshotSource(Instances, _catalogCommitFeed);
+        _snapshotSource = new AuthoritativeInstanceSnapshotSource(Instances, _catalogCommitFeed, _lifecycleEvents);
     }
 
     private static void RestoreStagedDirectory(string instanceDirectory, string? removedDirectory)
