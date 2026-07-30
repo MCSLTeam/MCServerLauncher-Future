@@ -47,6 +47,9 @@ internal sealed class MonitoringSampler : IDisposable, IAsyncDisposable
     private readonly TimeSpan _interval;
     private readonly ILogger<MonitoringSampler>? _logger;
     private MonitoringSample? _latest;
+    private readonly object _pendingGapGate = new();
+    private DateTimeOffset? _pendingGapFrom;
+    private DateTimeOffset? _pendingGapTo;
     private CancellationTokenSource? _runCancellation;
     private Task? _runTask;
     private bool _disposed;
@@ -110,6 +113,10 @@ internal sealed class MonitoringSampler : IDisposable, IAsyncDisposable
     {
         lock (_gate)
             _runCancellation?.Cancel();
+
+        // A graceful stop is the last chance to write a remembered hole down. Without this the
+        // evidence dies with the process and the window reads as fully observed after a restart.
+        FlushPendingGaps();
     }
 
     internal async Task StopAsync(CancellationToken cancellationToken = default)
@@ -134,6 +141,8 @@ internal sealed class MonitoringSampler : IDisposable, IAsyncDisposable
             _disposed = true;
             _runCancellation?.Cancel();
         }
+
+        FlushPendingGaps();
     }
 
     public async ValueTask DisposeAsync()
@@ -191,7 +200,12 @@ internal sealed class MonitoringSampler : IDisposable, IAsyncDisposable
                 info.Drive.TotalBytes,
                 info.Drive.FreeBytes,
                 CollectSignificantEvents(observed));
-            _log.Append(sample);
+
+            // Before the record itself, so the hole is ordered ahead of the sample that proves the
+            // log is writable again.
+            FlushPendingGaps();
+            if (!_log.Append(sample))
+                RememberDroppedRecord(now);
             Volatile.Write(ref _latest, sample);
             return sample;
         }
@@ -204,8 +218,11 @@ internal sealed class MonitoringSampler : IDisposable, IAsyncDisposable
         catch
         {
             // A tick that produced no point is time nobody observed. Marking it keeps a later
-            // reader from reading the silence as an uninterrupted stretch of observation.
-            AppendGap(_timeProvider.GetUtcNow());
+            // reader from reading the silence as an uninterrupted stretch of observation, and a
+            // marker that cannot be written is itself a hole worth remembering.
+            var at = _timeProvider.GetUtcNow();
+            if (!AppendGap(at))
+                RememberDroppedRecord(at);
             throw;
         }
     }
@@ -307,7 +324,9 @@ internal sealed class MonitoringSampler : IDisposable, IAsyncDisposable
             return;
 
         var now = _timeProvider.GetUtcNow();
-        if (now - last.Timestamp <= _interval * 2)
+        // Exactly two intervals already means one cadence went unobserved, so the boundary belongs
+        // inside the hole, not outside it.
+        if (now - last.Timestamp < _interval * 2)
             return;
 
         AppendGap(now);
@@ -388,7 +407,7 @@ internal sealed class MonitoringSampler : IDisposable, IAsyncDisposable
     /// A gap carries null for every metric that was never collected. Zero would be a measurement,
     /// and a reader judging a sustained condition must not mistake a hole for a reading of zero.
     /// </summary>
-    private void AppendGap(DateTimeOffset at) =>
+    private bool AppendGap(DateTimeOffset at) =>
         _log.Append(new MonitoringSample(
             at,
             Gap: true,
@@ -399,6 +418,78 @@ internal sealed class MonitoringSampler : IDisposable, IAsyncDisposable
             DiskTotalBytes: null,
             DiskFreeBytes: null,
             Events: null));
+
+    /// <summary>
+    /// Remembers that a record never reached the log, so the hole can be written into the history
+    /// itself rather than living only in this process's memory.
+    /// </summary>
+    /// <remarks>
+    /// The log's dropped count and newest-drop instant are both in-memory, so a restart forgets them
+    /// and a reader then treats a window that is missing a record as fully observed. The startup
+    /// marker does not save it either: it only fires when the newest persisted record is old enough,
+    /// so a quick restart after a dropped tick leaves no evidence at all. Two instants are kept
+    /// rather than one per lost tick, because the pair bounds an outage of any length and collapses
+    /// to a single marker for the common single drop.
+    /// </remarks>
+    private void RememberDroppedRecord(DateTimeOffset at)
+    {
+        lock (_pendingGapGate)
+        {
+            _pendingGapFrom ??= at;
+            _pendingGapTo = at;
+        }
+    }
+
+    /// <summary>
+    /// Commits the remembered holes, oldest first. Called before the record that proves the log is
+    /// writable again, so the retained series stays in timestamp order, and on the stop and dispose
+    /// paths so a graceful shutdown does not take the evidence with it.
+    /// </summary>
+    /// <remarks>
+    /// The markers are cleared only once their gap records are actually written. A gap append that
+    /// fails leaves the hole pending for the next attempt, because the whole point is that the
+    /// evidence outlives this process.
+    /// </remarks>
+    private void FlushPendingGaps()
+    {
+        DateTimeOffset from;
+        DateTimeOffset to;
+        lock (_pendingGapGate)
+        {
+            if (_pendingGapFrom is null)
+                return;
+            from = _pendingGapFrom.Value;
+            to = _pendingGapTo!.Value;
+        }
+
+        if (!AppendGap(from))
+            return;
+        if (to != from && !AppendGap(to))
+        {
+            // The opening marker landed, so the window already reads as incomplete from `from`
+            // onwards. Keep the closing one pending rather than forgetting where the outage ended.
+            lock (_pendingGapGate)
+            {
+                _pendingGapFrom = to;
+            }
+
+            return;
+        }
+
+        lock (_pendingGapGate)
+        {
+            if (_pendingGapTo == to)
+            {
+                _pendingGapFrom = null;
+                _pendingGapTo = null;
+            }
+            else
+            {
+                // A tick dropped while this flush was running. Keep the newer hole pending.
+                _pendingGapFrom = _pendingGapTo;
+            }
+        }
+    }
 
     private async Task RunAsync(CancellationToken cancellationToken)
     {

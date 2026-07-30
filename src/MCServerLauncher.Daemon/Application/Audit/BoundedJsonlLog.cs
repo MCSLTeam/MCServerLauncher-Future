@@ -82,9 +82,6 @@ internal sealed class BoundedJsonlLog<T>
     }
 
     /// <summary>
-    /// Appends one record. Never throws: history is an observer of mutations, not a participant.
-    /// </summary>
-    /// <summary>
     /// Keeps the newest drop instant under concurrent appends. Out-of-order drops must not move the
     /// marker backwards, or a range after the real hole would look clean.
     /// </summary>
@@ -101,7 +98,17 @@ internal sealed class BoundedJsonlLog<T>
         }
     }
 
-    internal void Append(T record)
+    /// <summary>
+    /// Appends one record. Never throws — history observes mutations, it does not participate in
+    /// them — and returns whether the record actually reached the log.
+    /// </summary>
+    /// <remarks>
+    /// The return value is the whole reason a caller can make a hole durable. A dropped record leaves
+    /// no trace outside this process: the count and <see cref="NewestDropAt" /> both live in memory,
+    /// so a restart forgets them and a reader then judges a window that is missing a record as fully
+    /// observed. An owner that is told about the failure can write the hole into the history itself.
+    /// </remarks>
+    internal bool Append(T record)
     {
         ArgumentNullException.ThrowIfNull(record);
         try
@@ -142,7 +149,7 @@ internal sealed class BoundedJsonlLog<T>
                 exception,
                 "[BoundedJsonlLog] Dropped a '{Prefix}' history record after a write failure.",
                 _prefix);
-            return;
+            return false;
         }
 
         // Retention runs after the record is durably written and outside the drop accounting: a
@@ -162,6 +169,8 @@ internal sealed class BoundedJsonlLog<T>
                 "[BoundedJsonlLog] Failed to enforce '{Prefix}' history retention.",
                 _prefix);
         }
+
+        return true;
     }
 
     private void TruncateToLocked(string path, long length)

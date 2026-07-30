@@ -53,6 +53,50 @@ public sealed class MonitoringSamplerTests
         Assert.Equal(0, queried.DroppedRecords);
     }
 
+    /// <summary>
+    /// A dropped record used to leave no trace outside the process: the log's dropped count and its
+    /// newest-drop instant both live in memory. So a write failure, a later success and a restart read
+    /// back as an uninterrupted stretch of observation — and the startup marker does not cover it
+    /// either, because it only fires when the newest persisted sample is old enough. The hole has to
+    /// become a record.
+    /// </summary>
+    [Fact]
+    public async Task ADroppedRecordSurvivesARestartAsAGapRecord()
+    {
+        var root = Directory.CreateTempSubdirectory("mcsl-monitoring-durable-drop-").FullName;
+        var start = DateTimeOffset.Parse("2026-07-28T00:00:00+00:00");
+        var time = new ManualTimeProvider(start);
+        DateTimeOffset droppedAt;
+
+        using (var sampler = CreateSampler(root, time))
+        {
+            await sampler.SampleOnceAsync(CancellationToken.None);
+            var segment = Path.Combine(root, "metrics-000000.jsonl");
+            Assert.True(File.Exists(segment));
+
+            time.Advance(TimeSpan.FromSeconds(15));
+            droppedAt = time.GetUtcNow();
+
+            // Hold the segment exclusively, which is what the log's own FileShare.Read cannot open
+            // through: the append fails the way a locked or full volume makes it fail.
+            using (new FileStream(segment, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+            {
+                await sampler.SampleOnceAsync(CancellationToken.None);
+            }
+
+            time.Advance(TimeSpan.FromSeconds(15));
+            await sampler.SampleOnceAsync(CancellationToken.None);
+        }
+
+        // Restart over the same root. The replacement has no memory of the drop, so anything it can
+        // still see about the hole had to have been written down.
+        using var restarted = CreateSampler(root, time);
+        var window = restarted.Query(new MonitoringQuery(start.AddMinutes(-1), time.GetUtcNow().AddMinutes(1)));
+
+        Assert.Equal(0, window.DroppedRecords);
+        Assert.Contains(window.Samples, sample => sample.Gap && sample.Timestamp == droppedAt);
+    }
+
     [Fact]
     public async Task Restart_MarksTheHoleWithASingleGapRecord()
     {
