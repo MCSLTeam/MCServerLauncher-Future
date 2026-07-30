@@ -18,12 +18,20 @@ after its fingerprint was taken. Re-recording a fingerprint under the same
 version is exactly what the NU1403 rule below forbids, so the baseline moves to
 `preview.5` rather than being re-cut in place.
 
-Only `MCServerLauncher.Common`'s payload actually changed. `PackageVersion` is a
-NuGet-level version and does not feed the assembly's informational version, so
-`MCServerLauncher.Daemon.API`, `MCServerLauncher.Daemon.Plugin.Sdk`, the packed
-generator, `NuGet.Versioning` and every `buildTransitive` asset are byte-identical
-to their `preview.4` entries. Two versions carrying the same payload is harmless;
-it is the reverse that breaks a locked restore.
+Two entries differ from `preview.4`, for two unrelated reasons, and the table below
+cannot tell them apart — so they are recorded here.
+
+`MCServerLauncher.Common` changed because its source did: that is the reason this
+baseline exists. `MCServerLauncher.Daemon.API` changed because the pinned SDK moved
+from `10.0.201` to `10.0.302`; its source is untouched. Both assemblies carry
+source-generated JSON metadata, and that generator ships with the SDK, which is why
+they moved and `MCServerLauncher.Daemon.Plugin.Sdk`, the packed generator,
+`NuGet.Versioning` and the `buildTransitive` assets did not — those five are
+byte-identical to their `preview.4` entries.
+
+`PackageVersion` is a NuGet-level version and does not feed the assembly's
+informational version, so the bump itself changes no payload. Two versions carrying
+the same payload is harmless; it is the reverse that breaks a locked restore.
 
 ## Why preview.4 and not preview.3
 
@@ -61,7 +69,7 @@ timestamp metadata that can change across repacks while payload code stays
 identical. The fingerprints below cover every DLL that executes in the
 consumer build or runtime path, plus every `buildTransitive` asset.
 
-Built from branch `feat/sdk-preview-2` with .NET SDK `10.0.201`; reproducibility
+Built from branch `feat/sdk-preview-2` with .NET SDK `10.0.302`; reproducibility
 requires that exact SDK. `global.json` pins it for both local and CI builds.
 
 `MCSLPinBuildRoot` must be spelled with the platform separator, as the PowerShell
@@ -89,13 +97,13 @@ git show HEAD:src/MCServerLauncher.Daemon.Plugin.Sdk/buildTransitive/MCServerLau
 
 | Entry | SHA-256 |
 |---|---|
-| `lib/net10.0/MCServerLauncher.Common.dll` | `07103770fe3fb9eefd0db0fc2b8ac07bdaae2b90a04ce09907e1a02617835fd4` |
+| `lib/net10.0/MCServerLauncher.Common.dll` | `4b898ca39d43588d07d30ee73f01fc7dab80e39e2609abdbe2b2bb8ba5939fee` |
 
 ### `MCServerLauncher.Daemon.API.2.0.0-preview.5.nupkg`
 
 | Entry | SHA-256 |
 |---|---|
-| `lib/net10.0/MCServerLauncher.Daemon.API.dll` | `9c3eff44e6a5b5b4620d6a46a92bb778cb415cfcf764ea0d0ac0439bd3c03c3d` |
+| `lib/net10.0/MCServerLauncher.Daemon.API.dll` | `e8c687821125a22a4928939b1a5df65932b30a23a6d131f52f532be85c0be922` |
 | `buildTransitive/MCServerLauncher.Daemon.API.targets` | `81a79275e7ab2a10cf08ac950c27692db1e7455387944377b06047b0a340c17c` |
 
 ### `MCServerLauncher.Daemon.Plugin.Sdk.2.0.0-preview.5.nupkg`
