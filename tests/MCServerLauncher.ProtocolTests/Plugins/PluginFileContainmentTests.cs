@@ -609,6 +609,34 @@ public sealed class PluginFileContainmentTests
         }
     }
 
+    /// <summary>
+    /// Canonicalisation can fail without the path being absent: <c>GetLongPathNameW</c> needs List
+    /// Folder, Read Data and Read Attributes on the parents and fails when it cannot query one. The
+    /// only spelling available then is the caller's, which is the spelling under suspicion, so the
+    /// answer has to be a refusal rather than a fall back to it.
+    /// </summary>
+    [Theory]
+    [InlineData(InsideInstance)]
+    [InlineData(InstanceRoot + "/daemon_instance.json")]
+    [InlineData(InstanceRoot + "/world.zip")]
+    public async Task APathWhoseRealNameCannotBeEstablishedIsRefused(string path)
+    {
+        var inner = new RecordingFileApplication();
+        var contained = new ContainedPluginFileApplication(
+            inner,
+            new CatalogSnapshotSource(CatalogedInstance),
+            expandPath: _ => null);
+
+        var read = await contained.GetFileInfoAsync(new PathRequest(path), CancellationToken.None);
+        var write = await contained.DeleteFileAsync(new PathRequest(path), CancellationToken.None);
+
+        Assert.True(read.IsErr(out var readError));
+        Assert.Equal("plugin.file.out_of_containment", readError!.Code);
+        Assert.True(write.IsErr(out var writeError));
+        Assert.Equal("plugin.file.out_of_containment", writeError!.Code);
+        Assert.Equal(0, inner.CallCount);
+    }
+
     [System.Runtime.InteropServices.DllImport("kernel32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode, SetLastError = true)]
     private static extern IntPtr CreateFileW(
         string path,

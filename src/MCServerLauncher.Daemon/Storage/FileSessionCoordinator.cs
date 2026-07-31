@@ -1223,18 +1223,31 @@ internal sealed class FileSessionCoordinator : IAsyncDisposable
     /// even on a volume with 8.3 auto-generation switched off. Win32 has no such shortcut, which is
     /// why this calls it directly; Microsoft's own guidance is not to assume the tilde is there.
     ///
-    /// A path that does not exist is returned as spelled, which is correct rather than lenient: it
-    /// aliases nothing. Any other failure also returns the input, leaving the caller exactly as
-    /// strong as it was before this expansion existed.
+    /// A path that does not exist is reported as expanded and returned as spelled, which is correct
+    /// rather than lenient: a path naming nothing aliases nothing. Every other failure is reported
+    /// as a failure. <c>GetLongPathNameW</c> needs List Folder, Read Data and Read Attributes on the
+    /// parents and fails when it cannot query one of them, so "the call did not work" and "there is
+    /// nothing there" are different answers — and a deny-list that cannot read the real name has to
+    /// refuse rather than fall back to the caller's spelling, which is the spelling under suspicion.
     /// </remarks>
-    internal static string ExpandShortPathName(string path)
+    internal static bool TryExpandShortPathName(string path, out string expanded)
     {
+        expanded = path;
         if (!OperatingSystem.IsWindows())
-            return path;
+            return true;
 
         var buffer = new StringBuilder(32768);
         var length = GetLongPathName(path, buffer, buffer.Capacity);
-        return length == 0 || length >= buffer.Capacity ? path : buffer.ToString();
+        var error = Marshal.GetLastWin32Error();
+        if (length > 0 && length < buffer.Capacity)
+        {
+            expanded = buffer.ToString();
+            return true;
+        }
+
+        // A buffer this size is not going to be outgrown by a real path, so a length overrun is
+        // treated as the failure it would be rather than silently truncating.
+        return length == 0 && error is ErrorFileNotFound or ErrorPathNotFound;
     }
 
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
@@ -1243,6 +1256,9 @@ internal sealed class FileSessionCoordinator : IAsyncDisposable
         StringBuilder path,
         int pathLength,
         uint flags);
+
+    private const int ErrorFileNotFound = 2;
+    private const int ErrorPathNotFound = 3;
 
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true, EntryPoint = "GetLongPathNameW")]
     private static extern uint GetLongPathName(string path, StringBuilder buffer, int bufferLength);

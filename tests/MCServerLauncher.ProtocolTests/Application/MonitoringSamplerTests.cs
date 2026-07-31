@@ -314,6 +314,78 @@ public sealed class MonitoringSamplerTests
     }
 
     /// <summary>
+    /// Events are taken before the sample that carries them is written, and that write can fail.
+    /// Discarding them on the way out loses them for a sample that never reached the log, so they
+    /// are only forgotten once the append is acknowledged — and then exactly once.
+    /// </summary>
+    [Fact]
+    public async Task SampleOnce_KeepsEventsForTheNextTickWhenTheSampleCannotBeWritten()
+    {
+        var root = Directory.CreateTempSubdirectory("mcsl-monitoring-ack-").FullName;
+        var time = new ManualTimeProvider(DateTimeOffset.Parse("2026-07-28T00:00:00+00:00"));
+        var events = new InstanceLifecycleEventBuffer(time);
+        using var sampler = CreateSampler(root, time, events);
+
+        await sampler.SampleOnceAsync(CancellationToken.None);
+        var segment = Path.Combine(root, "metrics-000000.jsonl");
+        Assert.True(File.Exists(segment));
+
+        events.Record(Snapshot(RunningId, InstanceStatus.Running), Snapshot(RunningId, InstanceStatus.Crashed));
+        time.Advance(TimeSpan.FromSeconds(15));
+
+        // Hold the segment so this sample cannot be persisted.
+        using (new FileStream(segment, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+        {
+            var lost = await sampler.SampleOnceAsync(CancellationToken.None);
+            Assert.Single(lost.Events!.Value);
+        }
+
+        time.Advance(TimeSpan.FromSeconds(15));
+        await sampler.SampleOnceAsync(CancellationToken.None);
+
+        // The event is in the history exactly once, carried by the sample that actually landed.
+        var persisted = sampler.Query(new MonitoringQuery(
+            DateTimeOffset.Parse("2026-07-28T00:00:00+00:00").AddMinutes(-1),
+            time.GetUtcNow().AddMinutes(1)));
+        var crashes = persisted.Samples
+            .SelectMany(sample => sample.Events ?? [])
+            .Where(entry => entry.Status == InstanceStatus.Crashed)
+            .ToArray();
+        Assert.Single(crashes);
+    }
+
+    /// <summary>
+    /// Downsampling aggregates events for a bucket, so it has to aggregate the count of the ones that
+    /// never made it too. The bucket winner usually carries zero, so an earlier sample's loss would
+    /// vanish and the result would read as a complete event list.
+    /// </summary>
+    [Fact]
+    public async Task Query_DownsamplingKeepsTheDroppedEventCountsItCannotKeepASampleFor()
+    {
+        var root = Directory.CreateTempSubdirectory("mcsl-monitoring-dropped-downsample-").FullName;
+        var start = DateTimeOffset.Parse("2026-07-28T00:00:00+00:00");
+        var time = new ManualTimeProvider(start);
+        var events = new InstanceLifecycleEventBuffer(time);
+        using var sampler = CreateSampler(root, time, events);
+
+        // First sample overflows the buffer; the second is ordinary and wins the shared bucket.
+        for (var index = 0; index < InstanceLifecycleEventBuffer.MaximumPendingEvents + 3; index++)
+            events.Record(Snapshot(RunningId, InstanceStatus.Running), Snapshot(RunningId, InstanceStatus.Stopped));
+        var overflowed = await sampler.SampleOnceAsync(CancellationToken.None);
+        Assert.Equal(3, overflowed.DroppedEvents);
+
+        time.Advance(TimeSpan.FromSeconds(15));
+        var ordinary = await sampler.SampleOnceAsync(CancellationToken.None);
+        Assert.Equal(0, ordinary.DroppedEvents);
+
+        // One point for the whole window forces both samples into the same bucket.
+        var downsampled = sampler.Query(
+            new MonitoringQuery(start.AddMinutes(-1), time.GetUtcNow().AddMinutes(1), MaximumPoints: 1));
+
+        Assert.Equal(3, Assert.Single(downsampled.Samples).DroppedEvents);
+    }
+
+    /// <summary>
     /// A full buffer must say so. A silent bound would read as "nothing happened", which is the same
     /// mistake as a dropped sample leaving no gap record.
     /// </summary>

@@ -129,13 +129,14 @@ public sealed class InstanceCatalogCommitFeedTests
 
         // A first publication is a baseline: there is no previous status to attribute a change to.
         source.Upsert(instance, new InstanceReportFact(InstanceStatus.Running, ReadyTimedOut: false));
-        Assert.Empty(events.Drain().Events);
+        Assert.Empty(events.Snapshot().Events);
+        events.Commit();
 
         source.Upsert(instance, new InstanceReportFact(InstanceStatus.Crashed, ReadyTimedOut: false));
         source.Upsert(instance, new InstanceReportFact(InstanceStatus.Starting, ReadyTimedOut: false));
         source.Upsert(instance, new InstanceReportFact(InstanceStatus.Running, ReadyTimedOut: false));
 
-        var drained = events.Drain();
+        var drained = events.Snapshot();
         Assert.Equal(0, drained.Dropped);
         Assert.Equal(
             new[]
