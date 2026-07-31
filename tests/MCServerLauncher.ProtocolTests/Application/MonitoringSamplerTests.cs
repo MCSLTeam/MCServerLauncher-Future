@@ -319,29 +319,39 @@ public sealed class MonitoringSamplerTests
     /// instants sees a sum that was never true and keeps accepting past the cap.
     /// </summary>
     [Fact]
-    public void Record_UnderConcurrentSnapshots_HoldsTheBoundAndAccountsForEveryEvent()
+    public async Task Record_UnderConcurrentSnapshots_HoldsTheBoundAndAccountsForEveryEvent()
     {
         var time = new ManualTimeProvider(DateTimeOffset.Parse("2026-07-28T00:00:00+00:00"));
         var events = new InstanceLifecycleEventBuffer(time);
         const int producers = 8;
         const int perProducer = 3000;
         using var consuming = new CancellationTokenSource();
+        var snapshotting = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        // Never commits, so the staged batch keeps growing: the case where the two-counter check
-        // under-counted worst.
+        // Never commits, so the staged batch keeps growing: the case where counting the queue and
+        // the staged batch separately under-counted worst.
         var consumer = Task.Run(() =>
         {
+            events.Snapshot();
+            snapshotting.TrySetResult();
             while (!consuming.IsCancellationRequested)
                 events.Snapshot();
         });
 
-        Parallel.For(0, producers, _ =>
+        // Producers start only once a snapshot has actually run, so they record into the window this
+        // test exists to cover rather than racing the consumer's startup.
+        await snapshotting.Task.WaitAsync(TimeSpan.FromSeconds(30));
+        await Task.WhenAll(Enumerable.Range(0, producers).Select(_ => Task.Run(() =>
         {
             for (var index = 0; index < perProducer; index++)
                 events.Record(Snapshot(RunningId, InstanceStatus.Running), Snapshot(RunningId, InstanceStatus.Stopped));
-        });
+        })));
         consuming.Cancel();
-        consumer.Wait(TimeSpan.FromSeconds(30));
+
+        // Throws rather than returning false on timeout: _staged is not thread-safe, so a consumer
+        // still running would make the final Snapshot below race it and report a number that means
+        // nothing.
+        await consumer.WaitAsync(TimeSpan.FromSeconds(30));
 
         var final = events.Snapshot();
         Assert.True(
