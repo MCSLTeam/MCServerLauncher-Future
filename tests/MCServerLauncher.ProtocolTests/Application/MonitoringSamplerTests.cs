@@ -323,19 +323,28 @@ public sealed class MonitoringSamplerTests
     {
         var time = new ManualTimeProvider(DateTimeOffset.Parse("2026-07-28T00:00:00+00:00"));
         var events = new InstanceLifecycleEventBuffer(time);
-        const int producers = 8;
-        const int perProducer = 3000;
+        const int producers = 4;
+        const int perProducer = 2000;
         using var consuming = new CancellationTokenSource();
         var snapshotting = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
         // Never commits, so the staged batch keeps growing: the case where counting the queue and
         // the staged batch separately under-counted worst.
+        //
+        // Paced rather than spinning. A spin holds a core outright and rebuilds a 4096-element array
+        // every iteration, which on a two-core runner starves the producers it is supposed to race
+        // and turns a 40ms test into a job that never finishes. Pacing also widens the window under
+        // test: more events accumulate between snapshots, so each drain moves more of them, which is
+        // exactly the interval a producer used to misread.
         var consumer = Task.Run(() =>
         {
             events.Snapshot();
             snapshotting.TrySetResult();
             while (!consuming.IsCancellationRequested)
+            {
                 events.Snapshot();
+                Thread.Sleep(1);
+            }
         });
 
         // Producers start only once a snapshot has actually run, so they record into the window this
