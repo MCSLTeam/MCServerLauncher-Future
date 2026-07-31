@@ -34,7 +34,7 @@ internal sealed class InstanceLifecycleEventBuffer
     private readonly TimeProvider _timeProvider;
     private int _dropped;
     private int _stagedDropped;
-    private int _stagedCount;
+    private int _buffered;
 
     internal InstanceLifecycleEventBuffer(TimeProvider? timeProvider = null) =>
         _timeProvider = timeProvider ?? TimeProvider.System;
@@ -87,10 +87,12 @@ internal sealed class InstanceLifecycleEventBuffer
     /// </remarks>
     internal (ImmutableArray<MonitoringInstanceEvent> Events, int Dropped) Snapshot()
     {
+        // Moving an event from the queue to the staged batch does not change how many are held, so
+        // the reservation below is untouched here. That is the point: a producer never sees capacity
+        // that this loop is in the middle of moving.
         while (_pending.TryDequeue(out var pending))
             _staged.Add(pending);
 
-        Volatile.Write(ref _stagedCount, _staged.Count);
         _stagedDropped += Interlocked.Exchange(ref _dropped, 0);
         return ([.. _staged], _stagedDropped);
     }
@@ -98,19 +100,23 @@ internal sealed class InstanceLifecycleEventBuffer
     /// <summary>Acknowledges that the last <see cref="Snapshot" /> reached the log.</summary>
     internal void Commit()
     {
+        Interlocked.Add(ref _buffered, -_staged.Count);
         _staged.Clear();
-        Volatile.Write(ref _stagedCount, 0);
         _stagedDropped = 0;
     }
 
     private void Enqueue(MonitoringInstanceEvent pending)
     {
-        // Counted, not silently discarded: the snapshot reports the loss so a reader knows the event
-        // list is incomplete rather than assuming nothing happened. Events awaiting acknowledgement
-        // count against the bound too, or a log that keeps refusing writes would grow it without
-        // limit - which is what the bound is for.
-        if (_pending.Count + Volatile.Read(ref _stagedCount) >= MaximumPendingEvents)
+        // One counter for everything accepted and not yet acknowledged, reserved before the enqueue.
+        // Counting the queue and the staged batch separately cannot be made correct: a snapshot moves
+        // events between them, and a producer reading the two halves at different instants sees a sum
+        // that was never true, so it keeps accepting past the bound.
+        //
+        // Overflow is counted, not silently discarded: the snapshot reports the loss so a reader knows
+        // the event list is incomplete rather than assuming nothing happened.
+        if (Interlocked.Increment(ref _buffered) > MaximumPendingEvents)
         {
+            Interlocked.Decrement(ref _buffered);
             Interlocked.Increment(ref _dropped);
             return;
         }

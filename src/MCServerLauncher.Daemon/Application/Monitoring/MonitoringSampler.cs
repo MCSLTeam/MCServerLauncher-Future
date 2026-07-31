@@ -219,12 +219,20 @@ internal sealed class MonitoringSampler : IDisposable, IAsyncDisposable
             // log is writable again.
             FlushPendingGaps();
             if (_log.Append(sample))
-                // Only now: the events are in the history, so the buffer may forget them. A failed
-                // append leaves them staged and the next sample carries them instead.
+            {
+                // Only now: the events are in the history, so the buffer may forget them, and
+                // mcsl.monitoring.current.get is defined as the newest *retained* sample. Publishing
+                // one that never reached the log would serve its events twice — once from the failed
+                // sample and again from the one that carries them next tick — and events have no id
+                // for a consumer to tell the repeat from a new occurrence.
                 _lifecycleEvents.Commit();
+                Volatile.Write(ref _latest, sample);
+            }
             else
+            {
                 RememberDroppedRecord(now);
-            Volatile.Write(ref _latest, sample);
+            }
+
             return sample;
         }
         catch (OperationCanceledException)

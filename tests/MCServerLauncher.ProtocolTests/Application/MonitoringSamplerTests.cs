@@ -314,6 +314,70 @@ public sealed class MonitoringSamplerTests
     }
 
     /// <summary>
+    /// The bound has to hold while a snapshot is moving events out of the queue. Counting the queue
+    /// and the staged batch separately cannot: a producer reading the two halves at different
+    /// instants sees a sum that was never true and keeps accepting past the cap.
+    /// </summary>
+    [Fact]
+    public void Record_UnderConcurrentSnapshots_HoldsTheBoundAndAccountsForEveryEvent()
+    {
+        var time = new ManualTimeProvider(DateTimeOffset.Parse("2026-07-28T00:00:00+00:00"));
+        var events = new InstanceLifecycleEventBuffer(time);
+        const int producers = 8;
+        const int perProducer = 3000;
+        using var consuming = new CancellationTokenSource();
+
+        // Never commits, so the staged batch keeps growing: the case where the two-counter check
+        // under-counted worst.
+        var consumer = Task.Run(() =>
+        {
+            while (!consuming.IsCancellationRequested)
+                events.Snapshot();
+        });
+
+        Parallel.For(0, producers, _ =>
+        {
+            for (var index = 0; index < perProducer; index++)
+                events.Record(Snapshot(RunningId, InstanceStatus.Running), Snapshot(RunningId, InstanceStatus.Stopped));
+        });
+        consuming.Cancel();
+        consumer.Wait(TimeSpan.FromSeconds(30));
+
+        var final = events.Snapshot();
+        Assert.True(
+            final.Events.Length <= InstanceLifecycleEventBuffer.MaximumPendingEvents,
+            $"buffer held {final.Events.Length}, cap is {InstanceLifecycleEventBuffer.MaximumPendingEvents}");
+        Assert.Equal(producers * perProducer, final.Events.Length + final.Dropped);
+    }
+
+    /// <summary>
+    /// <c>mcsl.monitoring.current.get</c> is defined as the newest retained sample. Publishing one
+    /// that never reached the log would also serve its events twice — once here and again from the
+    /// sample that carries them next tick — and events have no id to tell a repeat from a new one.
+    /// </summary>
+    [Fact]
+    public async Task SampleOnce_DoesNotPublishASampleThatNeverReachedTheLog()
+    {
+        var root = Directory.CreateTempSubdirectory("mcsl-monitoring-latest-").FullName;
+        var time = new ManualTimeProvider(DateTimeOffset.Parse("2026-07-28T00:00:00+00:00"));
+        var events = new InstanceLifecycleEventBuffer(time);
+        using var sampler = CreateSampler(root, time, events);
+
+        var retained = await sampler.SampleOnceAsync(CancellationToken.None);
+        Assert.Same(retained, sampler.Latest);
+        var segment = Path.Combine(root, "metrics-000000.jsonl");
+
+        events.Record(Snapshot(RunningId, InstanceStatus.Running), Snapshot(RunningId, InstanceStatus.Crashed));
+        time.Advance(TimeSpan.FromSeconds(15));
+        using (new FileStream(segment, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+        {
+            await sampler.SampleOnceAsync(CancellationToken.None);
+        }
+
+        Assert.Same(retained, sampler.Latest);
+    }
+
+    /// <summary>
     /// Events are taken before the sample that carries them is written, and that write can fail.
     /// Discarding them on the way out loses them for a sample that never reached the log, so they
     /// are only forgotten once the append is acknowledged — and then exactly once.
