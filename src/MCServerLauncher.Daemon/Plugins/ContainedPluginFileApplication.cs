@@ -94,6 +94,10 @@ internal sealed class ContainedPluginFileApplication : IFileApplication
     private readonly Dictionary<Guid, DateTimeOffset> _downloadSessions = [];
     private readonly Dictionary<Guid, DateTimeOffset> _uploadSessions = [];
     private readonly TimeProvider _timeProvider;
+    private readonly Func<string, string?> _expandPath;
+
+    private static string? DefaultExpandPath(string path) =>
+        FileSessionCoordinator.TryExpandShortPathName(path, out var expanded) ? expanded : null;
     private readonly TaskCompletionSource _quiesced = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly TimeSpan _releaseDeadline;
     private int _reservations;
@@ -110,10 +114,15 @@ internal sealed class ContainedPluginFileApplication : IFileApplication
         IInstanceSnapshotSource? instances,
         string? allowedRoot = null,
         TimeSpan? releaseDeadline = null,
-        TimeProvider? timeProvider = null)
+        TimeProvider? timeProvider = null,
+        Func<string, string?>? expandPath = null)
     {
         _inner = inner ?? throw new ArgumentNullException(nameof(inner));
         _timeProvider = timeProvider ?? TimeProvider.System;
+        // Null means the real name could not be established. Injectable because that branch is a
+        // refusal and the failure it guards against - the filesystem declining to answer - cannot be
+        // provoked from a test.
+        _expandPath = expandPath ?? DefaultExpandPath;
         // A missing catalog is not a reason to widen: with nothing to confirm an instance exists,
         // every path fails the membership check and the whole surface is refused.
         _instances = instances;
@@ -608,7 +617,12 @@ internal sealed class ContainedPluginFileApplication : IFileApplication
             // a Windows 8.3 short name is a second name for the same file, and one can be planted on
             // a daemon-owned file without elevation. Doing this on the whole resolved path rather than
             // the last segment also means an aliased directory component is judged as itself.
-            resolved = FileSessionCoordinator.ExpandShortPathName(resolved);
+            //
+            // A failure here is a refusal, not a fallback. Falling back would compare the caller's
+            // own spelling, which is exactly the spelling in question.
+            if (_expandPath(resolved) is not { } expanded)
+                return false;
+            resolved = expanded;
         }
         catch (Exception exception) when (exception is IOException or ArgumentException)
         {

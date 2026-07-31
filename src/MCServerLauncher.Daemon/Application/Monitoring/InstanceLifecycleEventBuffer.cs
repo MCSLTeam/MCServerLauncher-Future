@@ -30,8 +30,11 @@ internal sealed class InstanceLifecycleEventBuffer
     internal const int MaximumPendingEvents = 4096;
 
     private readonly ConcurrentQueue<MonitoringInstanceEvent> _pending = new();
+    private readonly List<MonitoringInstanceEvent> _staged = [];
     private readonly TimeProvider _timeProvider;
     private int _dropped;
+    private int _stagedDropped;
+    private int _stagedCount;
 
     internal InstanceLifecycleEventBuffer(TimeProvider? timeProvider = null) =>
         _timeProvider = timeProvider ?? TimeProvider.System;
@@ -72,23 +75,41 @@ internal sealed class InstanceLifecycleEventBuffer
     }
 
     /// <summary>
-    /// Takes everything recorded so far, oldest first, together with how many events were dropped
-    /// because the buffer was full.
+    /// Everything recorded so far, oldest first, together with how many events were dropped because
+    /// the buffer was full. Nothing is discarded until <see cref="Commit" />.
     /// </summary>
-    internal (ImmutableArray<MonitoringInstanceEvent> Events, int Dropped) Drain()
+    /// <remarks>
+    /// Two phases, because the sample that carries these events is written after they are taken and
+    /// the write can fail. Discarding on the way out would lose them for a sample that never reached
+    /// the log; holding them until the append is acknowledged means the next tick carries them
+    /// instead — once, and still in order, since a retry keeps the earlier batch ahead of whatever
+    /// arrived meanwhile. Single-consumer: only the sampler calls these.
+    /// </remarks>
+    internal (ImmutableArray<MonitoringInstanceEvent> Events, int Dropped) Snapshot()
     {
-        var drained = ImmutableArray.CreateBuilder<MonitoringInstanceEvent>();
         while (_pending.TryDequeue(out var pending))
-            drained.Add(pending);
+            _staged.Add(pending);
 
-        return (drained.ToImmutable(), Interlocked.Exchange(ref _dropped, 0));
+        Volatile.Write(ref _stagedCount, _staged.Count);
+        _stagedDropped += Interlocked.Exchange(ref _dropped, 0);
+        return ([.. _staged], _stagedDropped);
+    }
+
+    /// <summary>Acknowledges that the last <see cref="Snapshot" /> reached the log.</summary>
+    internal void Commit()
+    {
+        _staged.Clear();
+        Volatile.Write(ref _stagedCount, 0);
+        _stagedDropped = 0;
     }
 
     private void Enqueue(MonitoringInstanceEvent pending)
     {
-        // Counted, not silently discarded: the drain reports the loss so a reader knows the event
-        // list is incomplete rather than assuming nothing happened.
-        if (_pending.Count >= MaximumPendingEvents)
+        // Counted, not silently discarded: the snapshot reports the loss so a reader knows the event
+        // list is incomplete rather than assuming nothing happened. Events awaiting acknowledgement
+        // count against the bound too, or a log that keeps refusing writes would grow it without
+        // limit - which is what the bound is for.
+        if (_pending.Count + Volatile.Read(ref _stagedCount) >= MaximumPendingEvents)
         {
             Interlocked.Increment(ref _dropped);
             return;

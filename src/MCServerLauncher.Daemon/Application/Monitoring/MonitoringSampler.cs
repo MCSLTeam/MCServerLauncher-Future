@@ -170,9 +170,10 @@ internal sealed class MonitoringSampler : IDisposable, IAsyncDisposable
         {
             var now = _timeProvider.GetUtcNow();
             var info = await _systemInfo.Value.ConfigureAwait(false);
-            // Drained before the instances are walked, so an event committed during this tick belongs
+            // Taken before the instances are walked, so an event committed during this tick belongs
             // to the next sample rather than arriving after its own status was already recorded.
-            var lifecycle = _lifecycleEvents.Drain();
+            // Not removed yet: the sample carrying them can still fail to reach the log.
+            var lifecycle = _lifecycleEvents.Snapshot();
             var instanceSamples = ImmutableArray.CreateBuilder<MonitoringInstanceSample>();
             foreach (var instance in _instances.Instances.Values.OrderBy(static entry => entry.Config.Uuid))
             {
@@ -217,7 +218,11 @@ internal sealed class MonitoringSampler : IDisposable, IAsyncDisposable
             // Before the record itself, so the hole is ordered ahead of the sample that proves the
             // log is writable again.
             FlushPendingGaps();
-            if (!_log.Append(sample))
+            if (_log.Append(sample))
+                // Only now: the events are in the history, so the buffer may forget them. A failed
+                // append leaves them staged and the next sample carries them instead.
+                _lifecycleEvents.Commit();
+            else
                 RememberDroppedRecord(now);
             Volatile.Write(ref _latest, sample);
             return sample;
@@ -292,6 +297,7 @@ internal sealed class MonitoringSampler : IDisposable, IAsyncDisposable
         var bucketTicks = Math.Max(1, (long)Math.Ceiling(window.Ticks / (double)cap));
         var buckets = new SortedDictionary<long, MonitoringSample>();
         var bucketEvents = new SortedDictionary<long, ImmutableArray<MonitoringInstanceEvent>.Builder>();
+        var bucketDropped = new SortedDictionary<long, int>();
         foreach (var sample in raw)
         {
             // Buckets are relative to the window, not the epoch: an epoch-aligned grid splits an
@@ -312,6 +318,12 @@ internal sealed class MonitoringSampler : IDisposable, IAsyncDisposable
                 collected.AddRange(events.Value);
             }
 
+            // For the same reason, and with the same consequence if it is skipped: the bucket winner
+            // usually carries zero, so an earlier sample's non-zero loss would vanish and the result
+            // would read as a complete event list. Null only survives if every input was null.
+            if (sample.DroppedEvents is { } dropped)
+                bucketDropped[bucket] = bucketDropped.TryGetValue(bucket, out var running) ? running + dropped : dropped;
+
             if (buckets.TryGetValue(bucket, out var existing) && existing.Gap && !sample.Gap)
                 continue;
             buckets[bucket] = sample;
@@ -322,9 +334,14 @@ internal sealed class MonitoringSampler : IDisposable, IAsyncDisposable
         {
             // A gap winner still carries the bucket's events: the hole and the transitions are
             // both things the reader needs, and the gap flag already says the span is incomplete.
-            points.Add(bucketEvents.TryGetValue(pair.Key, out var collected)
-                ? pair.Value with { Events = collected.ToImmutable() }
-                : pair.Value);
+            var winner = pair.Value;
+            if (bucketEvents.TryGetValue(pair.Key, out var collected))
+                winner = winner with { Events = collected.ToImmutable() };
+            winner = winner with
+            {
+                DroppedEvents = bucketDropped.TryGetValue(pair.Key, out var dropped) ? dropped : null
+            };
+            points.Add(winner);
         }
 
         return new MonitoringQueryResult(points.ToImmutable(), _log.DroppedRecords);
