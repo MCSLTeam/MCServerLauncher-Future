@@ -239,15 +239,22 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
                 continue;
             }
 
-            // The trigger still fires when a hold is active — the hold refuses the lifecycle
-            // actions, not the policy — so the reason reports it instead of the verdict hiding it.
-            var hold = evaluation.Targets.FirstOrDefault() is { } firstTarget
-                ? ActiveSuppression(firstTarget, now)
-                : null;
+            // The trigger still fires when a hold is active — the hold refuses individual actions,
+            // not the policy — so the reason names every target that would have one refused. Asked
+            // per target and per action through the same predicate execution uses, because a
+            // firing covering several instances can be held on some of them and not others.
+            var held = evaluation.Targets
+                .Where(candidate => candidate is { } instanceId &&
+                                    policy.Actions.Any(action =>
+                                        RefusingHold(action, ResolveTarget(action, instanceId) ?? instanceId, now) is not null))
+                .Select(static candidate => candidate!.Value.ToString("D"))
+                .ToArray();
             outcomes.Add(new AutomationTestOutcome(
                 policy.Id,
                 true,
-                hold is null ? evaluation.Reason : $"{evaluation.Reason}; target held by a '{hold.Scope}' suppression",
+                held.Length == 0
+                    ? evaluation.Reason
+                    : $"{evaluation.Reason}; actions held for {string.Join(", ", held)}",
                 target));
         }
 
@@ -603,7 +610,7 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
 
                 // Checked before the backoff bookkeeping: a refused restart must not spend the
                 // escalation the next real restart is entitled to.
-                if (ActiveSuppression(target, _timeProvider.GetUtcNow()) is { } restartHold)
+                if (RefusingHold(action, target, _timeProvider.GetUtcNow()) is { } restartHold)
                 {
                     return Audited(policy, action.Type, target, Err(
                         "automation.suppressed",
@@ -684,9 +691,7 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
                 if (instanceId is not { } target)
                     return Audited(policy, action.Type, triggerTarget, Err("automation.no_target", "The stop action has no target instance."));
 
-                // Only a full maintenance hold refuses a stop: a restart hold exists precisely to
-                // let an instance be brought down and left down.
-                if (ActiveSuppression(target, _timeProvider.GetUtcNow()) is { Scope: AutomationSuppressionScope.All } stopHold)
+                if (RefusingHold(action, target, _timeProvider.GetUtcNow()) is { } stopHold)
                 {
                     return Audited(policy, action.Type, target, Err(
                         "automation.suppressed",
@@ -719,17 +724,18 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
                     restartSuppression.Reason);
 
             case AuditRecordAction auditRecord:
-                // An audit event has no free-text field, so the message rides in the target: an
-                // operator reading the history needs to see what the policy meant to say, and the
-                // permission carries the severity beside it.
-                return Audited(
-                    policy,
-                    $"{action.Type}:{auditRecord.Severity}",
-                    triggerTarget,
-                    RustyOptions.Result.Ok<string, API.Errors.DaemonError>(
-                        triggerTarget is { } audited
-                            ? $"{audited:D}: {auditRecord.Message}"
-                            : auditRecord.Message));
+                // Target stays the instance id like every other automation record, so a
+                // target-filtered audit query returns these — filtering is an exact match, and a
+                // message in that field would hide the records this action exists to surface.
+                // The authored text rides in the detail field the other branches use for their
+                // outcome code, which is the only free-text column the audit schema has.
+                Audit(
+                    policy?.Id,
+                    action.Type,
+                    triggerTarget?.ToString("D") ?? string.Empty,
+                    succeeded: true,
+                    $"{auditRecord.Severity}: {auditRecord.Message}");
+                return Ok(triggerTarget);
 
             case NotificationAction notification:
                 await _domainEvents.PublishAsync(
@@ -807,6 +813,39 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
         return Audited(policy, actionType, target,
             RustyOptions.Result.Ok<string, API.Errors.DaemonError>(target.ToString("D")));
     }
+
+    /// <summary>
+    /// The hold that refuses this action against this instance, or null when nothing refuses it.
+    /// Execution and the dry run both ask this, so what mcsl.automation.test predicts and what a
+    /// tick actually does cannot drift apart.
+    /// </summary>
+    /// <remarks>
+    /// A restart is refused by either scope. A stop is refused only by a full maintenance hold: a
+    /// restart hold exists precisely to let an instance be brought down and left down. Everything
+    /// else — notifications, audit records, confirmation plans, and the hold-writing actions
+    /// themselves — is never refused.
+    /// </remarks>
+    /// <summary>
+    /// The instance an action acts on: its own if it names one, otherwise the trigger's target.
+    /// </summary>
+    private static Guid? ResolveTarget(AutomationAction action, Guid? triggerTarget) => action switch
+    {
+        RestartInstanceAction restart => restart.InstanceId ?? triggerTarget,
+        StopInstanceAction stop => stop.InstanceId ?? triggerTarget,
+        MaintenanceStateAction maintenance => maintenance.InstanceId ?? triggerTarget,
+        RestartSuppressionAction suppression => suppression.InstanceId ?? triggerTarget,
+        _ => triggerTarget
+    };
+
+    private AutomationSuppression? RefusingHold(AutomationAction action, Guid instanceId, DateTimeOffset now) =>
+        action switch
+        {
+            RestartInstanceAction => ActiveSuppression(instanceId, now),
+            StopInstanceAction => ActiveSuppression(instanceId, now) is { Scope: AutomationSuppressionScope.All } hold
+                ? hold
+                : null,
+            _ => null
+        };
 
     /// <summary>
     /// The hold currently covering an instance, or null. Expired entries are filtered rather than
@@ -916,6 +955,16 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
                     pendingStarts.Add(instanceId);
                 }
             }
+
+            // An instance removed from the catalog takes its facts with it. A surviving status entry
+            // would keep a duration trigger firing forever on something that no longer exists — the
+            // status can never change again — and a surviving hold would be applied to whatever
+            // later reuses the id.
+            var live = observed.Select(static entry => entry.Key).ToHashSet();
+            foreach (var gone in _lastStatuses.Keys.Where(id => !live.Contains(id)).ToArray())
+                _lastStatuses.Remove(gone);
+            foreach (var gone in _suppressions.Keys.Where(id => !live.Contains(id)).ToArray())
+                _suppressions.Remove(gone);
         }
 
         foreach (var instanceId in pendingStarts)

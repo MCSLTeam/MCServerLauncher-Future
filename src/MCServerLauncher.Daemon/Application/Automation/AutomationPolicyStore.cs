@@ -174,6 +174,18 @@ internal static class AutomationPolicyValidator
         "instance_memory_bytes"
     ];
 
+    /// <summary>
+    /// The metrics whose readings are percentages. A threshold above 100 on one of them is a rule
+    /// that can never fire, which is a typo rather than a policy.
+    /// </summary>
+    private static readonly string[] PercentMetrics =
+    [
+        "system_cpu",
+        "system_memory_percent",
+        "system_disk_percent",
+        "instance_cpu"
+    ];
+
     private static readonly string[] KnownSeverities = ["Info", "Success", "Warning", "Error"];
 
     /// <summary>
@@ -276,6 +288,8 @@ internal static class AutomationPolicyValidator
                     diagnostics.Add(Diagnostic(policy, "automation.trigger_invalid", $"Unknown metric '{sustained.Metric}'."));
                 if (sustained.Threshold <= 0)
                     diagnostics.Add(Diagnostic(policy, "automation.trigger_invalid", "The metric threshold must be positive."));
+                if (PercentMetrics.Contains(sustained.Metric, StringComparer.Ordinal) && sustained.Threshold > 100)
+                    diagnostics.Add(Diagnostic(policy, "automation.trigger_invalid", $"A percentage threshold cannot exceed 100 for '{sustained.Metric}'."));
                 if (sustained.SustainedSeconds < 15)
                     diagnostics.Add(Diagnostic(policy, "automation.trigger_invalid", "The sustained window must be at least 15 seconds."));
                 break;
