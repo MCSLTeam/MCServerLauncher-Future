@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using System.Text.Json;
+using MCServerLauncher.Common.Contracts.Audit;
 using MCServerLauncher.Common.Contracts.Automation;
 using MCServerLauncher.Common.Contracts.Serialization;
 using MCServerLauncher.Common.Contracts.Instances;
@@ -34,6 +35,7 @@ public sealed class AutomationPolicyEngineTests
 {
     private static readonly Guid InstanceId = Guid.Parse("11111111-1111-1111-1111-111111111111");
     private static readonly Guid PolicyId = Guid.Parse("22222222-2222-2222-2222-222222222222");
+    private static readonly Guid SecondInstanceId = Guid.Parse("44444444-4444-4444-4444-444444444444");
 
     [Fact]
     public void Store_AppliesWithVersionCasAndRejectsInvalidDocuments()
@@ -954,7 +956,8 @@ public sealed class AutomationPolicyEngineTests
 
         // The dry run reports the hold without writing anything.
         var outcomes = harness.Evaluator.Test();
-        Assert.Contains(outcomes, outcome => outcome.Reason.Contains("Restarts' suppression", StringComparison.Ordinal));
+        Assert.Contains(outcomes, outcome =>
+            outcome.Reason.Contains($"actions held for {InstanceId:D}", StringComparison.Ordinal));
         Assert.Single(harness.Evaluator.ActiveSuppressions());
     }
 
@@ -974,10 +977,11 @@ public sealed class AutomationPolicyEngineTests
 
         await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
 
-        var recorded = Assert.Single(harness.Audit.Events, entry => entry.Permission.StartsWith("audit.record", StringComparison.Ordinal));
-        Assert.Equal("audit.record:Warning", recorded.Permission);
+        var recorded = Assert.Single(harness.Audit.Events, entry => entry.Permission == "audit.record");
         Assert.Equal(AutomationEvaluator.ServicePrincipalSubject, recorded.Principal);
-        Assert.Equal("disk is filling but nothing was done", recorded.Target);
+        // No instance fired this window trigger, so there is nothing to file it under.
+        Assert.Equal(string.Empty, recorded.Target);
+        Assert.Equal("Warning: disk is filling but nothing was done", recorded.ErrorCode);
         Assert.True(recorded.Succeeded);
     }
 
@@ -1101,6 +1105,355 @@ public sealed class AutomationPolicyEngineTests
         Assert.Equal("Error", auditRecord.Severity);
     }
 
+    /// <summary>
+    /// A property the kind does not define is rejected, not ignored. A misspelled instance_id would
+    /// otherwise read as absent, and absent means every instance on the wildcard-capable kinds — so
+    /// a policy written for one instance would quietly act on the whole fleet.
+    /// </summary>
+    [Fact]
+    public void Converter_RejectsAPropertyOutsideTheKindsOwnFields()
+    {
+        var misspelled = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(
+            "{\"type\":\"instance.unresponsive\",\"instanceId\":\"" + InstanceId + "\",\"silent_seconds\":300}",
+            ApplicationContractJsonContext.Default.AutomationTrigger));
+        Assert.Contains("instanceId", misspelled.Message, StringComparison.Ordinal);
+
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(
+            "{\"type\":\"instance.status_duration\",\"instance-id\":\"" + InstanceId + "\",\"status\":\"stopped\"}",
+            ApplicationContractJsonContext.Default.AutomationTrigger));
+
+        // The rule is uniform across the union, not a rule the new kinds carry alone.
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(
+            "{\"type\":\"instance.crash_loop\",\"instanceId\":\"" + InstanceId + "\",\"max_crashes\":3}",
+            ApplicationContractJsonContext.Default.AutomationTrigger));
+
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(
+            "{\"type\":\"instance.restart_suppression\",\"instanceId\":\"" + InstanceId + "\",\"duration_seconds\":60}",
+            ApplicationContractJsonContext.Default.AutomationAction));
+
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(
+            "{\"type\":\"instance.restart\",\"backoff_base\":30}",
+            ApplicationContractJsonContext.Default.AutomationAction));
+
+        // A nested deferred action is read through the same gate.
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(
+            "{\"type\":\"plan.confirmation\",\"summary\":\"s\",\"deferred\":{\"type\":\"instance.stop\",\"instanceId\":\"" + InstanceId + "\"}}",
+            ApplicationContractJsonContext.Default.AutomationAction));
+    }
+
+    [Fact]
+    public void Converter_RejectsExplicitNullOnAScalarButKeepsItMeaningfulOnInstanceId()
+    {
+        // Null on instance_id is the wildcard, and the writer emits it, so it must keep round-tripping.
+        var wildcard = Assert.IsType<UnresponsiveInstanceTrigger>(JsonSerializer.Deserialize(
+            "{\"type\":\"instance.unresponsive\",\"instance_id\":null,\"silent_seconds\":300}",
+            ApplicationContractJsonContext.Default.AutomationTrigger));
+        Assert.Null(wildcard.InstanceId);
+
+        // Null on a scalar asserts a value the field cannot hold; silently substituting the default
+        // is the same quiet coercion an unknown property would be.
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(
+            "{\"type\":\"instance.unresponsive\",\"silent_seconds\":null}",
+            ApplicationContractJsonContext.Default.AutomationTrigger));
+
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(
+            "{\"type\":\"instance.status_duration\",\"status\":null}",
+            ApplicationContractJsonContext.Default.AutomationTrigger));
+
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(
+            "{\"type\":\"audit.record\",\"message\":null}",
+            ApplicationContractJsonContext.Default.AutomationAction));
+    }
+
+    [Fact]
+    public void Converter_RejectsMalformedRestartSuppressionAndDiskMetricPayloads()
+    {
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(
+            "{\"type\":\"instance.restart_suppression\",\"duration_seconds\":\"600\"}",
+            ApplicationContractJsonContext.Default.AutomationAction));
+
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(
+            "{\"type\":\"instance.restart_suppression\",\"reason\":42}",
+            ApplicationContractJsonContext.Default.AutomationAction));
+
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(
+            "{\"type\":\"instance.restart_suppression\",\"instance_id\":\"not-a-guid\"}",
+            ApplicationContractJsonContext.Default.AutomationAction));
+
+        // The disk metric is a value on the existing trigger, so it inherits that trigger's strictness.
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(
+            "{\"type\":\"metric.sustained\",\"metric\":\"system_disk_percent\",\"threshold\":\"95\"}",
+            ApplicationContractJsonContext.Default.AutomationTrigger));
+
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(
+            "{\"type\":\"metric.sustained\",\"metric\":\"system_disk_percent\",\"sustained_seconds\":300.5}",
+            ApplicationContractJsonContext.Default.AutomationTrigger));
+
+        var disk = Assert.IsType<SustainedMetricTrigger>(JsonSerializer.Deserialize(
+            "{\"type\":\"metric.sustained\",\"metric\":\"system_disk_percent\",\"instance_id\":null,\"threshold\":95,\"sustained_seconds\":300}",
+            ApplicationContractJsonContext.Default.AutomationTrigger));
+        Assert.Equal("system_disk_percent", disk.Metric);
+        Assert.Equal(95, disk.Threshold);
+    }
+
+    [Fact]
+    public void Validator_RejectsMetricThresholdsThatCouldNeverBeReached()
+    {
+        Assert.Contains(
+            Diagnostics(
+                new SustainedMetricTrigger { Metric = "system_disk_percent", Threshold = 150, SustainedSeconds = 60 },
+                new StopInstanceAction()),
+            diagnostic => diagnostic.Message.Contains("cannot exceed 100", StringComparison.Ordinal));
+
+        Assert.Contains(
+            Diagnostics(
+                new SustainedMetricTrigger { Metric = "system_disk_bytes", Threshold = 95, SustainedSeconds = 60 },
+                new StopInstanceAction()),
+            diagnostic => diagnostic.Message.Contains("Unknown metric", StringComparison.Ordinal));
+
+        // A byte-valued metric is not a percentage, so a large threshold is legitimate there.
+        Assert.Empty(Diagnostics(
+            new SustainedMetricTrigger { Metric = "instance_memory_bytes", Threshold = 4_000_000_000, SustainedSeconds = 60 },
+            new StopInstanceAction()));
+    }
+
+    /// <summary>
+    /// A human-confirmed intent executes through the same action path as a tick, so it meets the
+    /// same holds. Confirmation authorizes the action; it does not exempt it from maintenance.
+    /// </summary>
+    [Fact]
+    public async Task Evaluator_DeferredIntentRestartIsRefusedWhileTheInstanceIsHeld()
+    {
+        using var harness = new Harness(start: DateTimeOffset.Parse("2026-07-28T00:00:00+00:00"));
+        var hold = new AutomationPolicy
+        {
+            Id = PolicyId,
+            Name = "hold",
+            Trigger = new MaintenanceWindowTrigger { StartHourUtc = 0, StartMinuteUtc = 0, DurationMinutes = 1 },
+            Actions = [new MaintenanceStateAction { InstanceId = InstanceId, DurationSeconds = 600, Reason = "patching" }],
+            CooldownSeconds = 0
+        };
+        var guarded = new AutomationPolicy
+        {
+            Id = Guid.Parse("33333333-3333-3333-3333-333333333333"),
+            Name = "guarded-restart",
+            Trigger = new UnexpectedExitTrigger { InstanceId = InstanceId },
+            Actions =
+            [
+                new ConfirmationPlanAction
+                {
+                    Summary = "approve the restart",
+                    Deferred = new RestartInstanceAction { InstanceId = InstanceId }
+                }
+            ],
+            CooldownSeconds = 0
+        };
+        harness.Store.Apply(new AutomationPolicySet { Policies = [hold, guarded], Version = 0 }).Unwrap();
+        var instance = harness.AddInstance(InstanceId, InstanceStatus.Running);
+
+        await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
+        instance.Status = InstanceStatus.Crashed;
+        harness.Time.Advance(TimeSpan.FromSeconds(15));
+        await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
+
+        var plan = Assert.Single(harness.PlanKernel.ListActive(AutomationIntents.PlanKind));
+        harness.PlanKernel.Confirm(plan.PlanId, plan.PlanHash, "user-a").Unwrap();
+        Assert.True(AutomationIntents.TryParsePayload(
+            harness.PlanKernel.Get(plan.PlanId).Unwrap().Payload,
+            out var payload,
+            out var deferred));
+
+        var refused = await harness.Evaluator.ExecuteDeferredAsync(deferred, payload.TargetInstanceId, CancellationToken.None);
+        Assert.True(refused.IsErr(out var refusedError));
+        Assert.Equal("automation.suppressed", refusedError!.Code);
+        Assert.Empty(harness.Instances.Started);
+        Assert.Contains(harness.Audit.Events, entry =>
+            entry.Permission == "instance.restart" && entry.ErrorCode == "automation.suppressed" && !entry.Succeeded);
+
+        // Once the hold lapses the same confirmed intent goes through.
+        harness.Time.Advance(TimeSpan.FromMinutes(11));
+        var executed = await harness.Evaluator.ExecuteDeferredAsync(deferred, payload.TargetInstanceId, CancellationToken.None);
+        Assert.True(executed.IsOk(out _));
+        Assert.Equal([InstanceId], harness.Instances.Started);
+    }
+
+    /// <summary>
+    /// A removed instance's status can never change again, so a surviving observation would satisfy
+    /// a duration trigger forever.
+    /// </summary>
+    [Fact]
+    public async Task Evaluator_ForgetsInstancesRemovedFromTheCatalog()
+    {
+        using var harness = new Harness();
+        var trigger = new StatusDurationTrigger { Status = InstanceStatus.Stopped, DurationSeconds = 60 };
+        var policy = new AutomationPolicy
+        {
+            Id = PolicyId,
+            Name = "stuck-stopped",
+            Trigger = trigger,
+            Actions =
+            [
+                new NotificationAction { Title = "stopped", Message = "down", Severity = "Warning" },
+                new MaintenanceStateAction { DurationSeconds = 600, Reason = "held" }
+            ],
+            CooldownSeconds = 0
+        };
+        harness.Store.Apply(Document(policy, version: 0)).Unwrap();
+        harness.AddInstance(InstanceId, InstanceStatus.Stopped);
+
+        await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
+        harness.Time.Advance(TimeSpan.FromSeconds(90));
+        await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
+        Assert.Single(harness.DomainEvents.Notifications);
+        Assert.Single(harness.Evaluator.ActiveSuppressions());
+
+        harness.Manager.Instances.TryRemove(InstanceId, out _);
+        harness.Time.Advance(TimeSpan.FromSeconds(90));
+        await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
+        await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
+
+        // No further firing, and the facts and holds the instance left behind are gone.
+        Assert.Single(harness.DomainEvents.Notifications);
+        Assert.Empty(harness.Evaluator.ActiveSuppressions());
+        Assert.False(harness.Evaluator.EvaluateTrigger(trigger, harness.Time.GetUtcNow()).Fires);
+    }
+
+    /// <summary>
+    /// The audit record this action writes has to be findable the way every other automation record
+    /// is found — audit queries filter on an exact target match.
+    /// </summary>
+    [Fact]
+    public async Task Evaluator_AuditRecordIsReturnedByATargetFilteredAuditQuery()
+    {
+        var auditRoot = Directory.CreateTempSubdirectory("mcsl-automation-audit-").FullName;
+        var auditLog = new AuditLog(new DaemonAuditConfig(), rootDirectory: auditRoot);
+        using var harness = new Harness(
+            start: DateTimeOffset.Parse("2026-07-28T00:00:00+00:00"),
+            forwardAudit: auditLog);
+        var targeted = new AutomationPolicy
+        {
+            Id = PolicyId,
+            Name = "note-the-crash",
+            Trigger = new UnexpectedExitTrigger { InstanceId = InstanceId },
+            Actions = [new AuditRecordAction { Message = "crashed and left alone on purpose", Severity = "Warning" }],
+            CooldownSeconds = 0
+        };
+        var untargeted = new AutomationPolicy
+        {
+            Id = Guid.Parse("33333333-3333-3333-3333-333333333333"),
+            Name = "note-the-window",
+            Trigger = new MaintenanceWindowTrigger { StartHourUtc = 0, StartMinuteUtc = 0, DurationMinutes = 30 },
+            Actions = [new AuditRecordAction { Message = "maintenance window opened", Severity = "Info" }],
+            CooldownSeconds = 0
+        };
+        harness.Store.Apply(new AutomationPolicySet { Policies = [targeted, untargeted], Version = 0 }).Unwrap();
+        var instance = harness.AddInstance(InstanceId, InstanceStatus.Running);
+
+        await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
+        instance.Status = InstanceStatus.Crashed;
+        harness.Time.Advance(TimeSpan.FromSeconds(15));
+        await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
+
+        // "*" is the trusted-admin marker: an operator reading the whole history.
+        var application = new LocalAuditApplication(auditLog);
+        var filtered = await application.QueryAsync(
+            new AuditQuery(Target: InstanceId.ToString("D"), OwnerPrincipal: "*"),
+            CancellationToken.None);
+        var record = Assert.Single(
+            filtered.Unwrap().Records,
+            candidate => candidate.Permission == "audit.record");
+        Assert.Equal(AutomationEvaluator.ServicePrincipalSubject, record.Principal);
+        Assert.Equal(InstanceId.ToString("D"), record.Target);
+        Assert.Contains("crashed and left alone on purpose", record.ErrorCode!, StringComparison.Ordinal);
+        Assert.Contains("Warning", record.ErrorCode!, StringComparison.Ordinal);
+        Assert.True(record.Succeeded);
+
+        // An untargeted policy still records, it simply has no instance to be filed under.
+        var all = await application.QueryAsync(new AuditQuery(OwnerPrincipal: "*"), CancellationToken.None);
+        Assert.Contains(all.Unwrap().Records, candidate =>
+            candidate.Permission == "audit.record" &&
+            candidate.Target == string.Empty &&
+            candidate.ErrorCode!.Contains("maintenance window opened", StringComparison.Ordinal));
+    }
+
+    /// <summary>
+    /// One firing can cover several instances and be held on only some of them, so the dry run has
+    /// to answer per target and per action exactly as execution does.
+    /// </summary>
+    [Fact]
+    public async Task Test_ReportsHeldTargetsIndividuallyForAWildcardFiring()
+    {
+        using var harness = new Harness(start: DateTimeOffset.Parse("2026-07-28T00:00:00+00:00"));
+        var hold = new AutomationPolicy
+        {
+            Id = PolicyId,
+            Name = "hold-one",
+            Trigger = new MaintenanceWindowTrigger { StartHourUtc = 0, StartMinuteUtc = 0, DurationMinutes = 1 },
+            Actions = [new MaintenanceStateAction { InstanceId = InstanceId, DurationSeconds = 600, Reason = "patching" }],
+            CooldownSeconds = 0
+        };
+        var wildcardGuard = new AutomationPolicy
+        {
+            Id = Guid.Parse("33333333-3333-3333-3333-333333333333"),
+            Name = "repair-everything",
+            Trigger = new StatusDurationTrigger { Status = InstanceStatus.Stopped, DurationSeconds = 60 },
+            Actions = [new RestartInstanceAction()],
+            CooldownSeconds = 0
+        };
+        harness.Store.Apply(new AutomationPolicySet { Policies = [hold, wildcardGuard], Version = 0 }).Unwrap();
+        harness.AddInstance(InstanceId, InstanceStatus.Stopped);
+        harness.AddInstance(SecondInstanceId, InstanceStatus.Stopped);
+
+        // Places the hold on one instance and starts the duration clock on both.
+        await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
+        harness.Time.Advance(TimeSpan.FromSeconds(90));
+
+        var outcome = Assert.Single(harness.Evaluator.Test(), candidate => candidate.PolicyId == wildcardGuard.Id);
+        Assert.True(outcome.WouldFire);
+        Assert.Contains(InstanceId.ToString("D"), outcome.Reason, StringComparison.Ordinal);
+        Assert.DoesNotContain(SecondInstanceId.ToString("D"), outcome.Reason, StringComparison.Ordinal);
+
+        // And the dry run wrote nothing: the real tick still repairs the instance that is free.
+        Assert.Single(harness.Evaluator.ActiveSuppressions());
+        await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
+        Assert.Equal([SecondInstanceId], harness.Instances.Started);
+    }
+
+    [Fact]
+    public async Task Evaluator_WildcardUnresponsiveAndStatusDurationActOnEveryMatchingInstance()
+    {
+        const string twoSilentInstances =
+            """
+            {"timestamp":"2026-07-28T00:00:00+00:00","gap":false,"system_cpu_percent":5.5,"memory_used_kilobytes":16384,"memory_total_kilobytes":32768,"instances":[{"instance_id":"11111111-1111-1111-1111-111111111111","name":"a","status":"running","cpu_percent":1.5,"memory_bytes":1024,"silent_seconds":600},{"instance_id":"44444444-4444-4444-4444-444444444444","name":"b","status":"running","cpu_percent":1.5,"memory_bytes":1024,"silent_seconds":900}],"disk_total_bytes":1024,"disk_free_bytes":512}
+            """;
+        using var harness = new Harness(seedHistoryJsonl: twoSilentInstances);
+
+        var unresponsive = harness.Evaluator.EvaluateTrigger(
+            new UnresponsiveInstanceTrigger { SilentSeconds = 300 },
+            harness.Time.GetUtcNow());
+        Assert.True(unresponsive.Fires);
+        Assert.Equal([InstanceId, SecondInstanceId], unresponsive.Targets);
+
+        // One firing must stop both, the way a wildcard crash repair covers a whole correlated crash.
+        var policy = new AutomationPolicy
+        {
+            Id = PolicyId,
+            Name = "quiet-guard",
+            Trigger = new StatusDurationTrigger { Status = InstanceStatus.Stopped, DurationSeconds = 60 },
+            Actions = [new StopInstanceAction()],
+            CooldownSeconds = 3600
+        };
+        harness.Store.Apply(Document(policy, version: 0)).Unwrap();
+        harness.AddInstance(InstanceId, InstanceStatus.Stopped);
+        harness.AddInstance(SecondInstanceId, InstanceStatus.Stopped);
+
+        await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
+        harness.Time.Advance(TimeSpan.FromSeconds(90));
+        await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
+
+        Assert.Equal([InstanceId, SecondInstanceId], harness.Instances.Stopped.Order());
+    }
+
     private static T RoundTrip<T>(T value, System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> typeInfo) =>
         JsonSerializer.Deserialize(JsonSerializer.Serialize(value, typeInfo), typeInfo)!;
 
@@ -1133,7 +1486,11 @@ public sealed class AutomationPolicyEngineTests
     {
         private readonly TimeSpan? _sampleInterval;
 
-        internal Harness(DateTimeOffset? start = null, TimeSpan? sampleInterval = null, string? seedHistoryJsonl = null)
+        internal Harness(
+            DateTimeOffset? start = null,
+            TimeSpan? sampleInterval = null,
+            string? seedHistoryJsonl = null,
+            IAuditSink? forwardAudit = null)
         {
             _sampleInterval = sampleInterval;
             Time = new ManualTimeProvider(start ?? DateTimeOffset.Parse("2026-07-28T00:00:00+00:00"));
@@ -1150,7 +1507,7 @@ public sealed class AutomationPolicyEngineTests
             Store = new AutomationPolicyStore(storeRoot);
             PlanKernel = new PlanKernel(Time, planRoot);
             Instances = new RecordingInstanceApplication(Manager);
-            Audit = new RecordingAuditSink();
+            Audit = new RecordingAuditSink(forwardAudit);
             DomainEvents = new RecordingDomainEventPort();
             Evaluator = new AutomationEvaluator(
                 Store,
@@ -1222,11 +1579,16 @@ public sealed class AutomationPolicyEngineTests
         public Task<Result<OperationCancelResult, DaemonError>> CancelOperationAsync(OperationCancelRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
     }
 
-    private sealed class RecordingAuditSink : IAuditSink
+    /// <summary>Records for assertions, and optionally forwards to a real sink under test.</summary>
+    private sealed class RecordingAuditSink(IAuditSink? forward = null) : IAuditSink
     {
         internal List<AuditEvent> Events { get; } = [];
 
-        public void Record(AuditEvent auditEvent) => Events.Add(auditEvent);
+        public void Record(AuditEvent auditEvent)
+        {
+            Events.Add(auditEvent);
+            forward?.Record(auditEvent);
+        }
     }
 
     private sealed class RecordingDomainEventPort : IDomainEventPort

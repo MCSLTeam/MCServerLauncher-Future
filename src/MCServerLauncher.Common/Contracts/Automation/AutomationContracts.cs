@@ -347,14 +347,18 @@ public sealed record AutomationIntentExecuteResult(Guid PlanId, Guid OperationId
 /// </summary>
 internal sealed class AutomationTriggerStjConverter : global::System.Text.Json.Serialization.JsonConverter<AutomationTrigger>
 {
-    private static readonly string[] KnownDiscriminators =
+    /// <summary>
+    /// Every property each kind accepts, discriminator included. Doubles as the known-discriminator
+    /// list, so a kind cannot be added to one and forgotten in the other.
+    /// </summary>
+    private static readonly Dictionary<string, string[]> FieldsByDiscriminator = new(StringComparer.Ordinal)
     {
-        "instance.crash_loop",
-        "instance.unexpected_exit",
-        "instance.unresponsive",
-        "instance.status_duration",
-        "metric.sustained",
-        "schedule.window"
+        ["instance.crash_loop"] = ["type", "instance_id", "max_crashes", "window_seconds"],
+        ["instance.unexpected_exit"] = ["type", "instance_id"],
+        ["instance.unresponsive"] = ["type", "instance_id", "silent_seconds"],
+        ["instance.status_duration"] = ["type", "instance_id", "status", "duration_seconds"],
+        ["metric.sustained"] = ["type", "metric", "instance_id", "threshold", "sustained_seconds"],
+        ["schedule.window"] = ["type", "start_hour_utc", "start_minute_utc", "duration_minutes"]
     };
 
     public override AutomationTrigger Read(ref StjUtf8JsonReader reader, Type typeToConvert, StjJsonSerializerOptions options)
@@ -383,8 +387,14 @@ internal sealed class AutomationTriggerStjConverter : global::System.Text.Json.S
             _ => throw AutomationUnionStjHelper.UnknownDiscriminator(
                 nameof(AutomationTrigger),
                 discriminator,
-                KnownDiscriminators)
+                FieldsByDiscriminator.Keys)
         };
+
+        AutomationUnionStjHelper.RejectUnknownProperties(
+            obj,
+            nameof(AutomationTrigger),
+            discriminator,
+            FieldsByDiscriminator[discriminator]);
 
         switch (trigger)
         {
@@ -487,15 +497,19 @@ internal sealed class AutomationTriggerStjConverter : global::System.Text.Json.S
 /// </summary>
 internal sealed class AutomationActionStjConverter : global::System.Text.Json.Serialization.JsonConverter<AutomationAction>
 {
-    private static readonly string[] KnownDiscriminators =
+    /// <summary>
+    /// Every property each kind accepts, discriminator included. Doubles as the known-discriminator
+    /// list, so a kind cannot be added to one and forgotten in the other.
+    /// </summary>
+    private static readonly Dictionary<string, string[]> FieldsByDiscriminator = new(StringComparer.Ordinal)
     {
-        "instance.restart",
-        "instance.stop",
-        "instance.maintenance",
-        "instance.restart_suppression",
-        "notification",
-        "audit.record",
-        "plan.confirmation"
+        ["instance.restart"] = ["type", "instance_id", "backoff_base_seconds", "backoff_max_seconds"],
+        ["instance.stop"] = ["type", "instance_id"],
+        ["instance.maintenance"] = ["type", "instance_id", "duration_seconds", "reason"],
+        ["instance.restart_suppression"] = ["type", "instance_id", "duration_seconds", "reason"],
+        ["notification"] = ["type", "title", "message", "severity"],
+        ["audit.record"] = ["type", "message", "severity"],
+        ["plan.confirmation"] = ["type", "summary", "deferred"]
     };
 
     public override AutomationAction Read(ref StjUtf8JsonReader reader, Type typeToConvert, StjJsonSerializerOptions options)
@@ -535,8 +549,14 @@ internal sealed class AutomationActionStjConverter : global::System.Text.Json.Se
             _ => throw AutomationUnionStjHelper.UnknownDiscriminator(
                 nameof(AutomationAction),
                 discriminator,
-                KnownDiscriminators)
+                FieldsByDiscriminator.Keys)
         };
+
+        AutomationUnionStjHelper.RejectUnknownProperties(
+            obj,
+            nameof(AutomationAction),
+            discriminator,
+            FieldsByDiscriminator[discriminator]);
 
         switch (action)
         {
@@ -669,15 +689,41 @@ internal static class AutomationUnionStjHelper
         return discriminator;
     }
 
-    internal static StjJsonException UnknownDiscriminator(string baseTypeName, string discriminator, string[] knownValues) =>
-        new($"Unknown {baseTypeName} discriminator '{discriminator}'. Known values: {string.Join(", ", knownValues)}.");
+    internal static StjJsonException UnknownDiscriminator(string baseTypeName, string discriminator, IEnumerable<string> knownValues) =>
+        new($"Unknown {baseTypeName} discriminator '{discriminator}'. Known values: {string.Join(", ", knownValues.Order(StringComparer.Ordinal))}.");
+
+    /// <summary>
+    /// Rejects any property the kind does not define, matching the strictness every source-generated
+    /// DTO gets from <c>JsonUnmappedMemberHandling.Disallow</c>.
+    /// </summary>
+    /// <remarks>
+    /// Ignoring an unknown property is the same failure as coercing a malformed one, and worse for
+    /// the wildcard-capable kinds: a misspelled 'instance_id' reads as absent, absent means every
+    /// instance, and a policy meant for one instance would quietly act on the whole fleet.
+    /// </remarks>
+    internal static void RejectUnknownProperties(
+        StjJsonElement obj,
+        string baseTypeName,
+        string discriminator,
+        string[] knownProperties)
+    {
+        foreach (var property in obj.EnumerateObject())
+        {
+            if (!knownProperties.Contains(property.Name, StringComparer.Ordinal))
+            {
+                throw new StjJsonException(
+                    $"Unknown property '{property.Name}' for {baseTypeName} '{discriminator}'. " +
+                    $"Known properties: {string.Join(", ", knownProperties)}.");
+            }
+        }
+    }
 
     // A malformed field is rejected, never coerced: silently defaulting a bad instance_id to null
     // would widen a single-instance policy into a fleet-wide one, and validation runs after
     // conversion so it could never see the loss.
     internal static string ReadStringOrDefault(StjJsonElement obj, string name, string fallback)
     {
-        if (!TryGetValue(obj, name, out var token))
+        if (!TryGetScalar(obj, name, out var token))
             return fallback;
         if (token.ValueKind != StjJsonValueKind.String)
             throw WrongType(name, "string");
@@ -686,7 +732,7 @@ internal static class AutomationUnionStjHelper
 
     internal static int ReadIntOrDefault(StjJsonElement obj, string name, int fallback)
     {
-        if (!TryGetValue(obj, name, out var token))
+        if (!TryGetScalar(obj, name, out var token))
             return fallback;
         if (token.ValueKind != StjJsonValueKind.Number || !token.TryGetInt32(out var value))
             throw WrongType(name, "32-bit integer");
@@ -695,7 +741,7 @@ internal static class AutomationUnionStjHelper
 
     internal static double ReadDoubleOrDefault(StjJsonElement obj, string name, double fallback)
     {
-        if (!TryGetValue(obj, name, out var token))
+        if (!TryGetScalar(obj, name, out var token))
             return fallback;
         if (token.ValueKind != StjJsonValueKind.Number)
             throw WrongType(name, "number");
@@ -712,7 +758,7 @@ internal static class AutomationUnionStjHelper
 
     internal static InstanceStatus ReadInstanceStatusOrDefault(StjJsonElement obj, string name, InstanceStatus fallback)
     {
-        if (!TryGetValue(obj, name, out var token))
+        if (!TryGetScalar(obj, name, out var token))
             return fallback;
         if (token.ValueKind != StjJsonValueKind.String ||
             !InstanceStatusByWireName.TryGetValue(token.GetString() ?? string.Empty, out var value))
@@ -734,6 +780,18 @@ internal static class AutomationUnionStjHelper
 
     private static bool TryGetValue(StjJsonElement obj, string name, out StjJsonElement token) =>
         obj.TryGetProperty(name, out token) && token.ValueKind != StjJsonValueKind.Null;
+
+    // Null on a scalar is not the same as omitting it. Omitting it asks for the default; writing
+    // null asserts a value the field cannot hold, and silently substituting the default there is the
+    // same quiet coercion an unknown property would be.
+    private static bool TryGetScalar(StjJsonElement obj, string name, out StjJsonElement token)
+    {
+        if (!obj.TryGetProperty(name, out token))
+            return false;
+        if (token.ValueKind == StjJsonValueKind.Null)
+            throw new StjJsonException($"'{name}' cannot be null.");
+        return true;
+    }
 
     private static StjJsonException WrongType(string name, string expected) =>
         new($"Cannot convert '{name}' to {expected}.");
