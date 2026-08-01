@@ -3,8 +3,8 @@ using System.Security.Cryptography;
 using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.Storage;
-using RustyOptions;
 using MCServerLauncher.ProtocolTests.Helpers;
+using RustyOptions;
 
 namespace MCServerLauncher.ProtocolTests;
 
