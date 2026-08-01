@@ -62,7 +62,7 @@ MCServerLauncher Future, codename `mcsl-future`, is a server management suite fo
 
 - Use `daemon`, `WPF client`, `daemon client`, `instance`, `application core`, `RPC`, `event`, `meta`, `payload`, `factory`, `installer`, `plugin`, `capability`, and `notification` consistently.
 - `action` refers only to the retiring V1 runtime or historical migration inventory; new public protocol work uses typed RPC methods and events.
-- Use `Minecraft Java`, `Forge`, `Fabric`, `NeoForge`, `Quilt`, `Bedrock`, `Terraria`, and `OtherExecutable` for instance families.
+- Use `Minecraft Java`, `Forge`, `Fabric`, `NeoForge`, `Quilt`, `Bedrock`, `Terraria`, and `Universal` for instance families. `Universal` is the code enum's generic fallback for arbitrary console processes; `OtherExecutable` never existed in code.
 - Avoid replacing `daemon` with generic words like service, backend, or server when describing this product's architecture.
 - Avoid calling the WPF client the daemon.
 

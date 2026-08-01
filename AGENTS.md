@@ -186,7 +186,7 @@ Use these terms consistently:
 - `RPC` and `event`: V2 protocol concepts over WebSocket. Use `action` only for the retiring V1 runtime or migration inventory.
 - `meta` and `payload`: event/action data concepts.
 - `factory`, `installer`, `relay`, and `notification`: project terms with established meaning.
-- `Minecraft Java`, `Forge`, `Fabric`, `NeoForge`, `Quilt`, `Bedrock`, `Terraria`, and `OtherExecutable`: instance family terms.
+- `Minecraft Java`, `Forge`, `Fabric`, `NeoForge`, `Quilt`, `Bedrock`, `Terraria`, and `Universal`: instance family terms. `Universal` (the code enum's generic fallback) is the correct name for the generic console-process family; there is no `OtherExecutable` instance type in code.
 
 Avoid replacing `daemon` with generic `backend`, `server`, or `service` when describing architecture. Do not call the WPF client the daemon.
 
