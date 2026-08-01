@@ -10,9 +10,9 @@ using MCServerLauncher.Daemon.Management.Communicate;
 using MCServerLauncher.Daemon.Management.Factory;
 using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils;
+using MCServerLauncher.ProtocolTests.Helpers;
 using RustyOptions;
 using LegacyInstanceReport = MCServerLauncher.Common.ProtoType.Instance.InstanceReport;
-using MCServerLauncher.ProtocolTests.Helpers;
 
 namespace MCServerLauncher.ProtocolTests;
 
