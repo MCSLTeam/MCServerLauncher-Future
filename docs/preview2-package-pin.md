@@ -1,14 +1,42 @@
 # Preview-2 Package Pin
 
-Status: internal baseline `2.0.0-preview.6` (2026-08-01) for MCP-6+.
-No Release exists for `preview.6`, and none is planned. `2.0.0-preview.2` was
+Status: internal baseline `2.0.0-preview.7` (2026-08-01) for MCP-6+.
+No Release exists for `preview.7`, and none is planned. `2.0.0-preview.2` was
 published as a Release on 2026-07-24 and is superseded — it is history, not a
-supported baseline, and preview.3/.4/.5/.6 deliberately did not follow it. SDK-9b
+supported baseline, and preview.3/.4/.5/.6/.7 deliberately did not follow it. SDK-9b
 closes the Preview-2 gate as an **internal implementation and test acceptance
 state only**; public package distribution (GitHub Release assets or nuget.org)
 requires explicitly reopening SDK-9a/9b via the staged conditions in the spec.
 Decision source: `docs/spec/2026-07-20-plugin-sdk-mcp-decisions.md`,
 sections 1, 10, and 12. Preview-1 history: `docs/preview1-package-pin.md`.
+
+## Why preview.7 and not preview.6
+
+`2.0.0-preview.6` was recorded before the automation cross-review fixes, and one of
+them added a public contract member: `AuditRecord` gained an optional `Detail`, the
+caller-authored annotation an automation `audit.record` action leaves. That is
+public surface on `MCServerLauncher.Common` arriving after its fingerprint was
+taken, so the baseline moves to `preview.7` rather than being re-cut in place —
+same NU1403 rule as every move before it.
+
+Exactly one of the eight packed entries differs from `preview.6`:
+`MCServerLauncher.Common`, because its source changed — the new contract member
+plus the union-converter strictness that came with the same review. The other
+seven — the `Daemon.API` payload and its `buildTransitive` target, the SDK payload,
+the packed generator, `NuGet.Versioning`, and the SDK's two `buildTransitive`
+assets — are byte-identical to their `preview.6` entries. `Daemon.API` bumped its
+`PackageVersion` and did not move, which again shows the bump itself touches no
+payload.
+
+The `preview.6` caveat about the SDK facade earned its keep here, and the shape it
+predicted is worth recording precisely. Mid-branch, an intermediate state of
+`Common` moved the SDK hash to `c52be378…` with no SDK source edit; the final state
+moved it back to the value below. So the SDK hash is not a stable function of SDK
+source alone, and a reader who packs some intermediate commit of this branch will
+see a value that appears nowhere in this document. Only the tree at the recorded
+commit is pinned, and `PinnedPayloadHashesMatchTheAcceptanceRecord` is what says so.
+Every fingerprint below was reproduced by packing twice into different
+`MCSLPinBuildRoot` values, so none of them is build-state noise.
 
 ## Why preview.6 and not preview.5
 
@@ -34,7 +62,9 @@ development an intermediate state of `Common` moved the SDK hash without touchin
 line of SDK source, and the final state moved it back to the value recorded here.
 So an SDK hash that shifts after a `Common`-only edit is not by itself evidence that
 something is wrong — `PinnedPayloadHashesMatchTheAcceptanceRecord` is the arbiter,
-and it compares a fresh pack against this table on every run.
+and it compares a fresh pack against this table on every run. (`preview.7` saw the
+same thing again: a `Common`-only change moved the SDK hash mid-branch, and the
+state that was finally recorded moved it back.)
 
 ## Why preview.5 and not preview.4
 
@@ -72,17 +102,17 @@ that mix caches (NU1403), which is the same reason preview.2 was retired.
 
 | Package id | Version |
 |---|---|
-| `MCServerLauncher.Daemon.Plugin.Sdk` | `2.0.0-preview.6` |
-| `MCServerLauncher.Daemon.API` | `2.0.0-preview.6` |
-| `MCServerLauncher.Common` | `2.0.0-preview.6` |
+| `MCServerLauncher.Daemon.Plugin.Sdk` | `2.0.0-preview.7` |
+| `MCServerLauncher.Daemon.API` | `2.0.0-preview.7` |
+| `MCServerLauncher.Common` | `2.0.0-preview.7` |
 
 Consumers MUST pin exact versions, without floating ranges, and should use a
 lockfile.
 
 ### Dependency pins in packages
 
-- `MCServerLauncher.Daemon.API` -> `MCServerLauncher.Common = [2.0.0-preview.6]`
-- `MCServerLauncher.Daemon.Plugin.Sdk` -> `MCServerLauncher.Daemon.API = [2.0.0-preview.6]`
+- `MCServerLauncher.Daemon.API` -> `MCServerLauncher.Common = [2.0.0-preview.7]`
+- `MCServerLauncher.Daemon.Plugin.Sdk` -> `MCServerLauncher.Daemon.API = [2.0.0-preview.7]`
 - `MCServerLauncher.Daemon.Plugin.Sdk` embeds both the generator and its
   `NuGet.Versioning.dll` analyzer dependency.
 - `MCServerLauncher.Daemon.Plugin.Sdk` carries `buildTransitive` props and
@@ -95,7 +125,7 @@ timestamp metadata that can change across repacks while payload code stays
 identical. The fingerprints below cover every DLL that executes in the
 consumer build or runtime path, plus every `buildTransitive` asset.
 
-Built from branch `feat/automation-vocabulary` with .NET SDK `10.0.302`; reproducibility
+Built from branch `fix/automation-cross-review` with .NET SDK `10.0.302`; reproducibility
 requires that exact SDK. `global.json` pins it for both local and CI builds.
 
 `MCSLPinBuildRoot` must be spelled with the platform separator, as the PowerShell
@@ -119,20 +149,20 @@ one written by a client that ignores it, carries CRLF and hashes differently:
 git show HEAD:src/MCServerLauncher.Daemon.Plugin.Sdk/buildTransitive/MCServerLauncher.Daemon.Plugin.Sdk.props | sha256sum
 ```
 
-### `MCServerLauncher.Common.2.0.0-preview.6.nupkg`
+### `MCServerLauncher.Common.2.0.0-preview.7.nupkg`
 
 | Entry | SHA-256 |
 |---|---|
-| `lib/net10.0/MCServerLauncher.Common.dll` | `14bcfb25c040dbaa6bafd5b87f894101a58858553c67eb2c40f3deab7b5514ee` |
+| `lib/net10.0/MCServerLauncher.Common.dll` | `0d124217380de3863791d7e2b06f929bd4bb45a2ba7a837f33b7d07c6b3d3f49` |
 
-### `MCServerLauncher.Daemon.API.2.0.0-preview.6.nupkg`
+### `MCServerLauncher.Daemon.API.2.0.0-preview.7.nupkg`
 
 | Entry | SHA-256 |
 |---|---|
 | `lib/net10.0/MCServerLauncher.Daemon.API.dll` | `e8c687821125a22a4928939b1a5df65932b30a23a6d131f52f532be85c0be922` |
 | `buildTransitive/MCServerLauncher.Daemon.API.targets` | `81a79275e7ab2a10cf08ac950c27692db1e7455387944377b06047b0a340c17c` |
 
-### `MCServerLauncher.Daemon.Plugin.Sdk.2.0.0-preview.6.nupkg`
+### `MCServerLauncher.Daemon.Plugin.Sdk.2.0.0-preview.7.nupkg`
 
 | Entry | SHA-256 |
 |---|---|
@@ -143,7 +173,9 @@ git show HEAD:src/MCServerLauncher.Daemon.Plugin.Sdk/buildTransitive/MCServerLau
 | `buildTransitive/MCServerLauncher.Daemon.Plugin.Sdk.targets` | `e383f4a71ef90a5ad1a25049291c6e877c980d6acac7095ba00778a53f544573` |
 
 The SDK payload DLL fingerprint is unchanged from preview.2 onward: the SDK
-assembly itself carries no Preview-2 surface, only the generator does.
+assembly itself carries no Preview-2 surface, only the generator does. It is stable
+across versions but not across every intermediate state of `Common` within a
+version's development, as the note above records.
 
 Build the candidate packages with:
 
@@ -213,10 +245,12 @@ ships. The gap is deliberate and bounded; it is recorded here rather than left
 implicit so the delivered state is not mistaken for the planned one. The
 monitoring metrics row closed in `preview.5`, which is why that baseline exists:
 the three items it lists were deferred when `preview.4` was recorded. The two
-automation rows closed in `preview.6`, which is why *this* baseline exists —
-the disk trigger arrived as a metric on the existing sustained-metric trigger
-rather than as a new union member, and the suppression actions brought an
-in-memory, instance-scoped hold that resets on daemon restart.
+automation rows closed in `preview.6`, which is why that baseline exists — the disk
+trigger arrived as a metric on the existing sustained-metric trigger rather than as
+a new union member, and the suppression actions brought an in-memory hold, one slot
+per instance and scope, that resets on daemon restart. `preview.7` widens no row: it
+carries the cross-review correctness fixes to that delivered surface plus the one
+audit contract member they needed.
 
 | Area | Delivered | Planned but deferred |
 |---|---|---|
@@ -232,7 +266,7 @@ acceptance criteria rather than folded into this baseline.
 ## Consumer pin
 
 ```xml
-<PackageReference Include="MCServerLauncher.Daemon.Plugin.Sdk" Version="2.0.0-preview.6" />
+<PackageReference Include="MCServerLauncher.Daemon.Plugin.Sdk" Version="2.0.0-preview.7" />
 ```
 
 Local-feed restore requires the three nupkgs above and nuget.org for
