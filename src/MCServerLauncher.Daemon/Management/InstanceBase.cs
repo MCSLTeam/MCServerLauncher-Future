@@ -13,6 +13,12 @@ public abstract class InstanceBase : DisposableObject, IInstance, IInstanceRepor
 {
     private const int MaximumLogHistoryLines = 500;
     private const string LifecycleLogPrefix = "[MCSL] Instance";
+
+    /// <summary>
+    /// How long a halt or a restart waits for the previous generation to finish draining before it
+    /// detaches the generation and lets the rest finish in the background.
+    /// </summary>
+    private static readonly TimeSpan DefaultDrainDeadline = TimeSpan.FromSeconds(5);
     private readonly Func<ProcessStartInfo, InstanceType, ConsoleMode, InstanceProcess> _processFactory;
     private readonly object _processBindingGate = new();
     private ProcessBinding? _processBinding;
@@ -102,7 +108,7 @@ public abstract class InstanceBase : DisposableObject, IInstance, IInstanceRepor
         // attached via Process.GetProcessById; after Kill/halt HasExited may stay false, which
         // previously made the next StartAsync return false permanently until daemon restart.
         if (Volatile.Read(ref _processBinding) is { } existingBinding)
-            await DisposeManagedProcessAsync(existingBinding, ct).ConfigureAwait(false);
+            await DisposeManagedProcessAsync(existingBinding, DefaultDrainDeadline, ct).ConfigureAwait(false);
 
         var startInfoResult = Config.TryGetStartInfo();
         if (startInfoResult.IsErr(out var error))
@@ -168,27 +174,14 @@ public abstract class InstanceBase : DisposableObject, IInstance, IInstanceRepor
     /// Immediately kills the managed process and drops <see cref="Process"/> so a later
     /// <see cref="StartAsync"/> cannot be blocked by a stale HasExited=false handle.
     /// </summary>
-    public async Task ForceKillAndClearAsync(CancellationToken ct = default)
+    public Task ForceKillAndClearAsync(CancellationToken ct = default) =>
+        ForceKillAndClearAsync(DefaultDrainDeadline, ct);
+
+    internal async Task ForceKillAndClearAsync(TimeSpan drainDeadline, CancellationToken ct = default)
     {
         ct.ThrowIfCancellationRequested();
-        var binding = Volatile.Read(ref _processBinding);
-        if (binding is null)
-            return;
-        var process = binding.Source;
-
-        try
-        {
-            // Once termination is requested, the per-instance manager gate must remain held
-            // until the old operating-system process tree and lifecycle publications drain.
-            await process.KillAndDrainAsync(ct).ConfigureAwait(false);
-        }
-        catch (Exception exception)
-        {
-            Log.Warning(exception, "[Instance] Process-tree halt failed for '{InstanceId}'", Config.Uuid);
-            throw;
-        }
-
-        ResetProcess(binding);
+        if (Volatile.Read(ref _processBinding) is { } binding)
+            await DisposeManagedProcessAsync(binding, drainDeadline, ct).ConfigureAwait(false);
     }
 
     public IReadOnlyList<string> GetLogHistory()
@@ -232,26 +225,70 @@ public abstract class InstanceBase : DisposableObject, IInstance, IInstanceRepor
         await InvokeAsync(OnLog, Config.Uuid, message, cancellationToken).ConfigureAwait(false);
     }
 
-    private async Task DisposeManagedProcessAsync(ProcessBinding binding, CancellationToken ct)
+    /// <summary>
+    /// Terminates the process tree and detaches the generation. Starting a new generation waits for
+    /// the previous process tree, output and lifecycle publication tail to drain — but the deadline
+    /// bounds that wait, never the work behind it.
+    /// </summary>
+    /// <remarks>
+    /// Nothing in the drain is ours to bound. A redirected pipe reaches EOF only when the last
+    /// inherited copy of its write handle closes anywhere on the machine, and the publication tail is
+    /// only as fast as its slowest subscriber. Waiting on a party we do not control while holding the
+    /// per-instance mutation gate is what wedges every later operation on the instance — and on the
+    /// restart path it is worse, because a generation that never finishes draining means the instance
+    /// can never start again.
+    /// </remarks>
+    private async Task DisposeManagedProcessAsync(
+        ProcessBinding binding,
+        TimeSpan drainDeadline,
+        CancellationToken ct)
     {
-        var process = binding.Source;
+        var drain = binding.Source.KillAndDrainAsync(ct);
         try
         {
-            // Starting a new generation is forbidden until the previous process tree, output,
-            // and lifecycle publication tail have fully drained.
-            await process.KillAndDrainAsync(ct).ConfigureAwait(false);
+            await drain.WaitAsync(drainDeadline).ConfigureAwait(false);
+        }
+        catch (TimeoutException)
+        {
+            // Detaching is what fences the straggler, and it is safe here because termination was
+            // already requested and the terminal status already committed, synchronously, before the
+            // drain's first await. Every publication path re-checks the current binding, so once the
+            // binding is gone the abandoned generation can no longer reach the catalog however long
+            // it takes to finish.
+            Log.Warning(
+                "[Instance] Process drain exceeded {DrainDeadline} for '{InstanceId}'; detaching the old generation and letting it finish in the background.",
+                drainDeadline,
+                Config.Uuid);
+            ObserveDetachedDrain(drain);
         }
         catch (Exception exception)
         {
+            // The drain failed rather than outran us, so the kill is not known to have taken. Keep
+            // the binding and report the failure instead of a false halt success.
             Log.Warning(
                 exception,
-                "[Instance] Failed to drain stale process before restart for '{InstanceId}'",
+                "[Instance] Failed to drain the process tree for '{InstanceId}'",
                 Config.Uuid);
             throw;
         }
 
         ResetProcess(binding);
     }
+
+    /// <summary>
+    /// Keeps an abandoned drain's failure from surfacing as an unobserved task exception. There is
+    /// nothing to do about it beyond recording it: the generation is already fenced.
+    /// </summary>
+    private void ObserveDetachedDrain(Task drain) =>
+        _ = drain.ContinueWith(
+            static (task, state) => Log.Warning(
+                task.Exception,
+                "[Instance] Detached process drain for '{InstanceId}' faulted after its deadline.",
+                state),
+            Config.Uuid,
+            CancellationToken.None,
+            TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
 
     private ProcessBinding AttachProcess(InstanceProcess process)
     {
