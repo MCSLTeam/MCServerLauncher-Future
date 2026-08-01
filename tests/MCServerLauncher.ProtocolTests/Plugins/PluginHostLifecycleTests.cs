@@ -146,21 +146,29 @@ public sealed class PluginHostLifecycleTests
                 new PluginEventBus(provider.GetRequiredService<EventFactory>()),
                 TimeSpan.FromMilliseconds(150),
                 fixture.CreateConfig("Medium"),
-                new PluginHttpEndpointRegistry());
+                new PluginHttpEndpointRegistry(),
+                // The plugin's StopAsync never completes, and StopRollbackAsync can only escape it
+                // via this deadline (the shutdown boundary does not exist until StopAsync runs).
+                // Making it far longer than the test means awaiting the rollback is indistinguishable
+                // from hanging, so "StartAsync returned" is itself the assertion.
+                rollbackCleanupTimeout: TimeSpan.FromMinutes(10),
+                // ...and the shutdown boundary is what releases that abandoned rollback, so keep it
+                // short or teardown pays the full rollback deadline.
+                shutdownCleanupTimeout: TimeSpan.FromMilliseconds(150));
 
-            var startedAt = Stopwatch.GetTimestamp();
-            await host.StartAsync(CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(2));
-            var elapsed = Stopwatch.GetElapsedTime(startedAt);
-
+            var start = host.StartAsync(CancellationToken.None);
+            var completed = await Task.WhenAny(start, Task.Delay(TimeSpan.FromSeconds(30)));
             Assert.True(
-                elapsed < TimeSpan.FromSeconds(2),
-                $"Startup waited for rollback cleanup after the 150 ms deadline: {elapsed}.");
+                ReferenceEquals(completed, start),
+                "StartAsync never returned, so it is awaiting the non-cooperative rollback.");
+            await start;
+
             AssertStates(host.States, ("fixture.start-never-completes", PluginRuntimeState.Failed));
             Assert.Contains(logger.Messages, message =>
                 message.Contains("fixture.start-never-completes", StringComparison.Ordinal) &&
                 message.Contains("start_timed_out", StringComparison.Ordinal));
 
-            await host.StopAsync(CancellationToken.None);
+            await host.StopAsync(CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(30));
         }
         finally
         {
