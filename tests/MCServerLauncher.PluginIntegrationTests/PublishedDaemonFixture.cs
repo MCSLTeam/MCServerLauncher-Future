@@ -426,9 +426,9 @@ internal sealed class PublishedDaemonFixture : IAsyncDisposable
         {
             var requiredPackages = new[]
             {
-                "MCServerLauncher.Common.2.0.0-preview.6.nupkg",
-                "MCServerLauncher.Daemon.API.2.0.0-preview.6.nupkg",
-                "MCServerLauncher.Daemon.Plugin.Sdk.2.0.0-preview.6.nupkg"
+                "MCServerLauncher.Common.2.0.0-preview.7.nupkg",
+                "MCServerLauncher.Daemon.API.2.0.0-preview.7.nupkg",
+                "MCServerLauncher.Daemon.Plugin.Sdk.2.0.0-preview.7.nupkg"
             };
             foreach (var packageName in requiredPackages)
             {
