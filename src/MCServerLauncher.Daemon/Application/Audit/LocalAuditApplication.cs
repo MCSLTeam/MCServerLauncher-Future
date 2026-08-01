@@ -57,7 +57,8 @@ internal sealed class AuditLog : IAuditSink
             auditEvent.OperationId,
             auditEvent.Succeeded,
             auditEvent.ErrorCode,
-            auditEvent.ConfirmedBy));
+            auditEvent.ConfirmedBy,
+            auditEvent.Detail));
     }
 
     internal AuditQueryResult Query(AuditQuery query)

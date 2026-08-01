@@ -7,6 +7,15 @@ namespace MCServerLauncher.Common.Contracts.Audit;
 /// console content, tokens, and resolved paths are never serialized, which is what keeps the log
 /// redaction-safe by construction.
 /// </summary>
+/// <param name="ErrorCode">
+/// A short structured outcome code from the daemon's own closed vocabulary, and null whenever
+/// <paramref name="Succeeded" /> is true.
+/// </param>
+/// <param name="Detail">
+/// The one free-text field, and the only one an operator authors: the annotation an automation
+/// audit.record action asked to leave. Nothing else populates it, and it is never derived from a
+/// request payload — the policy validator bounds it to 1024 characters before it can be stored.
+/// </param>
 public sealed record AuditRecord(
     DateTimeOffset Timestamp,
     string Principal,
@@ -19,7 +28,8 @@ public sealed record AuditRecord(
     Guid? OperationId,
     bool Succeeded,
     string? ErrorCode,
-    string? ConfirmedBy);
+    string? ConfirmedBy,
+    string? Detail = null);
 
 public sealed record AuditQuery(
     int? MaximumRecords = null,
