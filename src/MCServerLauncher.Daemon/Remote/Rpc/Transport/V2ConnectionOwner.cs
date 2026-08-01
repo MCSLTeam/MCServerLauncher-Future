@@ -235,14 +235,14 @@ internal sealed class V2ConnectionOwner : ICompiledProtocolPermissionView, IAsyn
             LaunchClose(closePlan);
         }
 
-        await AwaitShutdownAsync();
+        await AwaitShutdownAsync().ConfigureAwait(false);
     }
 
     private async Task PumpAsync()
     {
         try
         {
-            await foreach (var message in _outbound.Reader.ReadAllAsync(_connectionToken))
+            await foreach (var message in _outbound.Reader.ReadAllAsync(_connectionToken).ConfigureAwait(false))
             {
                 if (IsNonGracefulStopRequested())
                     break;
@@ -263,9 +263,10 @@ internal sealed class V2ConnectionOwner : ICompiledProtocolPermissionView, IAsyn
                     try
                     {
                         await sendTask.WaitAsync(
-                            FrameSendTimeout,
-                            _timeProvider,
-                            _connectionToken);
+                                FrameSendTimeout,
+                                _timeProvider,
+                                _connectionToken)
+                            .ConfigureAwait(false);
                     }
                     catch (TimeoutException)
                     {
@@ -337,7 +338,8 @@ internal sealed class V2ConnectionOwner : ICompiledProtocolPermissionView, IAsyn
     private async Task CloseCoreAsync(ClosePlan closePlan)
     {
         // A producer that detects backpressure only schedules shutdown; it never runs cleanup or close callbacks inline.
-        await Task.Yield();
+        // Yield to the pool rather than the caller's context: a producer thread must not host the close chain.
+        await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
 
         List<Exception>? failures = null;
         try
@@ -347,20 +349,20 @@ internal sealed class V2ConnectionOwner : ICompiledProtocolPermissionView, IAsyn
 
             try
             {
-                await _connectionLifetime.CancelAsync();
+                await _connectionLifetime.CancelAsync().ConfigureAwait(false);
             }
             catch (Exception exception)
             {
                 (failures ??= []).Add(exception);
             }
 
-            await _pumpCompletion.Task;
+            await _pumpCompletion.Task.ConfigureAwait(false);
 
             foreach (var cleanup in closePlan.Cleanups)
             {
                 try
                 {
-                    await cleanup.CleanupAsync(CancellationToken.None);
+                    await cleanup.CleanupAsync(CancellationToken.None).ConfigureAwait(false);
                 }
                 catch (Exception exception)
                 {
@@ -383,7 +385,8 @@ internal sealed class V2ConnectionOwner : ICompiledProtocolPermissionView, IAsyn
 
                 try
                 {
-                    await closeTask.WaitAsync(FrameSendTimeout, _timeProvider, CancellationToken.None);
+                    await closeTask.WaitAsync(FrameSendTimeout, _timeProvider, CancellationToken.None)
+                        .ConfigureAwait(false);
                 }
                 catch (TimeoutException)
                 {
@@ -410,8 +413,8 @@ internal sealed class V2ConnectionOwner : ICompiledProtocolPermissionView, IAsyn
 
     private async Task AwaitShutdownAsync()
     {
-        await _pumpCompletion.Task;
-        await _closeCompletion.Task;
+        await _pumpCompletion.Task.ConfigureAwait(false);
+        await _closeCompletion.Task.ConfigureAwait(false);
     }
 
     private static void ObserveAbandonedSend(Task sendTask)

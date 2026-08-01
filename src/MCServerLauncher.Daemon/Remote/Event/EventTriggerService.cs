@@ -135,13 +135,13 @@ internal sealed class EventTriggerService : IDisposable, IAsyncDisposable
     internal async Task StopAsync(CancellationToken cancellationToken = default)
     {
         Stop();
-        await DrainSupervisorsAsync(cancellationToken);
+        await DrainSupervisorsAsync(cancellationToken).ConfigureAwait(false);
     }
 
     public async ValueTask DisposeAsync()
     {
         Dispose();
-        await DrainSupervisorsAsync(CancellationToken.None);
+        await DrainSupervisorsAsync(CancellationToken.None).ConfigureAwait(false);
     }
 
     private async Task DrainSupervisorsAsync(CancellationToken cancellationToken)
@@ -154,8 +154,8 @@ internal sealed class EventTriggerService : IDisposable, IAsyncDisposable
 
         foreach (var supervisor in supervisors)
         {
-            await supervisor.DrainAsync(cancellationToken);
-            await supervisor.DisposeAsync();
+            await supervisor.DrainAsync(cancellationToken).ConfigureAwait(false);
+            await supervisor.DisposeAsync().ConfigureAwait(false);
             lock (_lifecycleGate)
                 _retiredSupervisors.Remove(supervisor);
         }
@@ -169,8 +169,9 @@ internal sealed class EventTriggerService : IDisposable, IAsyncDisposable
         try
         {
             var rulesResult = await _application.EventRules.GetEventRulesAsync(
-                new EventRuleQuery(instanceId),
-                cancellationToken);
+                    new EventRuleQuery(instanceId),
+                    cancellationToken)
+                .ConfigureAwait(false);
             if (rulesResult.IsErr(out var rulesError))
             {
                 _logger.LogWarning(
@@ -205,7 +206,7 @@ internal sealed class EventTriggerService : IDisposable, IAsyncDisposable
                 try
                 {
                     if (isTriggered(rule))
-                        await ExecuteActionsAsync(instanceId, rule, cancellationToken);
+                        await ExecuteActionsAsync(instanceId, rule, cancellationToken).ConfigureAwait(false);
                 }
                 catch (Exception exception) when (exception is not OperationCanceledException)
                 {
@@ -253,7 +254,7 @@ internal sealed class EventTriggerService : IDisposable, IAsyncDisposable
 
     private async Task ExecuteActionsAsync(Guid instanceId, EventRule rule, CancellationToken cancellationToken)
     {
-        if (!await EvaluateRulesetsAsync(instanceId, rule, cancellationToken))
+        if (!await EvaluateRulesetsAsync(instanceId, rule, cancellationToken).ConfigureAwait(false))
         {
             _logger.LogDebug("Rulesets did not match for rule '{RuleId}' on instance '{InstanceId}'", rule.Id, instanceId);
             return;
@@ -267,12 +268,13 @@ internal sealed class EventTriggerService : IDisposable, IAsyncDisposable
 
         if (string.Equals(rule.ActionExecutionMode, "Parallel", StringComparison.OrdinalIgnoreCase))
         {
-            await Task.WhenAll(rule.Actions.Select(action => ExecuteSingleActionAsync(instanceId, rule, action, cancellationToken)));
+            await Task.WhenAll(rule.Actions.Select(action => ExecuteSingleActionAsync(instanceId, rule, action, cancellationToken)))
+                .ConfigureAwait(false);
             return;
         }
 
         foreach (var action in rule.Actions)
-            await ExecuteSingleActionAsync(instanceId, rule, action, cancellationToken);
+            await ExecuteSingleActionAsync(instanceId, rule, action, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<bool> EvaluateRulesetsAsync(Guid instanceId, EventRule rule, CancellationToken cancellationToken)
@@ -281,8 +283,9 @@ internal sealed class EventTriggerService : IDisposable, IAsyncDisposable
             return true;
 
         var reportResult = await _application.Instances.GetInstanceReportAsync(
-            new InstanceReference(instanceId),
-            cancellationToken);
+                new InstanceReference(instanceId),
+                cancellationToken)
+            .ConfigureAwait(false);
         if (reportResult.IsErr(out var reportError))
         {
             _logger.LogWarning(
@@ -337,25 +340,28 @@ internal sealed class EventTriggerService : IDisposable, IAsyncDisposable
                 case SendCommandAction sendCommand:
                     LogActionFailure(
                         await _application.Instances.SendCommandAsync(
-                            new InstanceCommandRequest(instanceId, sendCommand.Command),
-                            cancellationToken),
+                                new InstanceCommandRequest(instanceId, sendCommand.Command),
+                                cancellationToken)
+                            .ConfigureAwait(false),
                         instanceId,
                         rule.Id,
                         sendCommand.Type);
                     break;
                 case ChangeInstanceStatusAction changeStatus:
-                    await ExecuteStatusActionAsync(instanceId, rule.Id, changeStatus.Action, cancellationToken);
+                    await ExecuteStatusActionAsync(instanceId, rule.Id, changeStatus.Action, cancellationToken)
+                        .ConfigureAwait(false);
                     break;
                 case SendNotificationAction sendNotification:
                     await _domainEvents.PublishAsync(
-                        new ClientNotificationDomainEvent(
-                            sendNotification.Title,
-                            sendNotification.Message,
-                            sendNotification.Severity,
-                            instanceId,
-                            rule.Id,
-                            DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()),
-                        cancellationToken);
+                            new ClientNotificationDomainEvent(
+                                sendNotification.Title,
+                                sendNotification.Message,
+                                sendNotification.Severity,
+                                instanceId,
+                                rule.Id,
+                                DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()),
+                            cancellationToken)
+                        .ConfigureAwait(false);
                     break;
                 default:
                     _logger.LogWarning(
@@ -382,34 +388,39 @@ internal sealed class EventTriggerService : IDisposable, IAsyncDisposable
         {
             case "start":
                 LogActionFailure(
-                    await _application.Instances.StartInstanceAsync(new InstanceReference(instanceId), cancellationToken),
+                    await _application.Instances.StartInstanceAsync(new InstanceReference(instanceId), cancellationToken)
+                        .ConfigureAwait(false),
                     instanceId,
                     ruleId,
                     action);
                 break;
             case "stop":
                 LogActionFailure(
-                    await _application.Instances.StopInstanceAsync(new InstanceReference(instanceId), cancellationToken),
+                    await _application.Instances.StopInstanceAsync(new InstanceReference(instanceId), cancellationToken)
+                        .ConfigureAwait(false),
                     instanceId,
                     ruleId,
                     action);
                 break;
             case "kill":
                 LogActionFailure(
-                    await _application.Instances.HaltInstanceAsync(new InstanceReference(instanceId), cancellationToken),
+                    await _application.Instances.HaltInstanceAsync(new InstanceReference(instanceId), cancellationToken)
+                        .ConfigureAwait(false),
                     instanceId,
                     ruleId,
                     action);
                 break;
             case "restart":
                 LogActionFailure(
-                    await _application.Instances.StopInstanceAsync(new InstanceReference(instanceId), cancellationToken),
+                    await _application.Instances.StopInstanceAsync(new InstanceReference(instanceId), cancellationToken)
+                        .ConfigureAwait(false),
                     instanceId,
                     ruleId,
                     "restart.stop");
-                await Task.Delay(_restartDelay, cancellationToken);
+                await Task.Delay(_restartDelay, cancellationToken).ConfigureAwait(false);
                 LogActionFailure(
-                    await _application.Instances.StartInstanceAsync(new InstanceReference(instanceId), cancellationToken),
+                    await _application.Instances.StartInstanceAsync(new InstanceReference(instanceId), cancellationToken)
+                        .ConfigureAwait(false),
                     instanceId,
                     ruleId,
                     "restart.start");
