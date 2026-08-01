@@ -917,7 +917,7 @@ internal sealed class PluginHost
                 .ConfigureAwait(false);
             if (!ReferenceEquals(completed, startTask))
             {
-                ObserveLateStartFault(runtime, startTask);
+                ObserveLateStartOutcome(runtime, startTask);
                 CancelStartAndDisposeLater(runtime, startCancellation);
                 disposeStartCancellation = false;
                 if (ReferenceEquals(completed, startDeadline))
@@ -962,7 +962,7 @@ internal sealed class PluginHost
         catch (OperationCanceledException) when (
             cancellationToken.IsCancellationRequested || runtime.Lifetime.IsCancellationRequested)
         {
-            ObserveLateStartFault(runtime, startTask);
+            ObserveLateStartOutcome(runtime, startTask);
             await FailStartCancellationAsync(runtime, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception exception)
@@ -1014,20 +1014,33 @@ internal sealed class PluginHost
             .ConfigureAwait(false);
     }
 
-    private void ObserveLateStartFault(PluginRuntime runtime, Task startTask)
+    private void ObserveLateStartOutcome(PluginRuntime runtime, Task startTask)
     {
         _ = startTask.ContinueWith(
             static (task, state) =>
             {
                 var (logger, pluginId) = ((ILogger<PluginHost> Logger, string PluginId))state!;
+                if (task.IsCanceled)
+                    return;
+
+                if (task.IsFaulted)
+                {
+                    logger.LogWarning(
+                        task.Exception,
+                        "Plugin {PluginId} StartAsync faulted after startup supervision had already ended.",
+                        pluginId);
+                    return;
+                }
+
+                // The timed-out runtime stays failed; this records that the discard happened, and is
+                // the only host-side signal that a late success was observed at all.
                 logger.LogWarning(
-                    task.Exception,
-                    "Plugin {PluginId} StartAsync faulted after startup supervision had already ended.",
+                    "Plugin {PluginId} StartAsync succeeded after startup supervision had already ended; start_discarded_late.",
                     pluginId);
             },
             (_logger, runtime.Manifest.Identity.Id),
             CancellationToken.None,
-            TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+            TaskContinuationOptions.ExecuteSynchronously,
             TaskScheduler.Default);
     }
 

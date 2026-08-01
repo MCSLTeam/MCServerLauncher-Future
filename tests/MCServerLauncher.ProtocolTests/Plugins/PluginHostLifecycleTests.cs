@@ -42,11 +42,8 @@ public sealed class PluginHostLifecycleTests
         // Gate for the late-success leg: the delayed plugin stays incomplete until this file
         // appears, so its success lands strictly after the host has already timed it out.
         var lateSuccessRelease = Path.Combine(Path.GetTempPath(), $"mcsl-late-success-{Guid.NewGuid():N}.release");
-        var lateSuccessCompleted = Path.Combine(Path.GetTempPath(), $"mcsl-late-success-{Guid.NewGuid():N}.completed");
         var previousRelease = Environment.GetEnvironmentVariable("MCSL_PLUGIN_LATE_SUCCESS_RELEASE_PATH");
-        var previousCompleted = Environment.GetEnvironmentVariable("MCSL_PLUGIN_LATE_SUCCESS_COMPLETED_PATH");
         Environment.SetEnvironmentVariable("MCSL_PLUGIN_LATE_SUCCESS_RELEASE_PATH", lateSuccessRelease);
-        Environment.SetEnvironmentVariable("MCSL_PLUGIN_LATE_SUCCESS_COMPLETED_PATH", lateSuccessCompleted);
         try
         {
             using var fixture = PluginHostFixture.Create(
@@ -116,10 +113,11 @@ public sealed class PluginHostLifecycleTests
                 ("fixture.start-late-success", PluginRuntimeState.Failed),
                 ("fixture.start-synchronously-blocks", PluginRuntimeState.Failed));
 
-            // Now let the timed-out plugin actually succeed. Waiting on its own completion signal
-            // replaces a fixed sleep that could not tell "late success rejected" from "never ran".
+            // Now let the timed-out plugin actually succeed. Wait on the HOST's record of that late
+            // completion, not on the plugin's own signal: the host continuation is where a
+            // regression would re-admit, so anchoring here orders the assertions after it.
             File.WriteAllText(lateSuccessRelease, string.Empty);
-            await WaitForFileAsync(lateSuccessCompleted, TimeSpan.FromSeconds(30));
+            await WaitForLogMessageAsync(logger, "start_discarded_late", TimeSpan.FromSeconds(30));
 
             AssertStates(
                 host.States,
@@ -144,11 +142,8 @@ public sealed class PluginHostLifecycleTests
         finally
         {
             Environment.SetEnvironmentVariable("MCSL_PLUGIN_LATE_SUCCESS_RELEASE_PATH", previousRelease);
-            Environment.SetEnvironmentVariable("MCSL_PLUGIN_LATE_SUCCESS_COMPLETED_PATH", previousCompleted);
             if (File.Exists(lateSuccessRelease))
                 File.Delete(lateSuccessRelease);
-            if (File.Exists(lateSuccessCompleted))
-                File.Delete(lateSuccessCompleted);
         }
     }
 
