@@ -988,6 +988,33 @@ public sealed class AutomationPolicyEngineTests
         Assert.True(recorded.Succeeded);
     }
 
+    /// <summary>
+    /// The validator bounds the authored message at 1024, but the composed detail carries a severity
+    /// prefix on top of it, so a message at the limit would otherwise store an over-long field.
+    /// </summary>
+    [Fact]
+    public async Task Evaluator_AuditRecordDetailIsBoundedAfterTheSeverityPrefixIsAdded()
+    {
+        using var harness = new Harness(start: DateTimeOffset.Parse("2026-07-28T00:00:00+00:00"));
+        var message = new string('x', AutomationPolicyValidator.MaximumAuditMessageLength);
+        var policy = new AutomationPolicy
+        {
+            Id = PolicyId,
+            Name = "long-note",
+            Trigger = new MaintenanceWindowTrigger { StartHourUtc = 0, StartMinuteUtc = 0, DurationMinutes = 30 },
+            Actions = [new AuditRecordAction { Message = message, Severity = "Warning" }],
+            CooldownSeconds = 0
+        };
+        // The message itself is exactly at the validator's limit, so the policy is legal.
+        harness.Store.Apply(Document(policy, version: 0)).Unwrap();
+
+        await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
+
+        var recorded = Assert.Single(harness.Audit.Events, entry => entry.Permission == "audit.record");
+        Assert.Equal(AutomationPolicyValidator.MaximumAuditMessageLength, recorded.Detail!.Length);
+        Assert.StartsWith("Warning: xxx", recorded.Detail, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void Validator_RejectsImpossibleShapesOfTheNewTriggersAndActions()
     {
@@ -1701,6 +1728,118 @@ public sealed class AutomationPolicyEngineTests
     }
 
     /// <summary>
+    /// The confirmed-intent restart waits for the stop to complete before starting, and that wait
+    /// runs for up to thirty seconds. A hold placed inside it is as binding as one placed a tick
+    /// earlier — confirmation authorizes the action, it does not exempt it from maintenance.
+    /// </summary>
+    [Fact]
+    public async Task Evaluator_DeferredIntentRestartIsRefusedByAHoldPlacedDuringTheStopWait()
+    {
+        using var harness = new Harness(start: DateTimeOffset.Parse("2026-07-28T00:00:00+00:00"));
+        harness.AddInstance(InstanceId, InstanceStatus.Running);
+
+        // The hold is placed from inside the stop call, which is where a real one would land: after
+        // the check that authorized this restart and before the start it is waiting to perform.
+        harness.Instances.OnStop = () => harness.Evaluator.ExecuteDeferredAsync(
+            new MaintenanceStateAction { InstanceId = InstanceId, DurationSeconds = 600, Reason = "patching" },
+            InstanceId,
+            CancellationToken.None).GetAwaiter().GetResult();
+
+        var refused = await harness.Evaluator.ExecuteDeferredAsync(
+            new RestartInstanceAction { InstanceId = InstanceId },
+            InstanceId,
+            CancellationToken.None);
+
+        Assert.True(refused.IsErr(out var refusedError));
+        Assert.Equal("automation.suppressed", refusedError!.Code);
+        Assert.Equal([InstanceId], harness.Instances.Stopped);
+        Assert.Empty(harness.Instances.Started);
+        Assert.Contains(harness.Audit.Events, entry =>
+            entry.Permission == "instance.restart" &&
+            entry.ErrorCode == "automation.suppressed" &&
+            !entry.Succeeded);
+    }
+
+    /// <summary>
+    /// A pending restart start survives its instance unless the tick sweeps it, and the drain fires
+    /// on the recorded id alone — so a later instance holding that id inherits a start nobody asked
+    /// for.
+    /// </summary>
+    [Fact]
+    public async Task Evaluator_ForgetsThePendingRestartOfAnInstanceRemovedFromTheCatalog()
+    {
+        using var harness = new Harness(start: DateTimeOffset.Parse("2026-07-28T00:00:00+00:00"));
+        var policy = new AutomationPolicy
+        {
+            Id = PolicyId,
+            Name = "window-restart",
+            Trigger = new MaintenanceWindowTrigger { StartHourUtc = 0, StartMinuteUtc = 0, DurationMinutes = 1 },
+            Actions = [new RestartInstanceAction { InstanceId = InstanceId, BackoffBaseSeconds = 1, BackoffMaxSeconds = 2 }],
+            CooldownSeconds = 3600
+        };
+        harness.Store.Apply(Document(policy, version: 0)).Unwrap();
+        harness.AddInstance(InstanceId, InstanceStatus.Running);
+
+        // The stop half runs and leaves a pending start behind.
+        await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
+        Assert.Equal([InstanceId], harness.Instances.Stopped);
+        Assert.Empty(harness.Instances.Started);
+
+        harness.Manager.Instances.TryRemove(InstanceId, out _);
+        harness.Time.Advance(TimeSpan.FromSeconds(15));
+        await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
+
+        // A new instance takes the id. It never asked to be restarted, so nothing starts it.
+        harness.AddInstance(InstanceId, InstanceStatus.Stopped);
+        harness.Time.Advance(TimeSpan.FromSeconds(15));
+        await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
+        await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
+        Assert.Empty(harness.Instances.Started);
+    }
+
+    /// <summary>
+    /// Restart backoff is per policy and per instance, and it outlives the instance unless the tick
+    /// sweeps it — so a later instance holding that id would inherit an escalation it never earned.
+    /// </summary>
+    [Fact]
+    public async Task Evaluator_ForgetsTheRestartBackoffOfAnInstanceRemovedFromTheCatalog()
+    {
+        using var harness = new Harness();
+        var policy = new AutomationPolicy
+        {
+            Id = PolicyId,
+            Name = "crash-guard",
+            Trigger = new UnexpectedExitTrigger { InstanceId = InstanceId },
+            // A ten-minute floor: any surviving backoff refuses every restart this test performs.
+            Actions = [new RestartInstanceAction { BackoffBaseSeconds = 600, BackoffMaxSeconds = 1800 }],
+            CooldownSeconds = 0
+        };
+        harness.Store.Apply(Document(policy, version: 0)).Unwrap();
+        var instance = harness.AddInstance(InstanceId, InstanceStatus.Running);
+
+        await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
+        instance.Status = InstanceStatus.Crashed;
+        harness.Time.Advance(TimeSpan.FromSeconds(15));
+        await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
+        Assert.Equal([InstanceId], harness.Instances.Started);
+
+        harness.Manager.Instances.TryRemove(InstanceId, out _);
+        harness.Time.Advance(TimeSpan.FromSeconds(15));
+        await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
+
+        // A new instance takes the id and crashes. It is entitled to its first restart immediately.
+        var replacement = harness.AddInstance(InstanceId, InstanceStatus.Running);
+        harness.Time.Advance(TimeSpan.FromSeconds(15));
+        await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
+        replacement.Status = InstanceStatus.Crashed;
+        harness.Time.Advance(TimeSpan.FromSeconds(15));
+        await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
+
+        Assert.Equal([InstanceId, InstanceId], harness.Instances.Started);
+        Assert.DoesNotContain(harness.Audit.Events, entry => entry.ErrorCode == "automation.backoff");
+    }
+
+    /// <summary>
     /// Crash evidence outlives the instance unless the tick sweeps it: a wildcard crash-loop trigger
     /// matches on the recorded id alone, so a ghost entry keeps firing actions at something that no
     /// longer exists.
@@ -1954,6 +2093,9 @@ public sealed class AutomationPolicyEngineTests
 
         internal List<Guid> Stopped { get; } = [];
 
+        /// <summary>Runs inside the stop, for tests that need state to change mid-mutation.</summary>
+        internal Action? OnStop { get; set; }
+
         public Task<Result<Unit, DaemonError>> StartInstanceAsync(InstanceReference request, CancellationToken cancellationToken)
         {
             Started.Add(request.InstanceId);
@@ -1967,6 +2109,7 @@ public sealed class AutomationPolicyEngineTests
             Stopped.Add(request.InstanceId);
             if (manager.Instances.TryGetValue(request.InstanceId, out var instance) && instance is TestInstance test)
                 test.Status = InstanceStatus.Stopped;
+            OnStop?.Invoke();
             return Task.FromResult(Result.Ok<Unit, DaemonError>(Unit.Default));
         }
 

@@ -14,7 +14,7 @@ namespace MCServerLauncher.Common.Contracts.Audit;
 /// <param name="Detail">
 /// The one free-text field, and the only one an operator authors: the annotation an automation
 /// audit.record action asked to leave. Nothing else populates it, and it is never derived from a
-/// request payload — the policy validator bounds it to 1024 characters before it can be stored.
+/// request payload. The writer bounds it to 1024 characters, truncating rather than rejecting.
 /// </param>
 public sealed record AuditRecord(
     DateTimeOffset Timestamp,
