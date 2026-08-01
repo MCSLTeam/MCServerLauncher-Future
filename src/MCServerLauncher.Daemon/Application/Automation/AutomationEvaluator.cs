@@ -690,6 +690,17 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
                         Err("automation.stop_timeout", "The instance did not stop within the restart deadline."));
                 }
 
+                // That wait runs for up to thirty seconds, so the hold state checked above is no
+                // longer current. A hold placed while the stop was in flight is a decision to keep
+                // the instance down, and it outranks a restart already under way — the same rule the
+                // deferred start half follows. The restart is spent here rather than retried.
+                if (RefusingHold(action, target, _timeProvider.GetUtcNow()) is { } lateHold)
+                {
+                    return Audited(policy, action.Type, target, Err(
+                        "automation.suppressed",
+                        $"The restart is suppressed by a '{lateHold.Scope}' hold on the instance until {lateHold.UntilUtc:O}."));
+                }
+
                 var restartStart = await _authorizedInstances.StartInstanceAsync(new InstanceReference(target), cancellationToken)
                     .ConfigureAwait(false);
                 return Audited(policy, action.Type, target, restartStart.IsErr(out var restartError)
@@ -747,7 +758,7 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
                     triggerTarget?.ToString("D") ?? string.Empty,
                     succeeded: true,
                     errorCode: null,
-                    detail: $"{auditRecord.Severity}: {auditRecord.Message}");
+                    detail: BoundedDetail(auditRecord));
                 return Ok(triggerTarget);
 
             case NotificationAction notification:
@@ -781,6 +792,18 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
 
         static RustyOptions.Result<string, API.Errors.DaemonError> Ok(Guid? target) =>
             RustyOptions.Result.Ok<string, API.Errors.DaemonError>(target?.ToString("D") ?? "-");
+
+        // The validator bounds the authored message, but the severity prefix rides on top of it, so
+        // a message at the limit composes past it. The field's own bound is applied here, where the
+        // composed string exists, and it truncates deterministically rather than rejecting: the
+        // policy was already accepted, and losing the tail of a note is not worth losing the note.
+        static string BoundedDetail(AuditRecordAction record)
+        {
+            var detail = $"{record.Severity}: {record.Message}";
+            return detail.Length <= AutomationPolicyValidator.MaximumAuditMessageLength
+                ? detail
+                : detail[..AutomationPolicyValidator.MaximumAuditMessageLength];
+        }
     }
 
     /// <summary>
@@ -995,7 +1018,10 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
             // in force then. A hold placed in between is a decision to keep the instance down, and
             // it outranks a restart already under way — the pending entry is spent, not re-queued,
             // because the condition that asked for the restart is long gone by the time it lifts.
-            if (RefusingHold(PendingRestartProbe, instanceId, now) is not null)
+            // Judged against the clock now, not the instant the tick started: a refusal here is
+            // permanent, because the pending entry is spent rather than re-queued, so a hold that
+            // lapsed while this tick was running must not take the restart with it.
+            if (RefusingHold(PendingRestartProbe, instanceId, _timeProvider.GetUtcNow()) is not null)
             {
                 Audit(null, "instance.restart.start", instanceId.ToString("D"), false, "automation.suppressed");
                 continue;
