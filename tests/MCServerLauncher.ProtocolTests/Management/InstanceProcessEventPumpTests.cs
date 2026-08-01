@@ -935,6 +935,52 @@ public sealed class InstanceProcessEventPumpTests
         }
     }
 
+    /// <summary>
+    /// The drain waits on parties the daemon does not control — a redirected pipe reaches EOF only
+    /// when the last inherited copy of its write handle closes anywhere on the machine, and the
+    /// publication tail is only as fast as its slowest subscriber. The deadline bounds the wait, not
+    /// the work: the old generation is fenced on time and the rest finishes in the background.
+    /// </summary>
+    [Fact]
+    public async Task InstanceBase_ForceKillDetachesTheGenerationWhenTheDrainOutlastsItsDeadline()
+    {
+        using var stuckProcess = new InstanceProcess(CreateReadyThenLongRunningStartInfo(), InstanceType.Universal);
+        using var nextProcess = new InstanceProcess(CreateReadyThenLongRunningStartInfo(), InstanceType.Universal);
+        var instance = new FactoryBackedInstance(CreateConfig(), stuckProcess, nextProcess);
+        var parked = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        try
+        {
+            Assert.True(await instance.StartAsync());
+
+            // Subscribed after Start so only the halt's own terminal publication parks. A subscriber
+            // that never returns stands in for every party the drain cannot bound.
+            stuckProcess.OnStatusChanged += async (status, _) =>
+            {
+                if (status != InstanceStatus.Stopped)
+                    return;
+
+                parked.TrySetResult();
+                await release.Task;
+            };
+
+            var halt = instance.ForceKillAndClearAsync(TimeSpan.FromMilliseconds(200));
+            await parked.Task.WaitAsync(TestTimeout);
+            await halt.WaitAsync(TestTimeout);
+
+            // Bounded without weakening the invariant: the old generation is detached, so the drain
+            // still running behind it can no longer reach the catalog, and the next one may attach.
+            Assert.Null(instance.Process);
+            Assert.True(await instance.StartAsync());
+            Assert.Same(nextProcess, instance.Process);
+        }
+        finally
+        {
+            release.TrySetResult();
+            instance.Dispose();
+        }
+    }
+
     [Fact]
     public async Task InstanceBase_OldGenerationReadyTimeoutCannotRegressRestartedCatalog()
     {
