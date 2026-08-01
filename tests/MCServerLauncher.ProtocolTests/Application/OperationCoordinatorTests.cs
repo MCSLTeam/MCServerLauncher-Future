@@ -219,6 +219,57 @@ public sealed class OperationCoordinatorTests
     }
 
     [Theory]
+    [InlineData(true, OperationStatus.Succeeded, "result-ref")]
+    [InlineData(false, OperationStatus.Cancelled, null)]
+    public async Task Cancellation_DoesNotDowngradeAnExecutorThatAlreadyCommitted(
+        bool markCommitted,
+        OperationStatus expectedStatus,
+        string? expectedResultReference)
+    {
+        var root = Directory.CreateTempSubdirectory("mcsl-ops-commit-point-").FullName;
+        try
+        {
+            await using var coordinator = new OperationCoordinator(rootDirectory: root);
+            var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            var started = await coordinator.StartAsync(
+                kind: "test.commit-point",
+                target: "t1",
+                ownerPrincipal: "owner-commit",
+                executor: async (_, context, ct) =>
+                {
+                    // ct is deliberately not observed: this models an executor whose side effects
+                    // are already applied by the time the cancellation signal arrives.
+                    entered.TrySetResult();
+                    await release.Task;
+                    if (markCommitted)
+                        ((IOperationCommitPoint)context).MarkCommitted();
+                    return Result.Ok<string, DaemonError>("result-ref");
+                },
+                cancellationToken: CancellationToken.None);
+
+            Assert.True(started.IsOk(out var accepted));
+            await entered.Task.WaitAsync(TimeSpan.FromSeconds(3));
+
+            var cancel = await coordinator.CancelOperationAsync(
+                new OperationCancelRequest(accepted!.OperationId, "owner-commit"),
+                CancellationToken.None);
+            Assert.True(cancel.IsOk(out var requested));
+            Assert.True(requested!.CancelRequested);
+
+            release.TrySetResult();
+            var completed = await WaitForTerminalAsync(coordinator, accepted.OperationId, "owner-commit");
+            Assert.Equal(expectedStatus, completed.Status);
+            Assert.Equal(expectedResultReference, completed.ResultReference);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Theory]
     [InlineData("success", OperationStatus.Succeeded)]
     [InlineData("failure", OperationStatus.Failed)]
     [InlineData("cancel", OperationStatus.Cancelled)]
