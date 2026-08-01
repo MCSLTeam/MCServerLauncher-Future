@@ -327,9 +327,7 @@ internal sealed class OperationCoordinator : IOperationApplication, IAsyncDispos
         Func<OperationCompletion, Result<Unit, DaemonError>>? terminalCommit,
         CancellationToken shutdownToken)
     {
-        // Scheduled inline under the supervisor's gate from the caller's thread, so yield to the
-        // pool rather than back to whatever context that caller had.
-        await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
+        await Task.Yield();
         OperationCompletion completion;
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(
             shutdownToken,
