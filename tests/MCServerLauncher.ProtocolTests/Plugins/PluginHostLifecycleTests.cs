@@ -39,89 +39,117 @@ public sealed class PluginHostLifecycleTests
     [Fact]
     public async Task StartAsync_BoundsNonCooperativeStartsAndRejectsLateCompletion()
     {
-        using var fixture = PluginHostFixture.Create(
-            ("fixture.start-never-completes", typeof(NeverCompletingStartPlugin).Assembly, typeof(NeverCompletingStartPlugin).FullName!),
-            ("fixture.start-blocking-lifetime-cancellation", typeof(BlockingLifetimeCancellationPlugin).Assembly, typeof(BlockingLifetimeCancellationPlugin).FullName!),
-            ("fixture.start-blocking-start-cancellation", typeof(BlockingStartCancellationPlugin).Assembly, typeof(BlockingStartCancellationPlugin).FullName!),
-            ("fixture.start-ignores-cancellation", typeof(IgnoresCancellationStartPlugin).Assembly, typeof(IgnoresCancellationStartPlugin).FullName!),
-            ("fixture.start-late-success", typeof(DelayedRegisteredSuccessPlugin).Assembly, typeof(DelayedRegisteredSuccessPlugin).FullName!),
-            ("fixture.start-synchronously-blocks", typeof(SynchronouslyBlockingStartPlugin).Assembly, typeof(SynchronouslyBlockingStartPlugin).FullName!));
-        var logger = new RecordingLogger<PluginHost>();
-        var services = new ServiceCollection();
-        services.AddMessagePipe(options =>
+        // Gate for the late-success leg: the delayed plugin stays incomplete until this file
+        // appears, so its success lands strictly after the host has already timed it out.
+        var lateSuccessRelease = Path.Combine(Path.GetTempPath(), $"mcsl-late-success-{Guid.NewGuid():N}.release");
+        var lateSuccessCompleted = Path.Combine(Path.GetTempPath(), $"mcsl-late-success-{Guid.NewGuid():N}.completed");
+        var previousRelease = Environment.GetEnvironmentVariable("MCSL_PLUGIN_LATE_SUCCESS_RELEASE_PATH");
+        var previousCompleted = Environment.GetEnvironmentVariable("MCSL_PLUGIN_LATE_SUCCESS_COMPLETED_PATH");
+        Environment.SetEnvironmentVariable("MCSL_PLUGIN_LATE_SUCCESS_RELEASE_PATH", lateSuccessRelease);
+        Environment.SetEnvironmentVariable("MCSL_PLUGIN_LATE_SUCCESS_COMPLETED_PATH", lateSuccessCompleted);
+        try
         {
-            options.EnableAutoRegistration = false;
-            options.DefaultAsyncPublishStrategy = AsyncPublishStrategy.Sequential;
-            options.InstanceLifetime = InstanceLifetime.Singleton;
-            options.EnableCaptureStackTrace = false;
-        });
-        using var provider = services.BuildServiceProvider();
-        var host = new PluginHost(
-            new SnapshotSource(new InstanceCatalogSnapshot([])),
-            new RecordingLoggerFactory(logger),
-            logger,
-            fixture.PluginsRoot,
-            new PluginEventBus(provider.GetRequiredService<EventFactory>()),
-            TimeSpan.FromMilliseconds(250),
-            fixture.CreateConfig("Medium"),
-            new PluginHttpEndpointRegistry(),
-            // None of these plugins ever finish starting, so a startup that waits on their rollback
-            // waits on this deadline. Making it far longer than the test turns "supervision is
-            // bounded" into a liveness property instead of a stopwatch comparison.
-            rollbackCleanupTimeout: TimeSpan.FromMinutes(10),
-            shutdownCleanupTimeout: TimeSpan.FromMilliseconds(150));
+            using var fixture = PluginHostFixture.Create(
+                ("fixture.start-never-completes", typeof(NeverCompletingStartPlugin).Assembly, typeof(NeverCompletingStartPlugin).FullName!),
+                ("fixture.start-blocking-lifetime-cancellation", typeof(BlockingLifetimeCancellationPlugin).Assembly, typeof(BlockingLifetimeCancellationPlugin).FullName!),
+                ("fixture.start-blocking-start-cancellation", typeof(BlockingStartCancellationPlugin).Assembly, typeof(BlockingStartCancellationPlugin).FullName!),
+                ("fixture.start-ignores-cancellation", typeof(IgnoresCancellationStartPlugin).Assembly, typeof(IgnoresCancellationStartPlugin).FullName!),
+                ("fixture.start-late-success", typeof(DelayedRegisteredSuccessPlugin).Assembly, typeof(DelayedRegisteredSuccessPlugin).FullName!),
+                ("fixture.start-synchronously-blocks", typeof(SynchronouslyBlockingStartPlugin).Assembly, typeof(SynchronouslyBlockingStartPlugin).FullName!));
+            var logger = new RecordingLogger<PluginHost>();
+            var services = new ServiceCollection();
+            services.AddMessagePipe(options =>
+            {
+                options.EnableAutoRegistration = false;
+                options.DefaultAsyncPublishStrategy = AsyncPublishStrategy.Sequential;
+                options.InstanceLifetime = InstanceLifetime.Singleton;
+                options.EnableCaptureStackTrace = false;
+            });
+            using var provider = services.BuildServiceProvider();
+            var host = new PluginHost(
+                new SnapshotSource(new InstanceCatalogSnapshot([])),
+                new RecordingLoggerFactory(logger),
+                logger,
+                fixture.PluginsRoot,
+                new PluginEventBus(provider.GetRequiredService<EventFactory>()),
+                TimeSpan.FromMilliseconds(250),
+                fixture.CreateConfig("Medium"),
+                new PluginHttpEndpointRegistry(),
+                // None of these plugins ever finish starting, so a startup that waits on their rollback
+                // waits on this deadline. Making it far longer than the test turns "supervision is
+                // bounded" into a liveness property instead of a stopwatch comparison.
+                rollbackCleanupTimeout: TimeSpan.FromMinutes(10),
+                shutdownCleanupTimeout: TimeSpan.FromMilliseconds(150));
 
-        // The fixture includes permanently incomplete starts, so an unsupervised startup never
-        // returns at all. A wall-clock budget could not tell that apart from a loaded runner: it
-        // failed CI at 18.6s while the WaitAsync guard below saw the task finish in time.
-        var start = host.StartAsync(CancellationToken.None);
-        var completed = await Task.WhenAny(start, Task.Delay(TimeSpan.FromSeconds(60)));
-        Assert.True(ReferenceEquals(completed, start), "Plugin supervision never bounded the startup.");
-        await start;
+            // The fixture includes permanently incomplete starts, so an unsupervised startup never
+            // returns at all. A wall-clock budget could not tell that apart from a loaded runner: it
+            // failed CI at 18.6s while the WaitAsync guard below saw the task finish in time.
+            var start = host.StartAsync(CancellationToken.None);
+            var completed = await Task.WhenAny(start, Task.Delay(TimeSpan.FromSeconds(60)));
+            Assert.True(ReferenceEquals(completed, start), "Plugin supervision never bounded the startup.");
+            await start;
 
-        Assert.Contains(logger.Messages, message =>
-            message.Contains("fixture.start-never-completes", StringComparison.Ordinal) &&
-            message.Contains("start_timed_out", StringComparison.Ordinal));
-        Assert.Contains(logger.Messages, message =>
-            message.Contains("fixture.start-blocking-lifetime-cancellation", StringComparison.Ordinal) &&
-            message.Contains("start_timed_out", StringComparison.Ordinal));
-        Assert.Contains(logger.Messages, message =>
-            message.Contains("fixture.start-blocking-start-cancellation", StringComparison.Ordinal) &&
-            message.Contains("start_timed_out", StringComparison.Ordinal));
-        Assert.Contains(logger.Messages, message =>
-            message.Contains("fixture.start-ignores-cancellation", StringComparison.Ordinal) &&
-            message.Contains("start_timed_out", StringComparison.Ordinal));
-        Assert.Contains(logger.Messages, message =>
-            message.Contains("fixture.start-late-success", StringComparison.Ordinal) &&
-            message.Contains("start_timed_out", StringComparison.Ordinal));
-        Assert.Contains(logger.Messages, message =>
-            message.Contains("fixture.start-synchronously-blocks", StringComparison.Ordinal) &&
-            message.Contains("start_timed_out", StringComparison.Ordinal));
-        AssertStates(
-            host.States,
-            ("fixture.start-never-completes", PluginRuntimeState.Failed),
-            ("fixture.start-blocking-lifetime-cancellation", PluginRuntimeState.Failed),
-            ("fixture.start-blocking-start-cancellation", PluginRuntimeState.Failed),
-            ("fixture.start-ignores-cancellation", PluginRuntimeState.Failed),
-            ("fixture.start-late-success", PluginRuntimeState.Failed),
-            ("fixture.start-synchronously-blocks", PluginRuntimeState.Failed));
+            Assert.Contains(logger.Messages, message =>
+                message.Contains("fixture.start-never-completes", StringComparison.Ordinal) &&
+                message.Contains("start_timed_out", StringComparison.Ordinal));
+            Assert.Contains(logger.Messages, message =>
+                message.Contains("fixture.start-blocking-lifetime-cancellation", StringComparison.Ordinal) &&
+                message.Contains("start_timed_out", StringComparison.Ordinal));
+            Assert.Contains(logger.Messages, message =>
+                message.Contains("fixture.start-blocking-start-cancellation", StringComparison.Ordinal) &&
+                message.Contains("start_timed_out", StringComparison.Ordinal));
+            Assert.Contains(logger.Messages, message =>
+                message.Contains("fixture.start-ignores-cancellation", StringComparison.Ordinal) &&
+                message.Contains("start_timed_out", StringComparison.Ordinal));
+            Assert.Contains(logger.Messages, message =>
+                message.Contains("fixture.start-late-success", StringComparison.Ordinal) &&
+                message.Contains("start_timed_out", StringComparison.Ordinal));
+            Assert.Contains(logger.Messages, message =>
+                message.Contains("fixture.start-synchronously-blocks", StringComparison.Ordinal) &&
+                message.Contains("start_timed_out", StringComparison.Ordinal));
+            AssertStates(
+                host.States,
+                ("fixture.start-never-completes", PluginRuntimeState.Failed),
+                ("fixture.start-blocking-lifetime-cancellation", PluginRuntimeState.Failed),
+                ("fixture.start-blocking-start-cancellation", PluginRuntimeState.Failed),
+                ("fixture.start-ignores-cancellation", PluginRuntimeState.Failed),
+                ("fixture.start-late-success", PluginRuntimeState.Failed),
+                ("fixture.start-synchronously-blocks", PluginRuntimeState.Failed));
 
-        var builder = new ProtocolCatalogBuilder(new OpenRpcInfo("plugin-host-timeout-test", "1.0.0"));
-        host.AddCatalogContributions(builder);
-        var catalog = builder.Freeze();
-        Assert.Empty(catalog.Rpcs);
-        Assert.Empty(catalog.Events);
+            // Now let the timed-out plugin actually succeed. Waiting on its own completion signal
+            // replaces a fixed sleep that could not tell "late success rejected" from "never ran".
+            File.WriteAllText(lateSuccessRelease, string.Empty);
+            await WaitForFileAsync(lateSuccessCompleted, TimeSpan.FromSeconds(30));
 
-        await Task.Delay(TimeSpan.FromMilliseconds(1500));
-        AssertStates(
-            host.States,
-            ("fixture.start-never-completes", PluginRuntimeState.Failed),
-            ("fixture.start-blocking-lifetime-cancellation", PluginRuntimeState.Failed),
-            ("fixture.start-blocking-start-cancellation", PluginRuntimeState.Failed),
-            ("fixture.start-ignores-cancellation", PluginRuntimeState.Failed),
-            ("fixture.start-late-success", PluginRuntimeState.Failed),
-            ("fixture.start-synchronously-blocks", PluginRuntimeState.Failed));
-        await host.StopAsync(CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(60));
+            AssertStates(
+                host.States,
+                ("fixture.start-never-completes", PluginRuntimeState.Failed),
+                ("fixture.start-blocking-lifetime-cancellation", PluginRuntimeState.Failed),
+                ("fixture.start-blocking-start-cancellation", PluginRuntimeState.Failed),
+                ("fixture.start-ignores-cancellation", PluginRuntimeState.Failed),
+                ("fixture.start-late-success", PluginRuntimeState.Failed),
+                ("fixture.start-synchronously-blocks", PluginRuntimeState.Failed));
+
+            // The late success must not contribute the draft it registered before the deadline.
+            // Admission is single-use, so this one call covers both before and after the release:
+            // contributions only ever add, so an empty catalog here was empty earlier too.
+            var lateBuilder = new ProtocolCatalogBuilder(new OpenRpcInfo("plugin-host-timeout-test", "1.0.0"));
+            host.AddCatalogContributions(lateBuilder);
+            var lateCatalog = lateBuilder.Freeze();
+            Assert.Empty(lateCatalog.Rpcs);
+            Assert.Empty(lateCatalog.Events);
+
+            await host.StopAsync(CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(60));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("MCSL_PLUGIN_LATE_SUCCESS_RELEASE_PATH", previousRelease);
+            Environment.SetEnvironmentVariable("MCSL_PLUGIN_LATE_SUCCESS_COMPLETED_PATH", previousCompleted);
+            if (File.Exists(lateSuccessRelease))
+                File.Delete(lateSuccessRelease);
+            if (File.Exists(lateSuccessCompleted))
+                File.Delete(lateSuccessCompleted);
+        }
     }
 
     [Fact]
