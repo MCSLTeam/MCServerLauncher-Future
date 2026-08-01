@@ -15,6 +15,17 @@ using RustyOptions;
 namespace MCServerLauncher.Daemon.ApplicationCore.Operations;
 
 /// <summary>
+/// Marks the point past which an executor's side effects are real. Spec section 7: once side
+/// effects are committed, the executor's terminal status wins and a late cancellation must not
+/// downgrade it to cancelled. Deliberately internal — the seam belongs to the daemon, not to the
+/// packaged plugin surface.
+/// </summary>
+internal interface IOperationCommitPoint
+{
+    void MarkCommitted();
+}
+
+/// <summary>
 /// Daemon-owned long-running operation coordinator.
 /// Progress is coalesced in memory; index persistence is rate-limited for progress and
 /// immediate for admission, stage, cancellation, and terminal transitions. The coordinator
@@ -332,7 +343,7 @@ internal sealed class OperationCoordinator : IOperationApplication, IAsyncDispos
             {
                 var context = new CoordinatorOperationContext(runtime, this);
                 var result = await executor(scope.ServiceProvider, context, linked.Token).ConfigureAwait(false);
-                if (linked.IsCancellationRequested || runtime.CancellationRequested)
+                if ((linked.IsCancellationRequested || runtime.CancellationRequested) && !runtime.Committed)
                 {
                     completion = OperationCompletion.Cancelled();
                 }
@@ -951,6 +962,7 @@ internal sealed class OperationCoordinator : IOperationApplication, IAsyncDispos
         private readonly bool _recoverOnly;
         private bool _cancellationRequested;
         private bool _completionPrepared;
+        private bool _committed;
         private int _disposed;
 
         public OperationRuntime(OperationSnapshot snapshot, bool recoverOnly = false)
@@ -982,6 +994,21 @@ internal sealed class OperationCoordinator : IOperationApplication, IAsyncDispos
                 lock (_gate)
                     return _cancellationRequested;
             }
+        }
+
+        public bool Committed
+        {
+            get
+            {
+                lock (_gate)
+                    return _committed;
+            }
+        }
+
+        public void MarkCommitted()
+        {
+            lock (_gate)
+                _committed = true;
         }
 
         public bool TryCreateCancellationSnapshot(DateTimeOffset now, out OperationSnapshot candidate)
@@ -1094,7 +1121,9 @@ internal sealed class OperationCoordinator : IOperationApplication, IAsyncDispos
                 if (_completionPrepared || IsTerminal(_snapshot.Status))
                     return false;
 
-                if (_cancellationRequested && completion.Status is not OperationStatus.Interrupted)
+                // A committed executor keeps its own outcome (spec section 7); only an interrupted
+                // one is exempt from the downgrade regardless.
+                if (_cancellationRequested && !_committed && completion.Status is not OperationStatus.Interrupted)
                     prepared = OperationCompletion.Cancelled();
 
                 // Freeze the effective outcome before invoking the domain commit. Late cancellation
@@ -1249,7 +1278,7 @@ internal sealed class OperationCoordinator : IOperationApplication, IAsyncDispos
                 null);
     }
 
-    private sealed class CoordinatorOperationContext : IOperationContext
+    private sealed class CoordinatorOperationContext : IOperationContext, IOperationCommitPoint
     {
         private readonly OperationRuntime _runtime;
         private readonly OperationCoordinator _coordinator;
@@ -1262,6 +1291,8 @@ internal sealed class OperationCoordinator : IOperationApplication, IAsyncDispos
         }
 
         public Guid OperationId => _runtime.Snapshot.OperationId;
+
+        public void MarkCommitted() => _runtime.MarkCommitted();
 
         public void SetStage(OperationStage stage) =>
             _coordinator.ReportProgress(_runtime, stage, progress: null);

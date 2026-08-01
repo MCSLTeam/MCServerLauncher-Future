@@ -439,6 +439,11 @@ internal sealed class LocalBackupApplication(
                 return Result.Err<string, DaemonError>(extractError!);
 
             context.SetStage(OperationStage.Installing);
+            // Last cooperative observation point. Past the mark the working directory is replaced
+            // and the original tree deleted, so a cancellation arriving later must not report
+            // "cancelled" over a restore that actually happened.
+            cancellationToken.ThrowIfCancellationRequested();
+            ((IOperationCommitPoint)context).MarkCommitted();
             MoveDirectoryWithRetry(workingDirectory, retiredDirectory);
             try
             {
