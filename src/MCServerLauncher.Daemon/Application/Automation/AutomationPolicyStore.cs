@@ -270,8 +270,11 @@ internal static class AutomationPolicyValidator
                 break;
 
             case UnresponsiveInstanceTrigger unresponsive:
-                if (unresponsive.SilentSeconds <= 0)
-                    diagnostics.Add(Diagnostic(policy, "automation.trigger_invalid", "The silence threshold must be positive."));
+                // Finiteness is checked here as well as at the wire converter: a policy built in
+                // process never passes through that gate, and an infinite threshold persists as
+                // nothing a JSON document can hold.
+                if (!double.IsFinite(unresponsive.SilentSeconds) || unresponsive.SilentSeconds <= 0)
+                    diagnostics.Add(Diagnostic(policy, "automation.trigger_invalid", "The silence threshold must be a positive finite number."));
                 break;
 
             case StatusDurationTrigger statusDuration:
@@ -286,8 +289,8 @@ internal static class AutomationPolicyValidator
             case SustainedMetricTrigger sustained:
                 if (!KnownMetrics.Contains(sustained.Metric, StringComparer.Ordinal))
                     diagnostics.Add(Diagnostic(policy, "automation.trigger_invalid", $"Unknown metric '{sustained.Metric}'."));
-                if (sustained.Threshold <= 0)
-                    diagnostics.Add(Diagnostic(policy, "automation.trigger_invalid", "The metric threshold must be positive."));
+                if (!double.IsFinite(sustained.Threshold) || sustained.Threshold <= 0)
+                    diagnostics.Add(Diagnostic(policy, "automation.trigger_invalid", "The metric threshold must be a positive finite number."));
                 if (PercentMetrics.Contains(sustained.Metric, StringComparer.Ordinal) && sustained.Threshold > 100)
                     diagnostics.Add(Diagnostic(policy, "automation.trigger_invalid", $"A percentage threshold cannot exceed 100 for '{sustained.Metric}'."));
                 if (sustained.SustainedSeconds < 15)
