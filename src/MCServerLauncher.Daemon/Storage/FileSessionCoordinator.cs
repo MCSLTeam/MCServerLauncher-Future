@@ -1230,6 +1230,13 @@ internal sealed class FileSessionCoordinator : IAsyncDisposable
     /// nothing there" are different answers — and a deny-list that cannot read the real name has to
     /// refuse rather than fall back to the caller's spelling, which is the spelling under suspicion.
     /// </remarks>
+    /// <summary>
+    /// The shape of <see cref="TryExpandShortPathName" />, so a caller can substitute it. Named
+    /// rather than a <c>Func</c> returning null, because "could not establish the real name" is a
+    /// failure, not a value.
+    /// </summary>
+    internal delegate bool ExpandShortPathName(string path, out string expanded);
+
     internal static bool TryExpandShortPathName(string path, out string expanded)
     {
         expanded = path;

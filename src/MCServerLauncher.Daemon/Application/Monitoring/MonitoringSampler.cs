@@ -303,54 +303,23 @@ internal sealed class MonitoringSampler : IDisposable, IAsyncDisposable
 
         var window = query.NotAfter - query.NotBefore;
         var bucketTicks = Math.Max(1, (long)Math.Ceiling(window.Ticks / (double)cap));
-        var buckets = new SortedDictionary<long, MonitoringSample>();
-        var bucketEvents = new SortedDictionary<long, ImmutableArray<MonitoringInstanceEvent>.Builder>();
-        var bucketDropped = new SortedDictionary<long, int>();
+        var buckets = new SortedDictionary<long, Bucket>();
         foreach (var sample in raw)
         {
             // Buckets are relative to the window, not the epoch: an epoch-aligned grid splits an
             // unaligned window across cap + 1 buckets and returns more points than were asked for.
             // The closing boundary folds into the last bucket for the same reason.
             var offset = sample.Timestamp.UtcTicks - query.NotBefore.UtcTicks;
-            var bucket = Math.Clamp(offset / bucketTicks, 0, cap - 1);
+            var index = Math.Clamp(offset / bucketTicks, 0, cap - 1);
+            if (!buckets.TryGetValue(index, out var bucket))
+                buckets[index] = bucket = new Bucket(sample);
 
-            // A metric is a reading taken at an instant, so keeping one per bucket loses nothing
-            // but resolution. An event is something that happened during the bucket's span, so
-            // letting it ride the single surviving sample would discard most of them outright —
-            // the same silent loss the gap rule below exists to prevent. Accumulate instead.
-            var events = sample.Events;
-            if (events is not null && events.Value.Length > 0)
-            {
-                if (!bucketEvents.TryGetValue(bucket, out var collected))
-                    bucketEvents[bucket] = collected = ImmutableArray.CreateBuilder<MonitoringInstanceEvent>();
-                collected.AddRange(events.Value);
-            }
-
-            // For the same reason, and with the same consequence if it is skipped: the bucket winner
-            // usually carries zero, so an earlier sample's non-zero loss would vanish and the result
-            // would read as a complete event list. Null only survives if every input was null.
-            if (sample.DroppedEvents is { } dropped)
-                bucketDropped[bucket] = bucketDropped.TryGetValue(bucket, out var running) ? running + dropped : dropped;
-
-            if (buckets.TryGetValue(bucket, out var existing) && existing.Gap && !sample.Gap)
-                continue;
-            buckets[bucket] = sample;
+            bucket.Accumulate(sample);
         }
 
         var points = ImmutableArray.CreateBuilder<MonitoringSample>(buckets.Count);
-        foreach (var pair in buckets)
-        {
-            // A gap winner still carries the bucket's events: the hole and the transitions are
-            // both things the reader needs, and the gap flag already says the span is incomplete.
-            var winner = pair.Value;
-            if (bucketEvents.TryGetValue(pair.Key, out var collected))
-                winner = winner with { Events = collected.ToImmutable() };
-            winner = winner with
-            {
-                DroppedEvents = bucketDropped.TryGetValue(pair.Key, out var dropped) ? dropped : null
-            };
-            points.Add(winner);
-        }
+        foreach (var bucket in buckets.Values)
+            points.Add(bucket.ToSample());
 
         return new MonitoringQueryResult(points.ToImmutable(), _log.DroppedRecords);
     }
@@ -383,6 +352,49 @@ internal sealed class MonitoringSampler : IDisposable, IAsyncDisposable
 
         var silence = (now - lastOutput).TotalSeconds;
         return silence > 0 ? silence : 0;
+    }
+
+    /// <summary>
+    /// One downsampling bucket: the sample that represents it, plus the things that must survive
+    /// from the samples it replaces.
+    /// </summary>
+    /// <remarks>
+    /// A metric is a reading taken at an instant, so keeping one per bucket loses nothing but
+    /// resolution. An event is something that happened during the bucket's span, and a dropped-event
+    /// count says part of that span went unrecorded — letting either ride the single surviving sample
+    /// would discard most of them outright, and a winner carrying zero would make an incomplete list
+    /// read as complete.
+    /// </remarks>
+    private sealed class Bucket(MonitoringSample first)
+    {
+        private MonitoringSample _winner = first;
+        private ImmutableArray<MonitoringInstanceEvent>.Builder? _events;
+        private int? _dropped;
+
+        internal void Accumulate(MonitoringSample sample)
+        {
+            if (sample.Events is { Length: > 0 } events)
+                (_events ??= ImmutableArray.CreateBuilder<MonitoringInstanceEvent>()).AddRange(events);
+
+            if (sample.DroppedEvents is { } dropped)
+                _dropped = (_dropped ?? 0) + dropped;
+
+            // A gap already claimed this bucket, so a later reading must not paper over the hole.
+            if (_winner.Gap && !sample.Gap)
+                return;
+
+            _winner = sample;
+        }
+
+        /// <remarks>
+        /// A gap winner still carries the bucket's events: the hole and the transitions are both
+        /// things the reader needs, and the gap flag already says the span is incomplete.
+        /// </remarks>
+        internal MonitoringSample ToSample() => _winner with
+        {
+            Events = _events?.ToImmutable() ?? _winner.Events,
+            DroppedEvents = _dropped
+        };
     }
 
     /// <summary>

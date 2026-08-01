@@ -625,7 +625,11 @@ public sealed class PluginFileContainmentTests
         var contained = new ContainedPluginFileApplication(
             inner,
             new CatalogSnapshotSource(CatalogedInstance),
-            expandPath: _ => null);
+            expandPath: (string _, out string expanded) =>
+            {
+                expanded = string.Empty;
+                return false;
+            });
 
         var read = await contained.GetFileInfoAsync(new PathRequest(path), CancellationToken.None);
         var write = await contained.DeleteFileAsync(new PathRequest(path), CancellationToken.None);
