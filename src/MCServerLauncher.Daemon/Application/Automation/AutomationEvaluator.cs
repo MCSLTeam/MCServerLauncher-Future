@@ -36,6 +36,13 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
     /// </summary>
     internal static readonly TimeSpan CrashMemory = TimeSpan.FromHours(24);
 
+    /// <summary>
+    /// The longest hold a policy may place on an instance's automated lifecycle. Nothing lifts a
+    /// suppression early, so the validator refuses a longer one rather than letting a mistyped
+    /// duration take an instance out of automation for good.
+    /// </summary>
+    internal static readonly TimeSpan MaximumSuppression = TimeSpan.FromDays(7);
+
     private static readonly ImmutableArray<string> ServicePermissions =
         ["mcsl.instance.start", "mcsl.instance.stop"];
 
@@ -57,11 +64,20 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
     private readonly TimeSpan _interval;
     private readonly ILogger<AutomationEvaluator>? _logger;
 
-    private readonly Dictionary<Guid, InstanceStatus> _lastStatuses = new();
+    private readonly Dictionary<Guid, (InstanceStatus Status, DateTimeOffset Since)> _lastStatuses = new();
     private readonly Dictionary<Guid, List<DateTimeOffset>> _crashTimes = new();
     private readonly HashSet<Guid> _crashedThisTick = new();
     private readonly HashSet<Guid> _pendingRestartStarts = new();
     private readonly Dictionary<Guid, PolicyRuntime> _runtime = new();
+
+    /// <summary>
+    /// Active lifecycle holds, one per instance. A later hold replaces the one before it rather than
+    /// merging with it, so the newest policy to speak decides the scope.
+    /// </summary>
+    // ponytail: one entry per instance, last write wins. Two policies holding the same instance with
+    // different scopes is the case this cannot express; give the value a per-scope expiry if that
+    // ever becomes real.
+    private readonly Dictionary<Guid, AutomationSuppression> _suppressions = new();
 
     private CancellationTokenSource? _runCancellation;
     private Task? _runTask;
@@ -217,9 +233,22 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
 
             // A dry run observes guard state; it must never create or roll it.
             var suppression = CheckGuards(policy, now, admit: false);
-            outcomes.Add(suppression is not null
-                ? new AutomationTestOutcome(policy.Id, false, $"{evaluation.Reason}; suppressed: {suppression}", target)
-                : new AutomationTestOutcome(policy.Id, true, evaluation.Reason, target));
+            if (suppression is not null)
+            {
+                outcomes.Add(new AutomationTestOutcome(policy.Id, false, $"{evaluation.Reason}; suppressed: {suppression}", target));
+                continue;
+            }
+
+            // The trigger still fires when a hold is active — the hold refuses the lifecycle
+            // actions, not the policy — so the reason reports it instead of the verdict hiding it.
+            var hold = evaluation.Targets.FirstOrDefault() is { } firstTarget
+                ? ActiveSuppression(firstTarget, now)
+                : null;
+            outcomes.Add(new AutomationTestOutcome(
+                policy.Id,
+                true,
+                hold is null ? evaluation.Reason : $"{evaluation.Reason}; target held by a '{hold.Scope}' suppression",
+                target));
         }
 
         return outcomes.ToImmutable();
@@ -292,6 +321,29 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
                     : TriggerEvaluation.Firing($"{recentMax} crashes within {crashLoop.WindowSeconds}s", looping);
             }
 
+            case UnresponsiveInstanceTrigger unresponsive:
+                return EvaluateUnresponsive(unresponsive, now);
+
+            case StatusDurationTrigger statusDuration:
+            {
+                // The status must have been held since at or before this instant to have lasted the
+                // configured duration.
+                var floor = now - TimeSpan.FromSeconds(statusDuration.DurationSeconds);
+                var held = facts.Statuses
+                    .Where(entry =>
+                        (statusDuration.InstanceId is null || statusDuration.InstanceId == entry.Key) &&
+                        entry.Value.Status == statusDuration.Status &&
+                        entry.Value.Since <= floor)
+                    .Select(static entry => entry.Key)
+                    .Order()
+                    .ToArray();
+                return held.Length == 0
+                    ? TriggerEvaluation.Quiet($"no instance has been {statusDuration.Status} for {statusDuration.DurationSeconds}s")
+                    : TriggerEvaluation.Firing(
+                        $"{statusDuration.Status} for at least {statusDuration.DurationSeconds}s",
+                        held);
+            }
+
             case SustainedMetricTrigger sustained:
                 return EvaluateSustainedMetric(sustained, now);
 
@@ -311,6 +363,35 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
             default:
                 return TriggerEvaluation.Quiet("unknown trigger");
         }
+    }
+
+    /// <summary>
+    /// Responsiveness is a live property, so this reads the newest retained sample rather than a
+    /// window: an instance that produced a line one tick ago is responsive whatever it did before.
+    /// A silence that was never measured is null, which is not evidence of responsiveness and not
+    /// evidence of silence either — the lifted comparison leaves it quiet, which is the safe
+    /// direction for a trigger that restarts instances.
+    /// </summary>
+    private TriggerEvaluation EvaluateUnresponsive(UnresponsiveInstanceTrigger trigger, DateTimeOffset now)
+    {
+        // Two intervals: one is the normal spacing, so anything older means the sampler itself
+        // stopped observing and the newest record no longer describes the present.
+        var interval = _metrics.SampleInterval;
+        var newest = _metrics.ReadRawWindow(now - interval * 2, now, 4).Samples
+            .LastOrDefault(static sample => !sample.Gap);
+        if (newest is null)
+            return TriggerEvaluation.Quiet("no monitoring sample covers the present");
+
+        var silent = newest.Instances
+            .Where(entry =>
+                (trigger.InstanceId is null || trigger.InstanceId == entry.InstanceId) &&
+                entry.SilentSeconds >= trigger.SilentSeconds)
+            .Select(static entry => entry.InstanceId)
+            .Order()
+            .ToArray();
+        return silent.Length == 0
+            ? TriggerEvaluation.Quiet($"no instance silent for {trigger.SilentSeconds}s")
+            : TriggerEvaluation.Firing($"silent for at least {trigger.SilentSeconds}s", silent);
     }
 
     /// <summary>
@@ -396,6 +477,19 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
                     sample.MemoryUsedKilobytes * 100.0 / sample.MemoryTotalKilobytes >= sustained.Threshold)
                     ? TriggerEvaluation.Firing($"system memory >= {sustained.Threshold}% for {sustained.SustainedSeconds}s", [])
                     : TriggerEvaluation.Quiet("system memory below threshold");
+
+            case "system_disk_percent":
+                // A record written before the history carried disk, or a reading that never landed,
+                // is unmeasured. Saying "below threshold" there would report a verdict nobody
+                // measured, so the missing reading is named for what it is.
+                if (samples.Any(static sample => sample.DiskTotalBytes is not > 0 || sample.DiskFreeBytes is null))
+                    return TriggerEvaluation.Quiet("metric history has a sample with no disk reading");
+
+                return samples.All(sample =>
+                    (sample.DiskTotalBytes!.Value - Math.Min(sample.DiskFreeBytes!.Value, sample.DiskTotalBytes!.Value))
+                    * 100.0 / sample.DiskTotalBytes!.Value >= sustained.Threshold)
+                    ? TriggerEvaluation.Firing($"system disk >= {sustained.Threshold}% for {sustained.SustainedSeconds}s", [])
+                    : TriggerEvaluation.Quiet("system disk below threshold");
 
             case "instance_cpu":
             case "instance_memory_bytes":
@@ -507,6 +601,15 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
                 if (instanceId is not { } target)
                     return Audited(policy, action.Type, triggerTarget, Err("automation.no_target", "The restart action has no target instance."));
 
+                // Checked before the backoff bookkeeping: a refused restart must not spend the
+                // escalation the next real restart is entitled to.
+                if (ActiveSuppression(target, _timeProvider.GetUtcNow()) is { } restartHold)
+                {
+                    return Audited(policy, action.Type, target, Err(
+                        "automation.suppressed",
+                        $"The restart is suppressed by a '{restartHold.Scope}' hold on the instance until {restartHold.UntilUtc:O}."));
+                }
+
                 if (applyRestartBackoff && policy is not null)
                 {
                     var now = _timeProvider.GetUtcNow();
@@ -581,12 +684,52 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
                 if (instanceId is not { } target)
                     return Audited(policy, action.Type, triggerTarget, Err("automation.no_target", "The stop action has no target instance."));
 
+                // Only a full maintenance hold refuses a stop: a restart hold exists precisely to
+                // let an instance be brought down and left down.
+                if (ActiveSuppression(target, _timeProvider.GetUtcNow()) is { Scope: AutomationSuppressionScope.All } stopHold)
+                {
+                    return Audited(policy, action.Type, target, Err(
+                        "automation.suppressed",
+                        $"The stop is suppressed by a '{stopHold.Scope}' hold on the instance until {stopHold.UntilUtc:O}."));
+                }
+
                 var stop = await _authorizedInstances.StopInstanceAsync(new InstanceReference(target), cancellationToken)
                     .ConfigureAwait(false);
                 return Audited(policy, action.Type, target, stop.IsErr(out var stopError)
                     ? RustyOptions.Result.Err<string, API.Errors.DaemonError>(stopError!)
                     : Ok(target));
             }
+
+            case MaintenanceStateAction maintenance:
+                return HoldInstance(
+                    policy,
+                    action.Type,
+                    maintenance.InstanceId ?? triggerTarget,
+                    AutomationSuppressionScope.All,
+                    maintenance.DurationSeconds,
+                    maintenance.Reason);
+
+            case RestartSuppressionAction restartSuppression:
+                return HoldInstance(
+                    policy,
+                    action.Type,
+                    restartSuppression.InstanceId ?? triggerTarget,
+                    AutomationSuppressionScope.Restarts,
+                    restartSuppression.DurationSeconds,
+                    restartSuppression.Reason);
+
+            case AuditRecordAction auditRecord:
+                // An audit event has no free-text field, so the message rides in the target: an
+                // operator reading the history needs to see what the policy meant to say, and the
+                // permission carries the severity beside it.
+                return Audited(
+                    policy,
+                    $"{action.Type}:{auditRecord.Severity}",
+                    triggerTarget,
+                    RustyOptions.Result.Ok<string, API.Errors.DaemonError>(
+                        triggerTarget is { } audited
+                            ? $"{audited:D}: {auditRecord.Message}"
+                            : auditRecord.Message));
 
             case NotificationAction notification:
                 await _domainEvents.PublishAsync(
@@ -619,6 +762,82 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
 
         static RustyOptions.Result<string, API.Errors.DaemonError> Ok(Guid? target) =>
             RustyOptions.Result.Ok<string, API.Errors.DaemonError>(target?.ToString("D") ?? "-");
+    }
+
+    /// <summary>
+    /// Places a lifecycle hold on the target instance and audits it like any other mutation. Writing
+    /// the hold prunes the entries that have already expired, which is the only sweep they get.
+    /// </summary>
+    private RustyOptions.Result<string, API.Errors.DaemonError> HoldInstance(
+        AutomationPolicy? policy,
+        string actionType,
+        Guid? instanceId,
+        AutomationSuppressionScope scope,
+        int durationSeconds,
+        string reason)
+    {
+        if (instanceId is not { } target)
+        {
+            return Audited(policy, actionType, null,
+                RustyOptions.Result.Err<string, API.Errors.DaemonError>(new API.Errors.ValidationDaemonError(
+                    "automation.no_target",
+                    "The suppression action has no target instance.")));
+        }
+
+        var now = _timeProvider.GetUtcNow();
+        var entry = new AutomationSuppression(
+            target,
+            scope,
+            now + TimeSpan.FromSeconds(durationSeconds),
+            reason,
+            policy?.Id ?? Guid.Empty);
+        lock (_stateGate)
+        {
+            foreach (var expired in _suppressions
+                         .Where(candidate => candidate.Value.UntilUtc <= now)
+                         .Select(static candidate => candidate.Key)
+                         .ToArray())
+            {
+                _suppressions.Remove(expired);
+            }
+
+            _suppressions[target] = entry;
+        }
+
+        return Audited(policy, actionType, target,
+            RustyOptions.Result.Ok<string, API.Errors.DaemonError>(target.ToString("D")));
+    }
+
+    /// <summary>
+    /// The hold currently covering an instance, or null. Expired entries are filtered rather than
+    /// removed so that every read of this state, including the wire-reachable dry run, is pure.
+    /// </summary>
+    private AutomationSuppression? ActiveSuppression(Guid instanceId, DateTimeOffset now)
+    {
+        lock (_stateGate)
+        {
+            return _suppressions.TryGetValue(instanceId, out var entry) && entry.UntilUtc > now
+                ? entry
+                : null;
+        }
+    }
+
+    /// <summary>
+    /// Every hold still in force, for mcsl.automation.get. A caller that cannot see the active holds
+    /// cannot tell a policy that is disabled from one whose actions are being refused.
+    /// </summary>
+    internal ImmutableArray<AutomationSuppression> ActiveSuppressions()
+    {
+        var now = _timeProvider.GetUtcNow();
+        lock (_stateGate)
+        {
+            return
+            [
+                .. _suppressions.Values
+                    .Where(entry => entry.UntilUtc > now)
+                    .OrderBy(static entry => entry.InstanceId)
+            ];
+        }
     }
 
     private RustyOptions.Result<string, API.Errors.DaemonError> Audited(
@@ -663,7 +882,7 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
             foreach (var (instanceId, status) in observed)
             {
                 var known = _lastStatuses.TryGetValue(instanceId, out var previous);
-                if (known && previous != InstanceStatus.Crashed && status == InstanceStatus.Crashed)
+                if (known && previous.Status != InstanceStatus.Crashed && status == InstanceStatus.Crashed)
                 {
                     _crashedThisTick.Add(instanceId);
                     if (!_crashTimes.TryGetValue(instanceId, out var times))
@@ -686,7 +905,10 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
                     }
                 }
 
-                _lastStatuses[instanceId] = status;
+                // An unchanged status keeps the instant it was first seen at, which is what a
+                // duration trigger measures from. A status entered before this daemon started
+                // therefore counts from the first observation, not from when it truly began.
+                _lastStatuses[instanceId] = known && previous.Status == status ? previous : (status, now);
                 if (_pendingRestartStarts.Contains(instanceId) &&
                     status is InstanceStatus.Stopped or InstanceStatus.Crashed)
                 {
@@ -724,7 +946,8 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
         {
             return new FactSnapshot(
                 [.. _crashedThisTick],
-                _crashTimes.ToDictionary(static entry => entry.Key, static entry => entry.Value.ToArray()));
+                _crashTimes.ToDictionary(static entry => entry.Key, static entry => entry.Value.ToArray()),
+                new Dictionary<Guid, (InstanceStatus Status, DateTimeOffset Since)>(_lastStatuses));
         }
     }
 
@@ -821,7 +1044,8 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
     /// </summary>
     private readonly record struct FactSnapshot(
         IReadOnlyList<Guid> CrashedThisTick,
-        IReadOnlyDictionary<Guid, DateTimeOffset[]> CrashTimes);
+        IReadOnlyDictionary<Guid, DateTimeOffset[]> CrashTimes,
+        IReadOnlyDictionary<Guid, (InstanceStatus Status, DateTimeOffset Since)> Statuses);
 
     /// <summary>
     /// One trigger verdict. <see cref="Targets" /> holds every instance the trigger matched, and is

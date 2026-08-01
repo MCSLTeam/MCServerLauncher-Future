@@ -173,9 +173,36 @@ public sealed class ApplicationDtoJsonMetadataTests
                             Deferred = new StopInstanceAction { InstanceId = instanceId }
                         }
                     ]
+                },
+                new AutomationPolicy
+                {
+                    Id = sessionId,
+                    Name = "quiet-guard",
+                    Enabled = true,
+                    Trigger = new UnresponsiveInstanceTrigger { InstanceId = instanceId, SilentSeconds = 300 },
+                    Actions =
+                    [
+                        new MaintenanceStateAction { InstanceId = instanceId, DurationSeconds = 600, Reason = "held" },
+                        new RestartSuppressionAction { DurationSeconds = 1800, Reason = "under investigation" },
+                        new AuditRecordAction { Message = "instance went quiet", Severity = "Warning" }
+                    ]
+                },
+                new AutomationPolicy
+                {
+                    Id = Guid.Parse("55555555-5555-5555-5555-555555555555"),
+                    Name = "stuck-stopped",
+                    Enabled = true,
+                    Trigger = new StatusDurationTrigger { Status = InstanceStatus.Stopped, DurationSeconds = 900 },
+                    Actions = [new AuditRecordAction { Message = "still stopped", Severity = "Info" }]
                 }
             ]
         };
+        var automationSuppression = new AutomationSuppression(
+            instanceId,
+            AutomationSuppressionScope.All,
+            DateTimeOffset.UnixEpoch.AddMinutes(10),
+            "held",
+            sessionId);
         var monitoringEvent = new MonitoringInstanceEvent(
             instanceId,
             MonitoringEventKind.StatusChanged,
@@ -282,7 +309,9 @@ public sealed class ApplicationDtoJsonMetadataTests
             automationPolicySet,
             automationPolicySet.Policies[0],
             new AutomationPolicyDiagnostic(instanceId, "automation.name_required", "The policy needs a name."),
-            new AutomationGetResult(automationPolicySet),
+            automationPolicySet.Policies[1],
+            automationSuppression,
+            new AutomationGetResult(automationPolicySet) { Suppressions = [automationSuppression] },
             new AutomationValidateRequest(automationPolicySet),
             new AutomationValidateResult([new AutomationPolicyDiagnostic(null, "automation.trigger_required", "The policy needs a trigger.")]),
             new AutomationApplyRequest(automationPolicySet),
