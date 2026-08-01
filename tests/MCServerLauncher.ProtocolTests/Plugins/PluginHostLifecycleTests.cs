@@ -64,16 +64,21 @@ public sealed class PluginHostLifecycleTests
             new PluginEventBus(provider.GetRequiredService<EventFactory>()),
             TimeSpan.FromMilliseconds(250),
             fixture.CreateConfig("Medium"),
-            new PluginHttpEndpointRegistry());
+            new PluginHttpEndpointRegistry(),
+            // None of these plugins ever finish starting, so a startup that waits on their rollback
+            // waits on this deadline. Making it far longer than the test turns "supervision is
+            // bounded" into a liveness property instead of a stopwatch comparison.
+            rollbackCleanupTimeout: TimeSpan.FromMinutes(10),
+            shutdownCleanupTimeout: TimeSpan.FromMilliseconds(150));
 
-        // Allow scheduler contention from the full protocol suite while still bounding an
-        // otherwise unbounded startup. The fixture includes permanently incomplete starts.
-        var supervisionBudget = TimeSpan.FromSeconds(8);
-        var startedAt = Stopwatch.GetTimestamp();
-        await host.StartAsync(CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(10));
-        var elapsed = Stopwatch.GetElapsedTime(startedAt);
+        // The fixture includes permanently incomplete starts, so an unsupervised startup never
+        // returns at all. A wall-clock budget could not tell that apart from a loaded runner: it
+        // failed CI at 18.6s while the WaitAsync guard below saw the task finish in time.
+        var start = host.StartAsync(CancellationToken.None);
+        var completed = await Task.WhenAny(start, Task.Delay(TimeSpan.FromSeconds(60)));
+        Assert.True(ReferenceEquals(completed, start), "Plugin supervision never bounded the startup.");
+        await start;
 
-        Assert.True(elapsed < supervisionBudget, $"Plugin supervision took {elapsed}.");
         Assert.Contains(logger.Messages, message =>
             message.Contains("fixture.start-never-completes", StringComparison.Ordinal) &&
             message.Contains("start_timed_out", StringComparison.Ordinal));
@@ -116,7 +121,7 @@ public sealed class PluginHostLifecycleTests
             ("fixture.start-ignores-cancellation", PluginRuntimeState.Failed),
             ("fixture.start-late-success", PluginRuntimeState.Failed),
             ("fixture.start-synchronously-blocks", PluginRuntimeState.Failed));
-        await host.StopAsync(CancellationToken.None);
+        await host.StopAsync(CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(60));
     }
 
     [Fact]
