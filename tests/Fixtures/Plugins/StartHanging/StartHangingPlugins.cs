@@ -196,13 +196,11 @@ public sealed class DelayedRegisteredSuccessPlugin : IGeneratedDaemonPluginAdapt
         }
 
         // A test that wants to exercise the late-success leg opens this gate once the host has
-        // already timed the plugin out, so the success is genuinely late rather than racing.
+        // already timed the plugin out, so the success is genuinely late rather than racing. The
+        // test waits on the host's own late-completion log, not on this method returning.
         while (!File.Exists(releasePath))
             await Task.Delay(TimeSpan.FromMilliseconds(10), CancellationToken.None);
 
-        var completedPath = Environment.GetEnvironmentVariable("MCSL_PLUGIN_LATE_SUCCESS_COMPLETED_PATH");
-        if (!string.IsNullOrWhiteSpace(completedPath))
-            File.WriteAllText(completedPath, string.Empty);
         return PluginResult.Ok();
     }
 
