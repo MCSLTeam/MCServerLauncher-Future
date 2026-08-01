@@ -49,10 +49,16 @@ internal sealed class PublishedDaemonFixture : IAsyncDisposable
 
     public string Token { get; }
 
+    /// <summary>
+    /// The daemon's working directory; its data root is <c>daemon/</c> underneath.
+    /// </summary>
+    public string Root => _root;
+
     public static async Task<PublishedDaemonFixture> CreateAsync(
         string configuredPath,
         bool includeNeverCompletingStartPlugin = false,
-        bool includeNeverCompletingDisposePlugin = false)
+        bool includeNeverCompletingDisposePlugin = false,
+        bool includePlugins = true)
     {
         var source = ResolveDaemonPath(configuredPath);
         var root = Directory.CreateTempSubdirectory("mcsl-published-plugin-").FullName;
@@ -61,15 +67,17 @@ internal sealed class PublishedDaemonFixture : IAsyncDisposable
         var port = GetUnusedLoopbackPort();
         var token = Convert.ToHexString(Guid.NewGuid().ToByteArray()).ToLowerInvariant();
         // Spec section 4: plugins load only with an explicit entries opt-in record.
-        var entryIds = new List<string>
-        {
-            "community.instance-health",
-            "fixture.returned-error",
-            "fixture.throwing",
-            "fixture.start-returned-error",
-            "fixture.start-throwing",
-            "fixture.package-reference-consumer",
-        };
+        var entryIds = includePlugins
+            ? new List<string>
+            {
+                "community.instance-health",
+                "fixture.returned-error",
+                "fixture.throwing",
+                "fixture.start-returned-error",
+                "fixture.start-throwing",
+                "fixture.package-reference-consumer",
+            }
+            : [];
         if (includeNeverCompletingStartPlugin)
             entryIds.Add("fixture.start-never-completes");
         if (includeNeverCompletingDisposePlugin)
@@ -82,6 +90,18 @@ internal sealed class PublishedDaemonFixture : IAsyncDisposable
         await File.WriteAllTextAsync(
             Path.Combine(root, "config.json"),
             $$"""{"port":{{port}},"secret":"{{token}}","main_token":"{{token}}","file_download_sessions":1,"verbose":false{{pluginsConfig}}}""");
+
+        // Skipping the plugin payloads also skips the SDK pack/publish they need, which is most of
+        // this fixture's setup cost for a test that only exercises built-in RPCs.
+        if (!includePlugins)
+        {
+            return new PublishedDaemonFixture(
+                root,
+                daemonPath,
+                port,
+                token,
+                includeNeverCompletingDisposePlugin);
+        }
 
         var pluginDirectory = Path.Combine(root, "plugins", "community.instance-health");
         Directory.CreateDirectory(pluginDirectory);

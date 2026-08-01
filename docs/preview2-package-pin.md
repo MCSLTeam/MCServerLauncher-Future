@@ -253,14 +253,15 @@ The published-host suite runs with `MCSL_PUBLISHED_DAEMON` pointing at a
 published daemon and `MCSL_PLUGIN_PACKAGE_SOURCE` pointing at the three
 nupkgs above.
 
-### Known coverage gap carried into MCP-6
+### Coverage gap closed in MCP-6
 
-The published-host suite still exercises only plugin load, RPC/event serving,
-and shutdown behaviour. It does not yet drive `mcsl.backup.*` or poll a real
-long-running operation against a live daemon. Both need a daemon-side fake
-operation fixture and are tracked as the remaining SDK-9b/MCP-6 item; they do
-not block the internal pin because every one of those paths is covered by the
-in-process protocol suite.
+The published-host suite no longer stops at plugin load, RPC/event serving,
+and shutdown behaviour. It now drives `mcsl.backup.*` end to end against a
+live daemon: it creates a cold backup, polls the operation while it is still
+non-terminal, cancels a real restore mid-flight and asserts the instance
+working directory was not swapped, then re-runs the restore to success. No
+daemon-side fake operation fixture was needed; the archived payload is sized
+so the restore is genuinely long enough to cancel.
 
 Distribution is internal-only. Public distribution requires explicitly
 reopening the package gate.
