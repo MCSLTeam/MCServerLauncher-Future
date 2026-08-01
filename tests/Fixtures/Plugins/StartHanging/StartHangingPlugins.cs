@@ -188,7 +188,21 @@ public sealed class DelayedRegisteredSuccessPlugin : IGeneratedDaemonPluginAdapt
         _ = cancellationToken;
         // Intentionally ignores cancellation and must remain incomplete past the host deadline so
         // late success cannot race past Task.Delay supervision under CI load.
-        await Task.Delay(Timeout.InfiniteTimeSpan, CancellationToken.None);
+        var releasePath = Environment.GetEnvironmentVariable("MCSL_PLUGIN_LATE_SUCCESS_RELEASE_PATH");
+        if (string.IsNullOrWhiteSpace(releasePath))
+        {
+            await Task.Delay(Timeout.InfiniteTimeSpan, CancellationToken.None);
+            return PluginResult.Ok();
+        }
+
+        // A test that wants to exercise the late-success leg opens this gate once the host has
+        // already timed the plugin out, so the success is genuinely late rather than racing.
+        while (!File.Exists(releasePath))
+            await Task.Delay(TimeSpan.FromMilliseconds(10), CancellationToken.None);
+
+        var completedPath = Environment.GetEnvironmentVariable("MCSL_PLUGIN_LATE_SUCCESS_COMPLETED_PATH");
+        if (!string.IsNullOrWhiteSpace(completedPath))
+            File.WriteAllText(completedPath, string.Empty);
         return PluginResult.Ok();
     }
 
