@@ -28,7 +28,7 @@ internal sealed class LocalAutomationApplication(
     {
         cancellationToken.ThrowIfCancellationRequested();
         return Task.FromResult(Result.Ok<AutomationGetResult, DaemonError>(
-            new AutomationGetResult(store.Get())));
+            new AutomationGetResult(store.Get()) { Suppressions = evaluator.ActiveSuppressions() }));
     }
 
     public Task<Result<AutomationValidateResult, DaemonError>> ValidateAsync(

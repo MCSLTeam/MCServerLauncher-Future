@@ -3185,6 +3185,43 @@
                     }
                   },
                   "additionalProperties": false
+                },
+                "suppressions": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "instance_id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "scope": {
+                        "enum": [
+                          "all",
+                          "restarts"
+                        ]
+                      },
+                      "until_utc": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "reason": {
+                        "type": "string"
+                      },
+                      "policy_id": {
+                        "type": "string",
+                        "format": "uuid"
+                      }
+                    },
+                    "required": [
+                      "instance_id",
+                      "scope",
+                      "until_utc",
+                      "reason",
+                      "policy_id"
+                    ],
+                    "additionalProperties": false
+                  }
                 }
               },
               "required": [

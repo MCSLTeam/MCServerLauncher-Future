@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using MCServerLauncher.Common.Contracts.Automation;
 using MCServerLauncher.Common.Contracts.Monitoring;
 using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Common.ProtoType.Instance;
@@ -25,6 +26,9 @@ internal sealed class InstanceStatusJsonConverter()
 
 internal sealed class MonitoringEventKindJsonConverter()
     : JsonStringEnumConverter<MonitoringEventKind>(JsonNamingPolicy.SnakeCaseLower, allowIntegerValues: false);
+
+internal sealed class AutomationSuppressionScopeJsonConverter()
+    : JsonStringEnumConverter<AutomationSuppressionScope>(JsonNamingPolicy.SnakeCaseLower, allowIntegerValues: false);
 
 internal sealed class OperationStatusJsonConverter()
     : JsonStringEnumConverter<OperationStatus>(JsonNamingPolicy.SnakeCaseLower);

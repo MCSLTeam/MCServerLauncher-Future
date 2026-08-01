@@ -31,6 +31,7 @@ namespace MCServerLauncher.Common.Contracts.Serialization;
         typeof(InstanceFactoryMirrorJsonConverter),
         typeof(InstanceStatusJsonConverter),
         typeof(MonitoringEventKindJsonConverter),
+        typeof(AutomationSuppressionScopeJsonConverter),
 typeof(OperationStatusJsonConverter),
         typeof(OperationStageJsonConverter),
         typeof(PlanStatusJsonConverter),
@@ -143,13 +144,19 @@ typeof(OperationStatusJsonConverter),
 [JsonSerializable(typeof(AutomationTrigger))]
 [JsonSerializable(typeof(CrashLoopTrigger))]
 [JsonSerializable(typeof(UnexpectedExitTrigger))]
+[JsonSerializable(typeof(UnresponsiveInstanceTrigger))]
+[JsonSerializable(typeof(StatusDurationTrigger))]
 [JsonSerializable(typeof(SustainedMetricTrigger))]
 [JsonSerializable(typeof(MaintenanceWindowTrigger))]
 [JsonSerializable(typeof(AutomationAction))]
 [JsonSerializable(typeof(RestartInstanceAction))]
 [JsonSerializable(typeof(StopInstanceAction))]
+[JsonSerializable(typeof(MaintenanceStateAction))]
+[JsonSerializable(typeof(RestartSuppressionAction))]
 [JsonSerializable(typeof(NotificationAction))]
+[JsonSerializable(typeof(AuditRecordAction))]
 [JsonSerializable(typeof(ConfirmationPlanAction))]
+[JsonSerializable(typeof(AutomationSuppression))]
 [JsonSerializable(typeof(AutomationPolicy))]
 [JsonSerializable(typeof(AutomationPolicySet))]
 [JsonSerializable(typeof(AutomationPolicyDiagnostic))]

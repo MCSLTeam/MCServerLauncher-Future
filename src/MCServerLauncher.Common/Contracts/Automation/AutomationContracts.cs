@@ -1,5 +1,7 @@
 using System.Collections.Immutable;
+using MCServerLauncher.Common.ProtoType.Instance;
 using SysTextJsonConverter = System.Text.Json.Serialization.JsonConverterAttribute;
+using StjJsonNamingPolicy = System.Text.Json.JsonNamingPolicy;
 using StjJsonDocument = System.Text.Json.JsonDocument;
 using StjJsonElement = System.Text.Json.JsonElement;
 using StjJsonException = System.Text.Json.JsonException;
@@ -92,7 +94,7 @@ public sealed class UnexpectedExitTrigger : AutomationTrigger
 /// <summary>
 /// Fires when a retained metric stays at or above <see cref="Threshold" /> for
 /// <see cref="SustainedSeconds" />. Metrics: system_cpu, system_memory_percent,
-/// instance_cpu, instance_memory_bytes.
+/// system_disk_percent, instance_cpu, instance_memory_bytes.
 /// </summary>
 public sealed class SustainedMetricTrigger : AutomationTrigger
 {
@@ -120,6 +122,45 @@ public sealed class MaintenanceWindowTrigger : AutomationTrigger
     public int StartMinuteUtc { get; set; }
 
     public int DurationMinutes { get; set; } = 60;
+}
+
+/// <summary>
+/// Fires when the newest retained monitoring sample shows an instance that has produced no output
+/// for at least <see cref="SilentSeconds" />. Null <see cref="InstanceId" /> watches every instance.
+/// </summary>
+/// <remarks>
+/// This is a gauge read of the newest sample, not a windowed series: responsiveness is a live
+/// property, and an instance that answered one second ago is responsive whatever it did earlier.
+/// An unmeasured silence (null) is not evidence of responsiveness either, so it stays quiet.
+/// </remarks>
+public sealed class UnresponsiveInstanceTrigger : AutomationTrigger
+{
+    public override string Type => "instance.unresponsive";
+
+    public Guid? InstanceId { get; set; }
+
+    public double SilentSeconds { get; set; } = 300;
+}
+
+/// <summary>
+/// Fires while an instance has been continuously in <see cref="Status" /> for at least
+/// <see cref="DurationSeconds" />. Null <see cref="InstanceId" /> watches every instance.
+/// </summary>
+/// <remarks>
+/// The duration is measured from the evaluator's own first observation of the status, so a status
+/// entered before the daemon started counts from daemon start rather than from when it truly began.
+/// The condition stays true for as long as the status holds; the policy cooldown, not the trigger,
+/// is what keeps it from acting on every tick.
+/// </remarks>
+public sealed class StatusDurationTrigger : AutomationTrigger
+{
+    public override string Type => "instance.status_duration";
+
+    public Guid? InstanceId { get; set; }
+
+    public InstanceStatus Status { get; set; } = InstanceStatus.Stopped;
+
+    public int DurationSeconds { get; set; } = 300;
 }
 
 /// <summary>
@@ -186,9 +227,95 @@ public sealed class ConfirmationPlanAction : AutomationAction
     public AutomationAction? Deferred { get; set; }
 }
 
+/// <summary>
+/// Holds the target instance out of automated hands for <see cref="DurationSeconds" />: while it is
+/// active, automated restarts and stops of that instance are refused and the refusal is audited.
+/// </summary>
+public sealed class MaintenanceStateAction : AutomationAction
+{
+    public override string Type => "instance.maintenance";
+
+    /// <summary>Null targets the instance that fired the trigger.</summary>
+    public Guid? InstanceId { get; set; }
+
+    public int DurationSeconds { get; set; } = 1800;
+
+    public string Reason { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// The narrow half of <see cref="MaintenanceStateAction" />: refuses automated restarts of the
+/// target instance while leaving an automated stop available.
+/// </summary>
+public sealed class RestartSuppressionAction : AutomationAction
+{
+    public override string Type => "instance.restart_suppression";
+
+    /// <summary>Null targets the instance that fired the trigger.</summary>
+    public Guid? InstanceId { get; set; }
+
+    public int DurationSeconds { get; set; } = 1800;
+
+    public string Reason { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Records a caller-authored line in the audit history and does nothing else. It exists so a policy
+/// can leave an explicit trace of a condition it deliberately chose not to act on.
+/// </summary>
+public sealed class AuditRecordAction : AutomationAction
+{
+    public override string Type => "audit.record";
+
+    public string Message { get; set; } = string.Empty;
+
+    public string Severity { get; set; } = "Info";
+}
+
 public sealed record AutomationPolicyDiagnostic(Guid? PolicyId, string Code, string Message);
 
-public sealed record AutomationGetResult(AutomationPolicySet PolicySet);
+/// <summary>
+/// How much of an instance's automated lifecycle a suppression holds back.
+/// </summary>
+public enum AutomationSuppressionScope
+{
+    /// <summary>Automated restarts and stops are both refused.</summary>
+    All = 0,
+
+    /// <summary>Only automated restarts are refused.</summary>
+    Restarts = 1,
+}
+
+/// <summary>
+/// One active hold on an instance's automated lifecycle. Suppressions live in memory for the
+/// daemon's lifetime only, exactly like the cooldown and backoff guards that sit beside them.
+/// </summary>
+public sealed record AutomationSuppression(
+    Guid InstanceId,
+    AutomationSuppressionScope Scope,
+    DateTimeOffset UntilUtc,
+    string Reason,
+    Guid PolicyId);
+
+/// <summary>
+/// The applied policy document plus the suppressions currently held over instances. A caller that
+/// cannot see the active holds cannot tell a policy that is off from one that is being refused.
+/// </summary>
+/// <remarks>
+/// The list is an init-only property rather than a second constructor parameter: a defaulted
+/// <see cref="ImmutableArray{T}" /> parameter is a default instance, and the JSON schema exporter
+/// enumerates parameter defaults, which throws on one of those.
+/// </remarks>
+public sealed record AutomationGetResult(AutomationPolicySet PolicySet)
+{
+    private readonly ImmutableArray<AutomationSuppression> _suppressions = [];
+
+    public ImmutableArray<AutomationSuppression> Suppressions
+    {
+        get => _suppressions.IsDefault ? [] : _suppressions;
+        init => _suppressions = value;
+    }
+}
 
 public sealed record AutomationValidateRequest(AutomationPolicySet PolicySet);
 
@@ -224,6 +351,8 @@ internal sealed class AutomationTriggerStjConverter : global::System.Text.Json.S
     {
         "instance.crash_loop",
         "instance.unexpected_exit",
+        "instance.unresponsive",
+        "instance.status_duration",
         "metric.sustained",
         "schedule.window"
     };
@@ -247,6 +376,8 @@ internal sealed class AutomationTriggerStjConverter : global::System.Text.Json.S
         {
             "instance.crash_loop" => new CrashLoopTrigger(),
             "instance.unexpected_exit" => new UnexpectedExitTrigger(),
+            "instance.unresponsive" => new UnresponsiveInstanceTrigger(),
+            "instance.status_duration" => new StatusDurationTrigger(),
             "metric.sustained" => new SustainedMetricTrigger(),
             "schedule.window" => new MaintenanceWindowTrigger(),
             _ => throw AutomationUnionStjHelper.UnknownDiscriminator(
@@ -265,6 +396,17 @@ internal sealed class AutomationTriggerStjConverter : global::System.Text.Json.S
 
             case UnexpectedExitTrigger unexpectedExit:
                 unexpectedExit.InstanceId = AutomationUnionStjHelper.ReadNullableGuid(obj, "instance_id");
+                break;
+
+            case UnresponsiveInstanceTrigger unresponsive:
+                unresponsive.InstanceId = AutomationUnionStjHelper.ReadNullableGuid(obj, "instance_id");
+                unresponsive.SilentSeconds = AutomationUnionStjHelper.ReadDoubleOrDefault(obj, "silent_seconds", unresponsive.SilentSeconds);
+                break;
+
+            case StatusDurationTrigger statusDuration:
+                statusDuration.InstanceId = AutomationUnionStjHelper.ReadNullableGuid(obj, "instance_id");
+                statusDuration.Status = AutomationUnionStjHelper.ReadInstanceStatusOrDefault(obj, "status", statusDuration.Status);
+                statusDuration.DurationSeconds = AutomationUnionStjHelper.ReadIntOrDefault(obj, "duration_seconds", statusDuration.DurationSeconds);
                 break;
 
             case SustainedMetricTrigger sustained:
@@ -306,6 +448,17 @@ internal sealed class AutomationTriggerStjConverter : global::System.Text.Json.S
                 AutomationUnionStjHelper.WriteNullableGuid(writer, "instance_id", unexpectedExit.InstanceId);
                 break;
 
+            case UnresponsiveInstanceTrigger unresponsive:
+                AutomationUnionStjHelper.WriteNullableGuid(writer, "instance_id", unresponsive.InstanceId);
+                writer.WriteNumber("silent_seconds", unresponsive.SilentSeconds);
+                break;
+
+            case StatusDurationTrigger statusDuration:
+                AutomationUnionStjHelper.WriteNullableGuid(writer, "instance_id", statusDuration.InstanceId);
+                writer.WriteString("status", AutomationUnionStjHelper.InstanceStatusWireName(statusDuration.Status));
+                writer.WriteNumber("duration_seconds", statusDuration.DurationSeconds);
+                break;
+
             case SustainedMetricTrigger sustained:
                 writer.WriteString("metric", sustained.Metric);
                 AutomationUnionStjHelper.WriteNullableGuid(writer, "instance_id", sustained.InstanceId);
@@ -338,7 +491,10 @@ internal sealed class AutomationActionStjConverter : global::System.Text.Json.Se
     {
         "instance.restart",
         "instance.stop",
+        "instance.maintenance",
+        "instance.restart_suppression",
         "notification",
+        "audit.record",
         "plan.confirmation"
     };
 
@@ -371,7 +527,10 @@ internal sealed class AutomationActionStjConverter : global::System.Text.Json.Se
         {
             "instance.restart" => new RestartInstanceAction(),
             "instance.stop" => new StopInstanceAction(),
+            "instance.maintenance" => new MaintenanceStateAction(),
+            "instance.restart_suppression" => new RestartSuppressionAction(),
             "notification" => new NotificationAction(),
+            "audit.record" => new AuditRecordAction(),
             "plan.confirmation" => new ConfirmationPlanAction(),
             _ => throw AutomationUnionStjHelper.UnknownDiscriminator(
                 nameof(AutomationAction),
@@ -391,10 +550,27 @@ internal sealed class AutomationActionStjConverter : global::System.Text.Json.Se
                 stop.InstanceId = AutomationUnionStjHelper.ReadNullableGuid(obj, "instance_id");
                 break;
 
+            case MaintenanceStateAction maintenance:
+                maintenance.InstanceId = AutomationUnionStjHelper.ReadNullableGuid(obj, "instance_id");
+                maintenance.DurationSeconds = AutomationUnionStjHelper.ReadIntOrDefault(obj, "duration_seconds", maintenance.DurationSeconds);
+                maintenance.Reason = AutomationUnionStjHelper.ReadStringOrDefault(obj, "reason", maintenance.Reason);
+                break;
+
+            case RestartSuppressionAction restartSuppression:
+                restartSuppression.InstanceId = AutomationUnionStjHelper.ReadNullableGuid(obj, "instance_id");
+                restartSuppression.DurationSeconds = AutomationUnionStjHelper.ReadIntOrDefault(obj, "duration_seconds", restartSuppression.DurationSeconds);
+                restartSuppression.Reason = AutomationUnionStjHelper.ReadStringOrDefault(obj, "reason", restartSuppression.Reason);
+                break;
+
             case NotificationAction notification:
                 notification.Title = AutomationUnionStjHelper.ReadStringOrDefault(obj, "title", notification.Title);
                 notification.Message = AutomationUnionStjHelper.ReadStringOrDefault(obj, "message", notification.Message);
                 notification.Severity = AutomationUnionStjHelper.ReadStringOrDefault(obj, "severity", notification.Severity);
+                break;
+
+            case AuditRecordAction auditRecord:
+                auditRecord.Message = AutomationUnionStjHelper.ReadStringOrDefault(obj, "message", auditRecord.Message);
+                auditRecord.Severity = AutomationUnionStjHelper.ReadStringOrDefault(obj, "severity", auditRecord.Severity);
                 break;
 
             case ConfirmationPlanAction confirmation:
@@ -432,10 +608,27 @@ internal sealed class AutomationActionStjConverter : global::System.Text.Json.Se
                 AutomationUnionStjHelper.WriteNullableGuid(writer, "instance_id", stop.InstanceId);
                 break;
 
+            case MaintenanceStateAction maintenance:
+                AutomationUnionStjHelper.WriteNullableGuid(writer, "instance_id", maintenance.InstanceId);
+                writer.WriteNumber("duration_seconds", maintenance.DurationSeconds);
+                writer.WriteString("reason", maintenance.Reason);
+                break;
+
+            case RestartSuppressionAction restartSuppression:
+                AutomationUnionStjHelper.WriteNullableGuid(writer, "instance_id", restartSuppression.InstanceId);
+                writer.WriteNumber("duration_seconds", restartSuppression.DurationSeconds);
+                writer.WriteString("reason", restartSuppression.Reason);
+                break;
+
             case NotificationAction notification:
                 writer.WriteString("title", notification.Title);
                 writer.WriteString("message", notification.Message);
                 writer.WriteString("severity", notification.Severity);
+                break;
+
+            case AuditRecordAction auditRecord:
+                writer.WriteString("message", auditRecord.Message);
+                writer.WriteString("severity", auditRecord.Severity);
                 break;
 
             case ConfirmationPlanAction confirmation:
@@ -507,6 +700,27 @@ internal static class AutomationUnionStjHelper
         if (token.ValueKind != StjJsonValueKind.Number)
             throw WrongType(name, "number");
         return token.GetDouble();
+    }
+
+    // Derived from the same naming policy the InstanceStatus converter uses, so a status added to
+    // the enum reads and writes here identically to everywhere else without a second table to keep.
+    private static readonly Dictionary<string, InstanceStatus> InstanceStatusByWireName =
+        Enum.GetValues<InstanceStatus>().ToDictionary(InstanceStatusWireName, StringComparer.Ordinal);
+
+    internal static string InstanceStatusWireName(InstanceStatus status) =>
+        StjJsonNamingPolicy.SnakeCaseLower.ConvertName(status.ToString());
+
+    internal static InstanceStatus ReadInstanceStatusOrDefault(StjJsonElement obj, string name, InstanceStatus fallback)
+    {
+        if (!TryGetValue(obj, name, out var token))
+            return fallback;
+        if (token.ValueKind != StjJsonValueKind.String ||
+            !InstanceStatusByWireName.TryGetValue(token.GetString() ?? string.Empty, out var value))
+        {
+            throw WrongType(name, $"instance status ({string.Join(", ", InstanceStatusByWireName.Keys)})");
+        }
+
+        return value;
     }
 
     internal static Guid? ReadNullableGuid(StjJsonElement obj, string name)

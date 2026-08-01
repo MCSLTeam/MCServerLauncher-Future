@@ -169,11 +169,18 @@ internal static class AutomationPolicyValidator
     [
         "system_cpu",
         "system_memory_percent",
+        "system_disk_percent",
         "instance_cpu",
         "instance_memory_bytes"
     ];
 
     private static readonly string[] KnownSeverities = ["Info", "Success", "Warning", "Error"];
+
+    /// <summary>
+    /// The audit history is a bounded log shared by every principal, so one policy cannot be allowed
+    /// to spend its budget on a single message.
+    /// </summary>
+    internal const int MaximumAuditMessageLength = 1024;
 
     internal static ImmutableArray<AutomationPolicyDiagnostic> Validate(AutomationPolicySet document)
     {
@@ -250,6 +257,20 @@ internal static class AutomationPolicyValidator
             case UnexpectedExitTrigger:
                 break;
 
+            case UnresponsiveInstanceTrigger unresponsive:
+                if (unresponsive.SilentSeconds <= 0)
+                    diagnostics.Add(Diagnostic(policy, "automation.trigger_invalid", "The silence threshold must be positive."));
+                break;
+
+            case StatusDurationTrigger statusDuration:
+                if (statusDuration.DurationSeconds < 1)
+                    diagnostics.Add(Diagnostic(policy, "automation.trigger_invalid", "The status duration must be at least 1 second."));
+                // An undefined status can never equal an observed one, so the policy would be a
+                // rule that silently never fires rather than a rule that is off.
+                if (!Enum.IsDefined(statusDuration.Status))
+                    diagnostics.Add(Diagnostic(policy, "automation.trigger_invalid", $"Unknown instance status '{statusDuration.Status}'."));
+                break;
+
             case SustainedMetricTrigger sustained:
                 if (!KnownMetrics.Contains(sustained.Metric, StringComparer.Ordinal))
                     diagnostics.Add(Diagnostic(policy, "automation.trigger_invalid", $"Unknown metric '{sustained.Metric}'."));
@@ -296,6 +317,23 @@ internal static class AutomationPolicyValidator
             case StopInstanceAction:
                 break;
 
+            case MaintenanceStateAction maintenance:
+                ValidateSuppressionDuration(policy, maintenance.DurationSeconds, diagnostics);
+                break;
+
+            case RestartSuppressionAction restartSuppression:
+                ValidateSuppressionDuration(policy, restartSuppression.DurationSeconds, diagnostics);
+                break;
+
+            case AuditRecordAction auditRecord:
+                if (string.IsNullOrWhiteSpace(auditRecord.Message))
+                    diagnostics.Add(Diagnostic(policy, "automation.action_invalid", "An audit record needs a message."));
+                if (auditRecord.Message.Length > MaximumAuditMessageLength)
+                    diagnostics.Add(Diagnostic(policy, "automation.action_invalid", $"An audit message cannot exceed {MaximumAuditMessageLength} characters."));
+                if (!KnownSeverities.Contains(auditRecord.Severity, StringComparer.Ordinal))
+                    diagnostics.Add(Diagnostic(policy, "automation.action_invalid", $"Unknown audit severity '{auditRecord.Severity}'."));
+                break;
+
             case NotificationAction notification:
                 if (string.IsNullOrWhiteSpace(notification.Title) || string.IsNullOrWhiteSpace(notification.Message))
                     diagnostics.Add(Diagnostic(policy, "automation.action_invalid", "A notification needs a title and a message."));
@@ -322,6 +360,21 @@ internal static class AutomationPolicyValidator
                 diagnostics.Add(Diagnostic(policy, "automation.action_invalid", "Unknown action type."));
                 break;
         }
+    }
+
+    /// <summary>
+    /// A suppression holds an instance out of automated hands and nothing expires it early, so a
+    /// mistyped duration is refused rather than left to hold the instance indefinitely.
+    /// </summary>
+    private static void ValidateSuppressionDuration(
+        AutomationPolicy policy,
+        int durationSeconds,
+        ImmutableArray<AutomationPolicyDiagnostic>.Builder diagnostics)
+    {
+        if (durationSeconds < 1)
+            diagnostics.Add(Diagnostic(policy, "automation.action_invalid", "The suppression duration must be at least 1 second."));
+        if (durationSeconds > AutomationEvaluator.MaximumSuppression.TotalSeconds)
+            diagnostics.Add(Diagnostic(policy, "automation.action_invalid", $"The suppression duration cannot exceed {AutomationEvaluator.MaximumSuppression.TotalDays} days."));
     }
 
     private static AutomationPolicyDiagnostic Diagnostic(AutomationPolicy policy, string code, string message) =>
