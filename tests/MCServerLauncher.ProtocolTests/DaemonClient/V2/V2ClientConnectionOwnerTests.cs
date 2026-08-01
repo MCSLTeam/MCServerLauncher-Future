@@ -176,18 +176,18 @@ public sealed class V2ClientConnectionOwnerTests
     {
         var factory = new ControlledSessionFactory();
         await using var owner = Owner(factory);
-        using var releaseFirstObserver = new ManualResetEventSlim();
+        var releaseFirstObserver = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var firstObserverEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var secondObserverStates = new ConcurrentQueue<DaemonConnectionState>();
         var readyObserved = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        owner.StateChanged += state =>
+        owner.StateChanged += async state =>
         {
             if (state != DaemonConnectionState.Connecting)
-                return Task.CompletedTask;
+                return;
             firstObserverEntered.TrySetResult();
-            if (!releaseFirstObserver.Wait(Timeout))
-                throw new TimeoutException("The first state observer was not released.");
-            return Task.CompletedTask;
+            // Hold the drain asynchronously: a suspended observer must delay later observers exactly
+            // as a blocked one would, without parking the drain worker.
+            await releaseFirstObserver.Task.WaitAsync(Timeout);
         };
         owner.StateChanged += state =>
         {
@@ -206,7 +206,7 @@ public sealed class V2ClientConnectionOwnerTests
         }
         finally
         {
-            releaseFirstObserver.Set();
+            releaseFirstObserver.TrySetResult();
         }
         await readyObserved.Task.WaitAsync(Timeout);
 
@@ -239,7 +239,7 @@ public sealed class V2ClientConnectionOwnerTests
         Assert.True((await connecting.WaitAsync(Timeout)).IsErr(out var error));
         Assert.Equal("connection.closed", error!.Code);
         Assert.Equal(DaemonConnectionState.Closed, owner.ConnectionState);
-        await owner.DisposeAsync();
+        await owner.DisposeAsync().AsTask().WaitAsync(Timeout);
     }
 
     [Fact]
@@ -1511,7 +1511,8 @@ public sealed class V2ClientConnectionOwnerTests
         {
             if (timeout.IsCompleted)
                 throw new TimeoutException("The expected owner state was not reached.");
-            await Task.Yield();
+            // Paced, not spun: a bare Task.Yield loop monopolises a scheduler slot for the whole wait.
+            await Task.Delay(1).ConfigureAwait(false);
         }
     }
 

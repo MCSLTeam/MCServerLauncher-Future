@@ -6,6 +6,7 @@ using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.API.Protocol;
 using MCServerLauncher.DaemonClient.Connection.V2;
 using MCServerLauncher.DaemonClient.Application;
+using MCServerLauncher.ProtocolTests.Helpers;
 using RustyOptions;
 
 namespace MCServerLauncher.ProtocolTests.DaemonClient.V2;
@@ -176,16 +177,15 @@ public sealed class V2ClientConnectionCoreTests
         var core = new V2ClientConnectionCore(transport, TimeProvider.System, Timeout);
         using var barrier = new Barrier(2);
         Result<PingResult, DaemonError>? raced = null;
-        var worker = new Thread(() =>
+        var worker = OffPool.Run(() =>
         {
-            barrier.SignalAndWait();
+            Assert.True(barrier.SignalAndWait(Timeout));
             raced = core.InvokeAsync(Descriptor<EmptyRequest, PingResult>("mcsl.daemon.ping"), new EmptyRequest())
                 .GetAwaiter().GetResult();
         });
-        worker.Start();
         core.Close();
-        barrier.SignalAndWait();
-        worker.Join();
+        Assert.True(barrier.SignalAndWait(Timeout));
+        await worker.WaitAsync(Timeout);
         var results = new List<Result<PingResult, DaemonError>> { raced!.Value };
         for (var index = 0; index < 32; index++)
         {
@@ -202,10 +202,10 @@ public sealed class V2ClientConnectionCoreTests
         var transport = new SynchronouslyEnteringTransport();
         var core = new V2ClientConnectionCore(transport, TimeProvider.System, Timeout,
             () => JsonRpcRequestId.FromString(Guid.NewGuid().ToString("D")));
-        var admitted = Task.Run(() => core.InvokeAsync(
+        var admitted = OffPool.RunAsync(() => core.InvokeAsync(
             Descriptor<EmptyRequest, PingResult>("mcsl.daemon.ping"), new EmptyRequest()));
-        Assert.True(transport.Entered.Wait(TimeSpan.FromSeconds(5)));
-        var close = Task.Run(core.Close);
+        await transport.Entered.WaitAsync(TimeSpan.FromSeconds(5));
+        var close = OffPool.Run(core.Close);
         Assert.False(close.IsCompleted);
 
         transport.ReleaseReturn.Set();
@@ -507,12 +507,12 @@ public sealed class V2ClientConnectionCoreTests
         var session = DownloadSession();
         Assert.True(core.TryRegisterDownloadSession(session, out _));
 
-        var invoke = Task.Run(() => core.ReadDownloadChunkAsync(
+        var invoke = OffPool.RunAsync(() => core.ReadDownloadChunkAsync(
             new DownloadChunkRequest(session.SessionId, 0, 1),
             CancellationToken.None));
         await transport.Entered.WaitAsync(TimeSpan.FromSeconds(5));
 
-        await Task.Run(core.Close).WaitAsync(TimeSpan.FromSeconds(5));
+        await OffPool.Run(core.Close).WaitAsync(TimeSpan.FromSeconds(5));
         await transport.TokenCanceled.WaitAsync(TimeSpan.FromSeconds(5));
         var read = await invoke.WaitAsync(TimeSpan.FromSeconds(5));
         Assert.True(read.IsErr(out var error));
@@ -712,7 +712,7 @@ public sealed class V2ClientConnectionCoreTests
         var transport = new CancellationBlockingBinaryTransport();
         var core = new V2ClientConnectionCore(transport, TimeProvider.System, Timeout);
         var session = Guid.NewGuid();
-        var upload = Task.Run(() => core.SendUploadChunkAsync(
+        var upload = OffPool.RunAsync(() => core.SendUploadChunkAsync(
             new UploadChunkRequest(session, 0, ImmutableArray.Create<byte>(1)),
             1,
             CancellationToken.None));
@@ -720,7 +720,7 @@ public sealed class V2ClientConnectionCoreTests
 
         try
         {
-            var close = Task.Run(core.Close);
+            var close = OffPool.Run(core.Close);
             await close.WaitAsync(TimeSpan.FromSeconds(5));
             await transport.TokenCanceled.WaitAsync(TimeSpan.FromSeconds(5));
         }
@@ -744,13 +744,13 @@ public sealed class V2ClientConnectionCoreTests
     {
         var transport = new CloseBlockingCancellationBinaryTransport();
         var core = new V2ClientConnectionCore(transport, TimeProvider.System, Timeout);
-        var upload = Task.Run(() => core.SendUploadChunkAsync(
+        var upload = OffPool.RunAsync(() => core.SendUploadChunkAsync(
             new UploadChunkRequest(Guid.NewGuid(), 0, ImmutableArray.Create<byte>(1)),
             1,
             CancellationToken.None));
         await transport.Entered.WaitAsync(TimeSpan.FromSeconds(5));
 
-        var close = Task.Run(core.Close);
+        var close = OffPool.Run(core.Close);
         try
         {
             await transport.CloseBlocked.WaitAsync(TimeSpan.FromSeconds(5));
@@ -1071,7 +1071,7 @@ public sealed class V2ClientConnectionCoreTests
                 throw new TimeoutException("The reentrant close callback was not released.");
         };
 
-        var winningClose = Task.Run(core.Close);
+        var winningClose = OffPool.Run(core.Close);
         await callbackEntered.Task.WaitAsync(TimeSpan.FromSeconds(5));
         core.Close();
         Assert.False(core.Closed.IsCompleted);
@@ -1314,7 +1314,8 @@ public sealed class V2ClientConnectionCoreTests
     {
         private readonly TaskCompletionSource _completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly TaskCompletionSource _tokenCanceled = new(TaskCreationOptions.RunContinuationsAsynchronously);
-        public ManualResetEventSlim Entered { get; } = new();
+        private readonly TaskCompletionSource _entered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public Task Entered => _entered.Task;
         public ManualResetEventSlim ReleaseReturn { get; } = new();
         public Task TokenCanceled => _tokenCanceled.Task;
         public int SendCount;
@@ -1323,7 +1324,7 @@ public sealed class V2ClientConnectionCoreTests
         {
             Interlocked.Increment(ref SendCount);
             cancellationToken.Register(() => _tokenCanceled.TrySetResult());
-            Entered.Set();
+            _entered.TrySetResult();
             if (!ReleaseReturn.Wait(TimeSpan.FromSeconds(5))) throw new TimeoutException();
             return new(_completion.Task);
         }

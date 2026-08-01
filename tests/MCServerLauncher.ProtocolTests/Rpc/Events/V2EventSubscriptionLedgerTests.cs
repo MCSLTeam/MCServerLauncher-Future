@@ -9,6 +9,7 @@ using MCServerLauncher.Daemon.Remote.Rpc.Catalog;
 using MCServerLauncher.Daemon.Remote.Rpc.Dispatch;
 using MCServerLauncher.Daemon.Remote.Rpc.Events;
 using MCServerLauncher.Daemon.Remote.Rpc.Transport;
+using MCServerLauncher.ProtocolTests.Helpers;
 
 namespace MCServerLauncher.ProtocolTests.Rpc.Events;
 
@@ -228,7 +229,8 @@ public sealed class V2EventSubscriptionLedgerTests
             "mcsl.event.instance.log",
             Meta("{\"instance_id\":\"11111111-1111-1111-1111-111111111111\"}"));
 
-        var subscribe = Task.Run(() => ledger.Subscribe(request));
+        // Subscribe blocks inside the synchronous canonicalizer until the test releases it.
+        var subscribe = OffPool.Run(() => ledger.Subscribe(request));
         await canonicalizer.Entered.Task.WaitAsync(TimeSpan.FromSeconds(10));
         ledger.Close();
         canonicalizer.Release.TrySetResult();

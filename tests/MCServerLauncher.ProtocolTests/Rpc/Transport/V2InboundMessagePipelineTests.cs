@@ -17,6 +17,10 @@ public sealed class V2InboundMessagePipelineTests
 {
     private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(5);
 
+    // Deliberately far larger than Timeout: this guard exists to turn a wedged pump into a named
+    // failure instead of a silent hang, not to police how long a healthy drain takes.
+    private static readonly TimeSpan DrainTimeout = TimeSpan.FromSeconds(30);
+
     [Fact]
     public async Task Text_NoResponseDoesNotEnqueue_AndPlainResponseIsSentUnchanged()
     {
@@ -34,8 +38,8 @@ public sealed class V2InboundMessagePipelineTests
         Assert.Equal(V2OutboundFrameKind.Text, sent.Kind);
         Assert.Equal(-32700, JsonRpcWireParser.ParseErrorResponse(sent.Payload.AsSpan()).Error.Code);
 
-        await fixture.Owner.CompleteAsync();
-        await pump;
+        await DrainAsync(fixture.Owner.CompleteAsync(), "The graceful connection completion");
+        await DrainAsync(pump, "The outbound pump");
     }
 
     [Theory]
@@ -64,8 +68,8 @@ public sealed class V2InboundMessagePipelineTests
         Assert.True(fixture.Application.DownloadData.AsSpan().SequenceEqual(
             binary.Payload[BinaryFrameCodec.HeaderSize..].AsSpan()));
 
-        await fixture.Owner.CompleteAsync();
-        await pump;
+        await DrainAsync(fixture.Owner.CompleteAsync(), "The graceful connection completion");
+        await DrainAsync(pump, "The outbound pump");
     }
 
     [Theory]
@@ -108,8 +112,8 @@ public sealed class V2InboundMessagePipelineTests
             Assert.Equal("mcsl.daemon", acknowledgement.Error.Data.ExecutionOwner!.Id);
         }
 
-        await fixture.Owner.AbortAsync();
-        await pump;
+        await DrainAsync(fixture.Owner.AbortAsync(), "The connection abort");
+        await DrainAsync(pump, "The outbound pump");
     }
 
     [Fact]
@@ -226,6 +230,18 @@ public sealed class V2InboundMessagePipelineTests
 
         Assert.Equal(expectedReason, fixture.Owner.CloseReason);
         Assert.Equal(expectedCause, fixture.Owner.DiagnosticStopCause);
+    }
+
+    private static async Task DrainAsync(Task work, string what)
+    {
+        try
+        {
+            await work.WaitAsync(DrainTimeout);
+        }
+        catch (TimeoutException)
+        {
+            Assert.Fail($"{what} did not finish within {DrainTimeout.TotalSeconds:0}s.");
+        }
     }
 
     private static byte[] Frame(BinaryFrameKind kind, Guid sessionId, long offset, ReadOnlySpan<byte> payload)

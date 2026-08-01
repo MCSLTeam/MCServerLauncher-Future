@@ -6,6 +6,7 @@ using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.API.State;
 using MCServerLauncher.DaemonClient.State;
+using MCServerLauncher.ProtocolTests.Helpers;
 
 namespace MCServerLauncher.ProtocolTests.DaemonClient.V2;
 
@@ -577,28 +578,27 @@ public sealed class RemoteInstanceCatalogMirrorTests
     }
 
     [Fact]
-    public void BeginReceiveFullAndCloseRace_OldGenerationNeverPublishesAndCloseIsTerminal()
+    public async Task BeginReceiveFullAndCloseRace_OldGenerationNeverPublishesAndCloseIsTerminal()
     {
         var mirror = ReadyMirror(out var oldGeneration, 0, Item(FirstId, "stable"));
         Assert.Equal(RemoteInstanceCatalogTransition.NeedsResync,
             mirror.ReceiveChange(oldGeneration, Upsert(2, FirstId, "force-resync")));
         var before = mirror.Current;
         const int participantCount = 4;
-        using var ready = new CountdownEvent(participantCount);
+        using var ready = new SemaphoreSlim(0);
         using var start = new ManualResetEventSlim();
-        using var finished = new CountdownEvent(participantCount);
         var failures = new ConcurrentQueue<Exception>();
         var transitions = new ConcurrentQueue<RemoteInstanceCatalogTransition>();
         long newGeneration = 0;
         var beginClosed = 0;
 
-        Thread CreateParticipant(ThreadStart operation)
+        Task CreateParticipant(Action operation)
         {
-            return new Thread(() =>
+            return OffPool.Run(() =>
             {
                 try
                 {
-                    ready.Signal();
+                    ready.Release();
                     if (!start.Wait(TimeSpan.FromSeconds(10)))
                         throw new TimeoutException("The catalog race start gate was not released.");
                     operation();
@@ -607,18 +607,10 @@ public sealed class RemoteInstanceCatalogMirrorTests
                 {
                     failures.Enqueue(exception);
                 }
-                finally
-                {
-                    finished.Signal();
-                }
-            })
-            {
-                IsBackground = true,
-                Name = "RemoteInstanceCatalogMirror race participant"
-            };
+            });
         }
 
-        var threads = new[]
+        var participants = new[]
         {
             CreateParticipant(() =>
             {
@@ -639,25 +631,25 @@ public sealed class RemoteInstanceCatalogMirrorTests
         };
 
         var allFinished = false;
-        var allJoined = false;
         try
         {
-            foreach (var thread in threads)
-                thread.Start();
+            for (var poised = 0; poised < participantCount; poised++)
+            {
+                Assert.True(
+                    await ready.WaitAsync(TimeSpan.FromSeconds(10)),
+                    "Race participants did not become ready.");
+            }
 
-            Assert.True(ready.Wait(TimeSpan.FromSeconds(10)), "Race participants did not become ready.");
             start.Set();
-            allFinished = finished.Wait(TimeSpan.FromSeconds(10));
+            allFinished = await AllCompletedAsync(participants, TimeSpan.FromSeconds(10));
         }
         finally
         {
             start.Set();
-            allFinished = finished.Wait(TimeSpan.FromSeconds(10)) || allFinished;
-            allJoined = JoinAll(threads, TimeSpan.FromSeconds(2));
+            allFinished = await AllCompletedAsync(participants, TimeSpan.FromSeconds(10)) || allFinished;
         }
 
         Assert.True(allFinished, "Race participants did not finish within the bounded timeout.");
-        Assert.True(allJoined, "Race participant threads did not terminate within the bounded timeout.");
         Assert.Empty(failures);
         Assert.Equal(2, transitions.Count);
         Assert.All(transitions, transition => Assert.Contains(
@@ -696,7 +688,7 @@ public sealed class RemoteInstanceCatalogMirrorTests
     }
 
     [Fact]
-    public void ConcurrentReadersWithFullDeltaAndReconnect_NeverObserveTornCatalogs()
+    public async Task ConcurrentReadersWithFullDeltaAndReconnect_NeverObserveTornCatalogs()
     {
         const int readerCount = 32;
         const int cycles = 80;
@@ -704,26 +696,25 @@ public sealed class RemoteInstanceCatalogMirrorTests
             0,
             Item(FirstId, Marker(0), Marker(0)),
             Item(SecondId, Marker(0), Marker(0)));
-        using var ready = new CountdownEvent(readerCount);
+        using var ready = new SemaphoreSlim(0);
         using var start = new ManualResetEventSlim();
-        using var initialRead = new CountdownEvent(readerCount);
+        using var initialRead = new SemaphoreSlim(0);
         using var stop = new ManualResetEventSlim();
-        using var finished = new CountdownEvent(readerCount);
         var failures = new ConcurrentQueue<Exception>();
         var observedPublicationChange = 0;
-        var readers = Enumerable.Range(0, readerCount).Select(readerIndex => new Thread(() =>
+        var readers = Enumerable.Range(0, readerCount).Select(readerIndex => OffPool.Run(() =>
         {
             var initialReadSignaled = false;
             try
             {
-                ready.Signal();
+                ready.Release();
                 if (!start.Wait(TimeSpan.FromSeconds(10)))
                     throw new TimeoutException($"Reader {readerIndex} did not receive the start signal.");
 
                 var startingHandle = mirror.Current;
                 var startingVersion = startingHandle.Version;
                 AssertCompleteHandle(startingHandle);
-                initialRead.Signal();
+                initialRead.Release();
                 initialReadSignaled = true;
                 var observed = false;
                 while (!stop.IsSet)
@@ -744,34 +735,24 @@ public sealed class RemoteInstanceCatalogMirrorTests
             finally
             {
                 if (!initialReadSignaled)
-                {
-                    try
-                    {
-                        initialRead.Signal();
-                    }
-                    catch (InvalidOperationException)
-                    {
-                    }
-                }
-                finished.Signal();
+                    initialRead.Release();
             }
-        })
-        {
-            IsBackground = true,
-            Name = $"RemoteInstanceCatalogMirror reader {readerIndex}"
-        }).ToArray();
+        })).ToArray();
 
         Exception? writerFailure = null;
         var allFinished = false;
-        var allJoined = false;
         try
         {
-            foreach (var reader in readers)
-                reader.Start();
+            for (var poised = 0; poised < readerCount; poised++)
+                Assert.True(await ready.WaitAsync(TimeSpan.FromSeconds(10)), "Readers did not become ready.");
 
-            Assert.True(ready.Wait(TimeSpan.FromSeconds(10)), "Readers did not become ready.");
             start.Set();
-            Assert.True(initialRead.Wait(TimeSpan.FromSeconds(10)), "Readers did not capture the initial publication.");
+            for (var read = 0; read < readerCount; read++)
+            {
+                Assert.True(
+                    await initialRead.WaitAsync(TimeSpan.FromSeconds(10)),
+                    "Readers did not capture the initial publication.");
+            }
 
             for (var cycle = 1; cycle <= cycles; cycle++)
             {
@@ -792,7 +773,7 @@ public sealed class RemoteInstanceCatalogMirrorTests
             }
 
             Assert.True(
-                SpinWait.SpinUntil(
+                await SpinUntilAsync(
                     () => Volatile.Read(ref observedPublicationChange) == readerCount,
                     TimeSpan.FromSeconds(10)),
                 "Every reader must overlap the writer and observe a publication change.");
@@ -805,12 +786,10 @@ public sealed class RemoteInstanceCatalogMirrorTests
         {
             start.Set();
             stop.Set();
-            allFinished = finished.Wait(TimeSpan.FromSeconds(10));
-            allJoined = JoinAll(readers, TimeSpan.FromSeconds(2));
+            allFinished = await AllCompletedAsync(readers, TimeSpan.FromSeconds(10));
         }
 
         Assert.True(allFinished, "Reader threads did not finish within the bounded timeout.");
-        Assert.True(allJoined, "Reader threads did not terminate within the bounded timeout.");
         if (writerFailure is not null)
             ExceptionDispatchInfo.Capture(writerFailure).Throw();
         Assert.Empty(failures);
@@ -863,16 +842,30 @@ public sealed class RemoteInstanceCatalogMirrorTests
         }
     }
 
-    private static bool JoinAll(IEnumerable<Thread> threads, TimeSpan timeout)
+    private static async Task<bool> AllCompletedAsync(Task[] workers, TimeSpan timeout)
     {
-        var stopwatch = Stopwatch.StartNew();
-        var allJoined = true;
-        foreach (var thread in threads)
+        try
         {
-            var remaining = timeout - stopwatch.Elapsed;
-            allJoined &= remaining > TimeSpan.Zero && thread.Join(remaining);
+            await Task.WhenAll(workers).WaitAsync(timeout);
+            return true;
         }
-        return allJoined;
+        catch (TimeoutException)
+        {
+            return false;
+        }
+    }
+
+    private static async Task<bool> SpinUntilAsync(Func<bool> condition, TimeSpan timeout)
+    {
+        var deadline = Stopwatch.StartNew();
+        while (!condition())
+        {
+            if (deadline.Elapsed > timeout)
+                return false;
+            await Task.Delay(1).ConfigureAwait(false);
+        }
+
+        return true;
     }
 
     private static InstanceCatalogResult Full(long version, params InstanceCatalogItem[] items) =>
