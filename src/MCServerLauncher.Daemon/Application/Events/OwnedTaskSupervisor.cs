@@ -132,8 +132,9 @@ internal sealed class OwnedTaskSupervisor(
     private async Task DriveStopAsync(TaskCompletionSource completion)
     {
         // Yield so Schedule()'d work that already signalled "started" can finish installing
-        // CancellationToken registrations before Cancel runs under a loaded thread pool.
-        await Task.Yield();
+        // CancellationToken registrations before Cancel runs under a loaded thread pool. The stop
+        // driver belongs on the pool, not on whatever context called RequestStop().
+        await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
 
         try
         {

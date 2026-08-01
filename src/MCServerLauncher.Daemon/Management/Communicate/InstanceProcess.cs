@@ -214,7 +214,7 @@ public class InstanceProcess : DisposableObject
         }
         catch
         {
-            await TerminateAndDrainAsync();
+            await TerminateAndDrainAsync().ConfigureAwait(false);
             throw;
         }
     }
@@ -253,8 +253,9 @@ public class InstanceProcess : DisposableObject
 
     private async Task TransitionAfterStartAsync(InstanceLifecycleSignal signal)
     {
-        // Yield so StartAsync can return while status is still Starting.
-        await Task.Yield();
+        // Yield so StartAsync can return while status is still Starting. The transition runs on the
+        // pool, never on the caller's context.
+        await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
         try
         {
             await ApplyLifecycleSignalAsync(signal).ConfigureAwait(false);
@@ -271,7 +272,7 @@ public class InstanceProcess : DisposableObject
         if (completion is null)
         {
             if (_process is not null)
-                await _process.WaitForExitAsync(ct);
+                await _process.WaitForExitAsync(ct).ConfigureAwait(false);
             await AwaitTrackedPublicationsAsync(ct).ConfigureAwait(false);
             return;
         }
@@ -457,7 +458,7 @@ public class InstanceProcess : DisposableObject
         {
             while (true)
             {
-                var line = await reader.ReadLineAsync(CancellationToken.None);
+                var line = await reader.ReadLineAsync(CancellationToken.None).ConfigureAwait(false);
                 if (line is null)
                     return;
 
@@ -873,8 +874,9 @@ public class InstanceProcess : DisposableObject
 
     private static async Task PublishAfterAsync(Task previous, Func<Task> publish, string description)
     {
-        // Never invoke callbacks while the lifecycle-state lock is held.
-        await Task.Yield();
+        // Never invoke callbacks while the lifecycle-state lock is held, and never on the queueing
+        // thread's context: each link resumes on the pool.
+        await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
         try
         {
             await previous.ConfigureAwait(false);

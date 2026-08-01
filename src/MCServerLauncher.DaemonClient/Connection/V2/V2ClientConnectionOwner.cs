@@ -208,7 +208,9 @@ internal sealed class V2ClientConnectionOwner : IAsyncDisposable
 
     private async Task RunLifecycleAsync()
     {
-        await Task.Yield();
+        // Started under _gate from ConnectAsync: hand off to the pool so the lifecycle worker never
+        // inherits the connecting caller's context.
+        await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
         try
         {
             while (!_lifetimeCancellation.IsCancellationRequested)
