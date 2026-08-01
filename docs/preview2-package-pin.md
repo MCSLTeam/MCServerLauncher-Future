@@ -256,12 +256,25 @@ nupkgs above.
 ### Coverage gap closed in MCP-6
 
 The published-host suite no longer stops at plugin load, RPC/event serving,
-and shutdown behaviour. It now drives `mcsl.backup.*` end to end against a
-live daemon: it creates a cold backup, polls the operation while it is still
-non-terminal, cancels a real restore mid-flight and asserts the instance
-working directory was not swapped, then re-runs the restore to success. No
-daemon-side fake operation fixture was needed; the archived payload is sized
-so the restore is genuinely long enough to cancel.
+and shutdown behaviour. It now runs and polls a real long operation against a
+live daemon. Covered, exactly:
+
+- `mcsl.backup.create` against a stopped instance, polled through a running
+  snapshot to `succeeded`.
+- `mcsl.backup.list`, cross-checked against the operation's result reference.
+- `mcsl.backup.restore.plan` → `.confirm` → `.execute`, cancelled during the
+  extraction stage, asserting the outcome is `cancelled` and the instance
+  working directory was not swapped.
+- A second restore of the same archive, run to `succeeded`.
+
+Not covered: `mcsl.backup.prune`, and `Maintenance: true` backup of a running
+instance. No daemon-side fake operation fixture was needed; the archived
+payload is sized so extraction is genuinely long enough to cancel within.
+
+The cancelled-means-no-swap assertion holds because the coordinator honours
+the spec section 7 commit point: an executor that has committed its side
+effects keeps its own terminal status instead of being downgraded to
+cancelled.
 
 Distribution is internal-only. Public distribution requires explicitly
 reopening the package gate.

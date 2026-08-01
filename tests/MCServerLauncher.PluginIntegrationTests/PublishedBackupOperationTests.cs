@@ -75,9 +75,9 @@ public sealed class PublishedBackupOperationTests(ITestOutputHelper output)
 
         var createObserved = new List<OperationSnapshot>();
         var createTerminal = await PollAsync(client, createAccepted!.OperationId, IsTerminal, PhaseTimeout, createObserved);
-        Assert.Contains(
-            createObserved,
-            snapshot => !IsTerminal(snapshot) && !IsTerminalStage(snapshot.Stage));
+        Assert.True(
+            createObserved.Any(snapshot => snapshot.Status == OperationStatus.Running),
+            $"The backup never appeared as running. Observed: {Trail(createObserved)}.");
         Assert.Equal(OperationStatus.Succeeded, createTerminal.Status);
 
         var list = await client.Backups
@@ -88,35 +88,54 @@ public sealed class PublishedBackupOperationTests(ITestOutputHelper output)
         Assert.Equal(instanceId, archive.InstanceId);
         Assert.Equal(archive.ArchiveId.ToString("D"), createTerminal.ResultReference);
         // Without the seeded payload in the archive the restore below finishes too fast to cancel,
-        // and the cancel assertion would pass for the wrong reason.
+        // and the cancel assertion would pass for the wrong reason. TotalSizeBytes is summed from
+        // the source files, so CompressedSizeBytes is the one that would catch a truncated zip.
+        var seededBytes = SeedFileCount * (long)SeedFileBytes;
         Assert.True(
-            archive.TotalSizeBytes >= SeedFileCount * (long)SeedFileBytes,
+            archive.TotalSizeBytes >= seededBytes,
             $"The archive captured only {archive.TotalSizeBytes} bytes of instance data.");
+        Assert.True(
+            archive.CompressedSizeBytes >= seededBytes,
+            $"The archive payload is only {archive.CompressedSizeBytes} bytes on disk; the restore would be too fast to cancel.");
 
         await File.WriteAllTextAsync(markerPath, MutatedMarker);
 
         var cancelledRestore = await ExecuteRestoreAsync(client, archive.ArchiveId, instanceId);
         var cancelObserved = new List<OperationSnapshot>();
-        await PollAsync(
+        // Running alone is reached at stage Resolving before the executor body runs, so waiting on
+        // it would cancel during the checksum verify and never exercise the extraction loop.
+        var extracting = await PollAsync(
             client,
             cancelledRestore.OperationId,
-            snapshot => snapshot.Status is OperationStatus.Running,
+            snapshot => snapshot.Stage == OperationStage.Extracting || IsTerminal(snapshot),
             PhaseTimeout,
             cancelObserved);
+        Assert.True(
+            extracting.Stage == OperationStage.Extracting,
+            $"The restore reached {extracting.Status}/{extracting.Stage} without extracting: "
+            + $"{extracting.ErrorCode} {extracting.ErrorMessage}. Observed: {Trail(cancelObserved)}.");
 
         var requestedAt = Stopwatch.GetTimestamp();
         var cancel = await client.Operations
             .CancelOperationAsync(new OperationCancelRequest(cancelledRestore.OperationId), CancellationToken.None)
             .WaitAsync(RequestTimeout);
         Assert.True(cancel.IsOk(out var cancelResult), cancel.IsErr(out var cancelError) ? cancelError!.Message : null);
-        Assert.True(cancelResult!.CancelRequested);
+        Assert.True(
+            cancelResult!.CancelRequested,
+            $"The restore refused the cancellation request. Observed: {Trail(cancelObserved)}.");
 
         var cancelTerminal = await PollAsync(client, cancelledRestore.OperationId, IsTerminal, PhaseTimeout, cancelObserved);
-        // The margin between this and the restore's pre-swap work is what keeps the cancel
-        // assertion below from racing; it is reported so a shrinking window is visible before
+        // The margin between this and the restore's remaining pre-swap work is what keeps the
+        // assertions below from racing; it is reported so a shrinking window is visible before
         // it starts flaking.
         output.WriteLine($"Cancel acknowledged to terminal in {Stopwatch.GetElapsedTime(requestedAt)}.");
-        Assert.Equal(OperationStatus.Cancelled, cancelTerminal.Status);
+        // Cancelled and "the swap never happened" are the same claim: the daemon marks its commit
+        // point before the swap, so a cancel landing after it reports the real outcome instead.
+        Assert.True(
+            cancelTerminal.Status == OperationStatus.Cancelled,
+            $"Expected Cancelled but got {cancelTerminal.Status}; the cancel landed after the restore's "
+            + $"commit point, so grow the seed to widen the window. Observed: {Trail(cancelObserved)}.");
+        Assert.Equal("operation.cancelled", cancelTerminal.ErrorCode);
         Assert.Equal(
             MutatedMarker,
             await File.ReadAllTextAsync(markerPath));
@@ -126,15 +145,19 @@ public sealed class PublishedBackupOperationTests(ITestOutputHelper output)
         var restoreStartedAt = Stopwatch.GetTimestamp();
         var restoreTerminal = await PollAsync(client, succeedingRestore.OperationId, IsTerminal, PhaseTimeout, restoreObserved);
         output.WriteLine($"Uncancelled restore ran for {Stopwatch.GetElapsedTime(restoreStartedAt)}.");
-        Assert.Equal(OperationStatus.Succeeded, restoreTerminal.Status);
+        Assert.True(
+            restoreTerminal.Status == OperationStatus.Succeeded,
+            $"The restore did not succeed: {restoreTerminal.ErrorCode} {restoreTerminal.ErrorMessage}. "
+            + $"Observed: {Trail(restoreObserved)}.");
+        // A failed swap or an abandoned retired tree surfaces here, not in the daemon log.
+        Assert.Null(restoreTerminal.ErrorCode);
         Assert.Equal(archive.ArchiveId.ToString("D"), restoreTerminal.ResultReference);
         Assert.Equal(
             OriginalMarker,
             await File.ReadAllTextAsync(markerPath));
 
-        var logs = await fixture.StopAndReadLogsAsync();
+        await fixture.StopAndReadLogsAsync();
         Assert.True(fixture.GracefulStopObserved, "Published daemon did not complete its console-driven graceful shutdown.");
-        Assert.DoesNotContain("restore_manual_recovery_required", logs, StringComparison.Ordinal);
     }
 
     private static async Task<BackupRestoreExecuteResult> ExecuteRestoreAsync(
@@ -186,10 +209,12 @@ public sealed class PublishedBackupOperationTests(ITestOutputHelper output)
             await Task.Delay(PollInterval);
         }
 
-        var trail = string.Join(", ", observed.Select(static snapshot => $"{snapshot.Status}/{snapshot.Stage}"));
         throw new TimeoutException(
-            $"Operation {operationId:D} did not reach the awaited state within {deadline}. Observed: {trail}.");
+            $"Operation {operationId:D} did not reach the awaited state within {deadline}. Observed: {Trail(observed)}.");
     }
+
+    private static string Trail(IEnumerable<OperationSnapshot> observed) =>
+        string.Join(", ", observed.Select(static snapshot => $"{snapshot.Status}/{snapshot.Stage}"));
 
     private static async Task<Guid> CreateStoppedInstanceAsync(
         global::MCServerLauncher.DaemonClient.DaemonClient client,
@@ -197,7 +222,9 @@ public sealed class PublishedBackupOperationTests(ITestOutputHelper output)
     {
         // The universal factory copies this file into the working directory and the passthrough
         // installer leaves it alone, so a real but empty zip creates an instance without any
-        // download, installer run, or Java process.
+        // download, installer run, or Java process. It works because InstanceVersionDetector
+        // treats an unrecognised jar as no-match and leaves the submitted config alone; if
+        // detection ever starts rejecting jars it cannot identify, this is where it breaks.
         var sourceDirectory = Path.Combine(fixture.Root, "daemon", "caches", "uploads");
         Directory.CreateDirectory(sourceDirectory);
         using (var core = ZipFile.Open(Path.Combine(sourceDirectory, "server.jar"), ZipArchiveMode.Create))
@@ -270,10 +297,4 @@ public sealed class PublishedBackupOperationTests(ITestOutputHelper output)
             or OperationStatus.Failed
             or OperationStatus.Cancelled
             or OperationStatus.Interrupted;
-
-    private static bool IsTerminalStage(OperationStage stage) =>
-        stage is OperationStage.Succeeded
-            or OperationStage.Failed
-            or OperationStage.Cancelled
-            or OperationStage.Interrupted;
 }
