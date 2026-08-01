@@ -12,6 +12,7 @@ using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils;
 using RustyOptions;
 using LegacyInstanceReport = MCServerLauncher.Common.ProtoType.Instance.InstanceReport;
+using MCServerLauncher.ProtocolTests.Helpers;
 
 namespace MCServerLauncher.ProtocolTests;
 
@@ -1622,7 +1623,8 @@ public sealed class LocalInstanceApplicationTests
         manager.ReplaceInstance(config.Uuid, instance);
         instance.BlockNextConfigRead();
 
-        var statusTask = Task.Run(() => instance.RaiseStatusChangedAsync(InstanceStatus.Running));
+        // The status callback blocks on a gated Config read; keep that off the ThreadPool too.
+        var statusTask = OffPool.RunAsync(() => instance.RaiseStatusChangedAsync(InstanceStatus.Running));
         Task<bool> removeTask;
         try
         {

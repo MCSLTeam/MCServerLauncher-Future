@@ -10,6 +10,7 @@ using MCServerLauncher.Daemon.ApplicationCore.Events;
 using MCServerLauncher.Daemon.Remote.Rpc.Catalog;
 using MCServerLauncher.Daemon.Remote.Rpc.Events;
 using MCServerLauncher.Daemon.Remote.Rpc.Transport;
+using MCServerLauncher.ProtocolTests.Helpers;
 
 namespace MCServerLauncher.ProtocolTests.Rpc.Events;
 
@@ -157,19 +158,17 @@ public sealed class V2RemoteEventBridgeTests
         var clock = new BlockingTimeProvider(DateTimeOffset.FromUnixTimeMilliseconds(1_783_677_000_000));
         var bridge = new V2RemoteEventBridge(host.Port, catalog, registry, clock);
         Assert.Equal(4, host.Port.ActiveSubscriptionCount);
-        var publish = Task.Run(async () =>
+        // Publish blocks inside BlockingTimeProvider.GetUtcNow, so it needs the same off-pool
+        // treatment the racing dispose below already has.
+        var publish = OffPool.RunAsync(async () =>
             await host.Port.PublishAsync(new InstanceLogDomainEvent(Guid.NewGuid(), "race")));
         await clock.Entered.Task.WaitAsync(TimeSpan.FromSeconds(10));
         var disposeStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var dispose = Task.Factory.StartNew(
-            () =>
-            {
-                disposeStarted.TrySetResult();
-                bridge.Dispose();
-            },
-            CancellationToken.None,
-            TaskCreationOptions.LongRunning,
-            TaskScheduler.Default);
+        var dispose = OffPool.Run(() =>
+        {
+            disposeStarted.TrySetResult();
+            bridge.Dispose();
+        });
         try
         {
             await disposeStarted.Task.WaitAsync(TimeSpan.FromSeconds(10));

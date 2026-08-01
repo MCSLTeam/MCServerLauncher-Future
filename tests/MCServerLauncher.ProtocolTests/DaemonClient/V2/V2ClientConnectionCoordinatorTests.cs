@@ -6,6 +6,7 @@ using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.DaemonClient.Connection.V2;
 using MCServerLauncher.DaemonClient.State;
+using MCServerLauncher.ProtocolTests.Helpers;
 
 namespace MCServerLauncher.ProtocolTests.DaemonClient.V2;
 
@@ -409,10 +410,10 @@ public sealed class V2ClientConnectionCoordinatorTests : IAsyncLifetime
         await MakeReadyAsync(coordinator, transport, Catalog(1, Item("one")));
         coordinator.Core.RouteText(CatalogEvent(3, "three"));
         var refetch = await transport.NextAsync();
-        using var workersReady = new CountdownEvent(3);
+        using var workersReady = new SemaphoreSlim(0);
         using var release = new ManualResetEventSlim();
         var failures = new ConcurrentQueue<Exception>();
-        var threads = new[]
+        var workers = new[]
         {
             DedicatedWorker(() => coordinator.Core.RouteText(Success(refetch, Catalog(2, Item("two")))), workersReady, release, failures),
             DedicatedWorker(() => coordinator.Core.RouteText(CatalogEvent(3, "three")), workersReady, release, failures),
@@ -421,23 +422,17 @@ public sealed class V2ClientConnectionCoordinatorTests : IAsyncLifetime
 
         try
         {
-            foreach (var thread in threads)
-                thread.Start();
+            for (var poised = 0; poised < workers.Length; poised++)
+                Assert.True(await workersReady.WaitAsync(Timeout));
 
-            Assert.True(workersReady.Wait(Timeout));
             release.Set();
-            Assert.All(threads, thread => Assert.True(thread.Join(Timeout)));
+            await Task.WhenAll(workers).WaitAsync(Timeout);
             await coordinator.CloseAsync().WaitAsync(Timeout);
         }
         finally
         {
             release.Set();
-            foreach (var thread in threads)
-            {
-                if (thread.IsAlive)
-                    thread.Join(Timeout);
-            }
-
+            await Task.WhenAll(workers).WaitAsync(Timeout);
             await coordinator.CloseAsync().WaitAsync(Timeout);
         }
 
@@ -614,17 +609,17 @@ public sealed class V2ClientConnectionCoordinatorTests : IAsyncLifetime
 
     private static byte[] Utf8(string value) => Encoding.UTF8.GetBytes(value);
 
-    private static Thread DedicatedWorker(
+    private static Task DedicatedWorker(
         Action action,
-        CountdownEvent ready,
+        SemaphoreSlim ready,
         ManualResetEventSlim release,
         ConcurrentQueue<Exception> failures)
     {
-        return new Thread(() =>
+        return OffPool.Run(() =>
         {
             try
             {
-                ready.Signal();
+                ready.Release();
                 if (!release.Wait(Timeout))
                     throw new TimeoutException("The concurrent coordinator test was not released.");
 
@@ -634,10 +629,7 @@ public sealed class V2ClientConnectionCoordinatorTests : IAsyncLifetime
             {
                 failures.Enqueue(exception);
             }
-        })
-        {
-            IsBackground = true
-        };
+        });
     }
 
     private sealed record SentRequest(string Method, string IdJson, string Json);

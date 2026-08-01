@@ -4,6 +4,7 @@ using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.Storage;
 using RustyOptions;
+using MCServerLauncher.ProtocolTests.Helpers;
 
 namespace MCServerLauncher.ProtocolTests;
 
@@ -739,7 +740,10 @@ public sealed class FileSessionCoordinatorTests
 
                 try
                 {
-                    secondResult.TrySetResult(Task.Run(() => coordinator!.OpenDownloadAsync(
+                    // The callback contract is synchronous, so this thread must block. Run the
+                    // nested open on a dedicated thread: waiting on a pool thread from a pool
+                    // thread deadlocks whenever the pool has no slot left to inject.
+                    secondResult.TrySetResult(OffPool.RunAsync(() => coordinator!.OpenDownloadAsync(
                         new DownloadOpenRequest(relativePath), CancellationToken.None)).GetAwaiter().GetResult());
                 }
                 catch (Exception exception)

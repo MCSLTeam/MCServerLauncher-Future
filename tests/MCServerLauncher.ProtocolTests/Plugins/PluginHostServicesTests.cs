@@ -343,22 +343,23 @@ public sealed class PluginHostServicesTests
         var registry = new PluginHttpEndpointRegistry();
         var identity = new PluginIdentity("fixture.http.race", "1.0.0");
         var owner = new PluginHttpEndpointPolicy(identity.Id, registry, new PluginErrorFactory(identity));
-        using var start = new ManualResetEventSlim();
+        // Seventeen racers park until released; awaiting a TCS keeps them off the pool until then.
+        var start = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var registrations = Enumerable.Range(18110, 16)
-            .Select(port => Task.Run(() =>
+            .Select(async port =>
             {
-                start.Wait();
+                await start.Task;
                 return owner.ValidateAndRegister("127.0.0.1", port);
-            }))
+            })
             .ToArray();
-        var cleanup = Task.Run(() =>
+        var cleanup = Task.Run(async () =>
         {
-            start.Wait();
+            await start.Task;
             owner.ReleaseAll();
         });
 
-        start.Set();
-        await Task.WhenAll(registrations.Cast<Task>().Append(cleanup));
+        start.SetResult();
+        await Task.WhenAll(registrations.Cast<Task>().Append(cleanup)).WaitAsync(TimeSpan.FromSeconds(30));
 
         var competitorIdentity = new PluginIdentity("fixture.http.race-competitor", "1.0.0");
         var competitor = new PluginHttpEndpointPolicy(

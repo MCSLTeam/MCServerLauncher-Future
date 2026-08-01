@@ -8,6 +8,7 @@ using MCServerLauncher.Daemon.ApplicationCore.Operations;
 using MCServerLauncher.Daemon.ApplicationCore.Provisioning;
 using Microsoft.Extensions.Logging;
 using RustyOptions;
+using MCServerLauncher.ProtocolTests.Helpers;
 
 namespace MCServerLauncher.ProtocolTests;
 
@@ -733,11 +734,12 @@ public sealed class ProvisioningPlanKernelTests
             var expiredAt = plan!.ExpiresAt + TimeSpan.FromSeconds(1);
 
             var expiryReadEntered = time.ArmNextRead(expiredAt);
-            var getTask = Task.Run(() => kernel.Get(plan.PlanId));
+            // Both racers reach BlockingTimeProvider.GetUtcNow, which blocks its caller by design.
+            var getTask = OffPool.Run(() => kernel.Get(plan.PlanId));
             await expiryReadEntered.WaitAsync(TimeSpan.FromSeconds(3));
 
             var beginInvoked = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-            var beginTask = Task.Run(() =>
+            var beginTask = OffPool.Run(() =>
             {
                 beginInvoked.TrySetResult();
                 return kernel.TryBeginExecute(plan.PlanId, "owner-a");

@@ -18,6 +18,7 @@ using InstanceFactoryConfiguration = MCServerLauncher.Common.Contracts.Instances
 using InstanceSettingsResult = MCServerLauncher.Common.Contracts.Instances.InstanceSettingsResult;
 using UpdateInstanceSettingsRequest = MCServerLauncher.Common.Contracts.Instances.UpdateInstanceSettingsRequest;
 using UpdateInstanceSettingsResult = MCServerLauncher.Common.Contracts.Instances.UpdateInstanceSettingsResult;
+using MCServerLauncher.ProtocolTests.Helpers;
 
 namespace MCServerLauncher.ProtocolTests;
 
@@ -336,7 +337,7 @@ public sealed class MonitoringSamplerTests
         // and turns a 40ms test into a job that never finishes. Pacing also widens the window under
         // test: more events accumulate between snapshots, so each drain moves more of them, which is
         // exactly the interval a producer used to misread.
-        var consumer = Task.Run(() =>
+        var consumer = OffPool.Run(() =>
         {
             events.Snapshot();
             snapshotting.TrySetResult();
