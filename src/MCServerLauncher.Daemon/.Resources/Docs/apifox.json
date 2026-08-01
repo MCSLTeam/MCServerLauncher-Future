@@ -2824,6 +2824,13 @@
                           "string",
                           "null"
                         ]
+                      },
+                      "detail": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "default": null
                       }
                     },
                     "required": [

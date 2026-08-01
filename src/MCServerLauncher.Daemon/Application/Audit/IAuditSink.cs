@@ -3,6 +3,8 @@ namespace MCServerLauncher.Daemon.ApplicationCore.Audit;
 /// <summary>
 /// One observed authorized mutation, described by typed metadata only. Request payloads, command
 /// text, console content, and token material are never part of an audit event by construction.
+/// <see cref="Detail" /> is the single exception and is caller-authored rather than derived: only
+/// an automation audit.record action fills it, with the annotation that action exists to leave.
 /// </summary>
 internal sealed record AuditEvent(
     string Principal,
@@ -15,7 +17,8 @@ internal sealed record AuditEvent(
     Guid? OperationId,
     bool Succeeded,
     string? ErrorCode,
-    string? ConfirmedBy);
+    string? ConfirmedBy,
+    string? Detail = null);
 
 /// <summary>
 /// Fail-open audit recording: implementations must never throw into the mutation path they observe.
