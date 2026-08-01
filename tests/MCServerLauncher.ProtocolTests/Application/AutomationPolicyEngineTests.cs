@@ -981,7 +981,10 @@ public sealed class AutomationPolicyEngineTests
         Assert.Equal(AutomationEvaluator.ServicePrincipalSubject, recorded.Principal);
         // No instance fired this window trigger, so there is nothing to file it under.
         Assert.Equal(string.Empty, recorded.Target);
-        Assert.Equal("Warning: disk is filling but nothing was done", recorded.ErrorCode);
+        // The authored text is the record's detail. ErrorCode is a closed vocabulary of outcome
+        // codes, and it is null on every record that succeeded — this one included.
+        Assert.Equal("Warning: disk is filling but nothing was done", recorded.Detail);
+        Assert.Null(recorded.ErrorCode);
         Assert.True(recorded.Succeeded);
     }
 
@@ -1364,8 +1367,9 @@ public sealed class AutomationPolicyEngineTests
             candidate => candidate.Permission == "audit.record");
         Assert.Equal(AutomationEvaluator.ServicePrincipalSubject, record.Principal);
         Assert.Equal(InstanceId.ToString("D"), record.Target);
-        Assert.Contains("crashed and left alone on purpose", record.ErrorCode!, StringComparison.Ordinal);
-        Assert.Contains("Warning", record.ErrorCode!, StringComparison.Ordinal);
+        Assert.Contains("crashed and left alone on purpose", record.Detail!, StringComparison.Ordinal);
+        Assert.Contains("Warning", record.Detail!, StringComparison.Ordinal);
+        Assert.Null(record.ErrorCode);
         Assert.True(record.Succeeded);
 
         // An untargeted policy still records, it simply has no instance to be filed under.
@@ -1373,7 +1377,7 @@ public sealed class AutomationPolicyEngineTests
         Assert.Contains(all.Unwrap().Records, candidate =>
             candidate.Permission == "audit.record" &&
             candidate.Target == string.Empty &&
-            candidate.ErrorCode!.Contains("maintenance window opened", StringComparison.Ordinal));
+            candidate.Detail!.Contains("maintenance window opened", StringComparison.Ordinal));
     }
 
     /// <summary>
@@ -1452,6 +1456,331 @@ public sealed class AutomationPolicyEngineTests
         await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
 
         Assert.Equal([InstanceId, SecondInstanceId], harness.Instances.Stopped.Order());
+    }
+
+    /// <summary>
+    /// The union reads through a JsonDocument, which keeps both copies of a repeated property and
+    /// hands back the last. A second instance_id of null would therefore widen a policy written for
+    /// one instance into a fleet-wide one — the same harm a misspelled property does.
+    /// </summary>
+    [Fact]
+    public void Converter_RejectsADuplicatedPropertyOnEitherUnion()
+    {
+        var trigger = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(
+            "{\"type\":\"instance.unresponsive\",\"instance_id\":\"" + InstanceId + "\",\"instance_id\":null,\"silent_seconds\":300}",
+            ApplicationContractJsonContext.Default.AutomationTrigger));
+        Assert.Contains("instance_id", trigger.Message, StringComparison.Ordinal);
+
+        var action = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(
+            "{\"type\":\"instance.restart\",\"instance_id\":\"" + InstanceId + "\",\"instance_id\":null}",
+            ApplicationContractJsonContext.Default.AutomationAction));
+        Assert.Contains("instance_id", action.Message, StringComparison.Ordinal);
+
+        // The nested deferred action is read through the same gate.
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(
+            "{\"type\":\"plan.confirmation\",\"summary\":\"s\",\"deferred\":{\"type\":\"instance.stop\",\"instance_id\":\"" + InstanceId + "\",\"instance_id\":null}}",
+            ApplicationContractJsonContext.Default.AutomationAction));
+
+        // Control: one level up, the source-generated path already refused duplicates and still does.
+        // The union converters exist to mirror that strictness, not to relax it.
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(
+            "{\"policies\":[],\"version\":1,\"version\":2}",
+            ApplicationContractJsonContext.Default.AutomationPolicySet));
+    }
+
+    /// <summary>
+    /// 1e400 is a well-formed JSON number that no double can hold: it reads back as infinity, which
+    /// seats a threshold no reading can reach and then cannot be written back out at all.
+    /// </summary>
+    [Fact]
+    public void Converter_RejectsANumberTooLargeForADoubleAndValidatorRejectsANonFiniteOne()
+    {
+        var silent = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(
+            "{\"type\":\"instance.unresponsive\",\"silent_seconds\":1e400}",
+            ApplicationContractJsonContext.Default.AutomationTrigger));
+        Assert.Contains("silent_seconds", silent.Message, StringComparison.Ordinal);
+
+        Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(
+            "{\"type\":\"metric.sustained\",\"metric\":\"instance_memory_bytes\",\"threshold\":1e400,\"sustained_seconds\":60}",
+            ApplicationContractJsonContext.Default.AutomationTrigger));
+
+        // The validator does not lean on the converter having run: a policy built in process is a
+        // path that never passes through the wire gate.
+        Assert.Contains(
+            Diagnostics(
+                new SustainedMetricTrigger { Metric = "instance_memory_bytes", Threshold = double.PositiveInfinity, SustainedSeconds = 60 },
+                new StopInstanceAction()),
+            diagnostic => diagnostic.Code == "automation.trigger_invalid");
+
+        Assert.Contains(
+            Diagnostics(new UnresponsiveInstanceTrigger { SilentSeconds = double.NaN }, new StopInstanceAction()),
+            diagnostic => diagnostic.Code == "automation.trigger_invalid");
+    }
+
+    /// <summary>
+    /// A tick the sampler could not take is the newest thing the history knows. Reaching past it for
+    /// the last real reading would answer a question about the present with evidence the sampler
+    /// already disowned — the instance may have recovered during the tick nobody observed.
+    /// </summary>
+    [Fact]
+    public void Evaluator_UnresponsiveStaysQuietWhenTheNewestSampleIsAGap()
+    {
+        const string staleSilenceThenGap =
+            """
+            {"timestamp":"2026-07-27T23:59:45+00:00","gap":false,"system_cpu_percent":5.5,"memory_used_kilobytes":16384,"memory_total_kilobytes":32768,"instances":[{"instance_id":"11111111-1111-1111-1111-111111111111","name":"demo","status":"running","cpu_percent":1.5,"memory_bytes":1024,"silent_seconds":600}],"disk_total_bytes":1024,"disk_free_bytes":512}
+            {"timestamp":"2026-07-28T00:00:00+00:00","gap":true,"system_cpu_percent":0,"memory_used_kilobytes":0,"memory_total_kilobytes":0,"instances":[],"disk_total_bytes":null,"disk_free_bytes":null}
+            """;
+        using var harness = new Harness(
+            sampleInterval: TimeSpan.FromSeconds(15),
+            seedHistoryJsonl: staleSilenceThenGap);
+
+        // The real reading behind the gap is still inside the window and would fire on its own —
+        // the sibling test seeds exactly it — so only the gap in front of it keeps this quiet.
+        var evaluation = harness.Evaluator.EvaluateTrigger(
+            new UnresponsiveInstanceTrigger { SilentSeconds = 300 },
+            harness.Time.GetUtcNow());
+        Assert.False(evaluation.Fires);
+        Assert.Contains("gap", evaluation.Reason, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Two policies that do not know about each other can hold the same instance at once. A short
+    /// restart hold must not end a long maintenance hold early, so the scopes get a slot each and
+    /// expire on their own clocks.
+    /// </summary>
+    [Fact]
+    public async Task Evaluator_ScopedHoldsExpireIndependentlyOfEachOther()
+    {
+        using var harness = new Harness(start: DateTimeOffset.Parse("2026-07-28T00:00:00+00:00"));
+        var maintenance = new AutomationPolicy
+        {
+            Id = PolicyId,
+            Name = "hour-long-maintenance",
+            Trigger = new MaintenanceWindowTrigger { StartHourUtc = 0, StartMinuteUtc = 0, DurationMinutes = 1 },
+            Actions = [new MaintenanceStateAction { InstanceId = InstanceId, DurationSeconds = 3600, Reason = "patching" }],
+            CooldownSeconds = 3600
+        };
+        var briefRestartHold = new AutomationPolicy
+        {
+            Id = Guid.Parse("33333333-3333-3333-3333-333333333333"),
+            Name = "minute-long-restart-hold",
+            Trigger = new MaintenanceWindowTrigger { StartHourUtc = 0, StartMinuteUtc = 0, DurationMinutes = 1 },
+            Actions = [new RestartSuppressionAction { InstanceId = InstanceId, DurationSeconds = 60, Reason = "flapping" }],
+            CooldownSeconds = 3600
+        };
+        var stopGuard = new AutomationPolicy
+        {
+            Id = Guid.Parse("55555555-5555-5555-5555-555555555555"),
+            Name = "stop-on-crash",
+            Trigger = new UnexpectedExitTrigger { InstanceId = InstanceId },
+            Actions = [new StopInstanceAction()],
+            CooldownSeconds = 0
+        };
+        harness.Store.Apply(new AutomationPolicySet
+        {
+            Policies = [maintenance, briefRestartHold, stopGuard],
+            Version = 0
+        }).Unwrap();
+        var instance = harness.AddInstance(InstanceId, InstanceStatus.Running);
+
+        await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
+
+        // Both holds are in force and both are visible: a reader that saw only one could not tell
+        // which of the two refusals it is looking at.
+        var holds = harness.Evaluator.ActiveSuppressions();
+        Assert.Equal(2, holds.Length);
+        Assert.Equal([AutomationSuppressionScope.All, AutomationSuppressionScope.Restarts], holds.Select(hold => hold.Scope));
+        Assert.All(holds, hold => Assert.Equal(InstanceId, hold.InstanceId));
+
+        // The minute-long restart hold lapses; the hour-long maintenance hold it was written beside
+        // must still be refusing stops.
+        harness.Time.Advance(TimeSpan.FromMinutes(2));
+        instance.Status = InstanceStatus.Crashed;
+        await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
+
+        Assert.Empty(harness.Instances.Stopped);
+        Assert.Contains(harness.Audit.Events, entry =>
+            entry.Permission == "instance.stop" &&
+            entry.ErrorCode == "automation.suppressed" &&
+            !entry.Succeeded);
+        var surviving = Assert.Single(harness.Evaluator.ActiveSuppressions());
+        Assert.Equal(AutomationSuppressionScope.All, surviving.Scope);
+        Assert.Equal("patching", surviving.Reason);
+
+        // Past the maintenance hold, the same crash is handled normally.
+        harness.Time.Advance(TimeSpan.FromMinutes(60));
+        instance.Status = InstanceStatus.Running;
+        await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
+        instance.Status = InstanceStatus.Crashed;
+        harness.Time.Advance(TimeSpan.FromSeconds(15));
+        await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
+        Assert.Equal([InstanceId], harness.Instances.Stopped);
+    }
+
+    /// <summary>
+    /// A second hold in the same scope is the same decision being revised, so it replaces the first
+    /// rather than sitting beside it.
+    /// </summary>
+    [Fact]
+    public async Task Evaluator_ASecondHoldInTheSameScopeReplacesTheFirst()
+    {
+        using var harness = new Harness(start: DateTimeOffset.Parse("2026-07-28T00:00:00+00:00"));
+        var policy = new AutomationPolicy
+        {
+            Id = PolicyId,
+            Name = "re-declared-maintenance",
+            Trigger = new MaintenanceWindowTrigger { StartHourUtc = 0, StartMinuteUtc = 0, DurationMinutes = 60 },
+            Actions = [new MaintenanceStateAction { InstanceId = InstanceId, DurationSeconds = 600, Reason = "first" }],
+            CooldownSeconds = 0
+        };
+        harness.Store.Apply(Document(policy, version: 0)).Unwrap();
+        harness.AddInstance(InstanceId, InstanceStatus.Running);
+        await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
+        Assert.Equal("first", Assert.Single(harness.Evaluator.ActiveSuppressions()).Reason);
+
+        policy.Actions = [new MaintenanceStateAction { InstanceId = InstanceId, DurationSeconds = 600, Reason = "second" }];
+        harness.Store.Apply(new AutomationPolicySet { Policies = [policy], Version = 1 }).Unwrap();
+        harness.Time.Advance(TimeSpan.FromSeconds(15));
+        await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
+
+        var held = Assert.Single(harness.Evaluator.ActiveSuppressions());
+        Assert.Equal("second", held.Reason);
+    }
+
+    /// <summary>
+    /// The start half of a two-phase restart runs a tick or more after the check that authorized it,
+    /// so it meets the holds in force now. A maintenance hold placed in between is a decision to
+    /// keep the instance down, and it outranks a restart already under way.
+    /// </summary>
+    [Fact]
+    public async Task Evaluator_DelayedRestartStartIsRefusedByAHoldPlacedAfterTheStop()
+    {
+        using var harness = new Harness(start: DateTimeOffset.Parse("2026-07-28T00:00:00+00:00"));
+        var restart = new AutomationPolicy
+        {
+            Id = PolicyId,
+            Name = "window-restart",
+            Trigger = new MaintenanceWindowTrigger { StartHourUtc = 0, StartMinuteUtc = 0, DurationMinutes = 1 },
+            Actions = [new RestartInstanceAction { InstanceId = InstanceId, BackoffBaseSeconds = 1, BackoffMaxSeconds = 2 }],
+            CooldownSeconds = 3600
+        };
+        // Ordered after the restart, so the hold lands between the stop half and the start half.
+        var hold = new AutomationPolicy
+        {
+            Id = Guid.Parse("33333333-3333-3333-3333-333333333333"),
+            Name = "hold-it-down",
+            Trigger = new MaintenanceWindowTrigger { StartHourUtc = 0, StartMinuteUtc = 0, DurationMinutes = 1 },
+            Actions = [new MaintenanceStateAction { InstanceId = InstanceId, DurationSeconds = 600, Reason = "patching" }],
+            CooldownSeconds = 3600
+        };
+        harness.Store.Apply(new AutomationPolicySet { Policies = [restart, hold], Version = 0 }).Unwrap();
+        harness.AddInstance(InstanceId, InstanceStatus.Running);
+
+        await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
+        Assert.Equal([InstanceId], harness.Instances.Stopped);
+        Assert.Empty(harness.Instances.Started);
+        Assert.Single(harness.Evaluator.ActiveSuppressions());
+
+        // The drain tick observes the stop and finds the instance held: nothing starts, and the
+        // refusal is recorded rather than dropped silently.
+        harness.Time.Advance(TimeSpan.FromSeconds(15));
+        await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
+        Assert.Empty(harness.Instances.Started);
+        Assert.Contains(harness.Audit.Events, entry =>
+            entry.Permission == "instance.restart.start" &&
+            entry.ErrorCode == "automation.suppressed" &&
+            !entry.Succeeded);
+
+        // The pending restart is spent, not deferred: the condition that asked for it is long gone
+        // by the time the hold lifts, so nothing brings the instance back on its own.
+        harness.Time.Advance(TimeSpan.FromMinutes(20));
+        await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
+        await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
+        Assert.Empty(harness.Evaluator.ActiveSuppressions());
+        Assert.Empty(harness.Instances.Started);
+    }
+
+    /// <summary>
+    /// Crash evidence outlives the instance unless the tick sweeps it: a wildcard crash-loop trigger
+    /// matches on the recorded id alone, so a ghost entry keeps firing actions at something that no
+    /// longer exists.
+    /// </summary>
+    [Fact]
+    public async Task Evaluator_ForgetsTheCrashHistoryOfAnInstanceRemovedFromTheCatalog()
+    {
+        using var harness = new Harness();
+        var instance = harness.AddInstance(InstanceId, InstanceStatus.Running);
+
+        // The crashes accumulate before any policy is applied, so nothing consumes the evidence the
+        // way a firing crash-loop policy would.
+        await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
+        for (var index = 0; index < 2; index++)
+        {
+            instance.Status = InstanceStatus.Crashed;
+            harness.Time.Advance(TimeSpan.FromSeconds(15));
+            await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
+            instance.Status = InstanceStatus.Running;
+            harness.Time.Advance(TimeSpan.FromSeconds(15));
+            await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
+        }
+
+        var trigger = new CrashLoopTrigger { MaxCrashes = 2, WindowSeconds = 600 };
+        Assert.True(harness.Evaluator.EvaluateTrigger(trigger, harness.Time.GetUtcNow()).Fires);
+
+        harness.Manager.Instances.TryRemove(InstanceId, out _);
+        harness.Store.Apply(Document(new AutomationPolicy
+        {
+            Id = PolicyId,
+            Name = "loop-notice",
+            Trigger = trigger,
+            Actions = [new NotificationAction { Title = "looping", Message = "crash loop", Severity = "Warning" }],
+            CooldownSeconds = 0
+        }, version: 0)).Unwrap();
+
+        harness.Time.Advance(TimeSpan.FromSeconds(15));
+        await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
+        await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
+
+        Assert.False(harness.Evaluator.EvaluateTrigger(trigger, harness.Time.GetUtcNow()).Fires);
+        Assert.Empty(harness.DomainEvents.Notifications);
+    }
+
+    /// <summary>
+    /// A daemon-wide trigger has no target of its own, but its actions can each name one. The dry
+    /// run has to resolve targets the way execution does, or it reports a free hand where a real
+    /// tick would be refused.
+    /// </summary>
+    [Fact]
+    public async Task Test_ReportsAHoldOnADaemonWideTriggersExplicitlyTargetedAction()
+    {
+        using var harness = new Harness(start: DateTimeOffset.Parse("2026-07-28T00:00:00+00:00"));
+        var hold = new AutomationPolicy
+        {
+            Id = PolicyId,
+            Name = "hold-one",
+            Trigger = new MaintenanceWindowTrigger { StartHourUtc = 0, StartMinuteUtc = 0, DurationMinutes = 1 },
+            Actions = [new MaintenanceStateAction { InstanceId = InstanceId, DurationSeconds = 600, Reason = "patching" }],
+            CooldownSeconds = 3600
+        };
+        var nightlyRestart = new AutomationPolicy
+        {
+            Id = Guid.Parse("33333333-3333-3333-3333-333333333333"),
+            Name = "nightly-restart",
+            Trigger = new MaintenanceWindowTrigger { StartHourUtc = 0, StartMinuteUtc = 0, DurationMinutes = 60 },
+            Actions = [new RestartInstanceAction { InstanceId = InstanceId, BackoffBaseSeconds = 1, BackoffMaxSeconds = 2 }],
+            CooldownSeconds = 0
+        };
+        harness.Store.Apply(new AutomationPolicySet { Policies = [hold, nightlyRestart], Version = 0 }).Unwrap();
+        harness.AddInstance(InstanceId, InstanceStatus.Running);
+
+        await harness.Evaluator.EvaluateTickAsync(CancellationToken.None);
+
+        // Execution refuses it, so the dry run has to say so too.
+        Assert.Contains(harness.Audit.Events, entry =>
+            entry.Permission == "instance.restart" && entry.ErrorCode == "automation.suppressed");
+        var outcome = Assert.Single(harness.Evaluator.Test(), candidate => candidate.PolicyId == nightlyRestart.Id);
+        Assert.True(outcome.WouldFire);
+        Assert.Contains($"actions held for {InstanceId:D}", outcome.Reason, StringComparison.Ordinal);
     }
 
     private static T RoundTrip<T>(T value, System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> typeInfo) =>

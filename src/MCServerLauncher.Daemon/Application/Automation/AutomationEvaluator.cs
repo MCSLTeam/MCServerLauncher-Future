@@ -46,6 +46,12 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
     private static readonly ImmutableArray<string> ServicePermissions =
         ["mcsl.instance.start", "mcsl.instance.stop"];
 
+    /// <summary>
+    /// Stands in for the restart being completed when the deferred start half asks whether a hold
+    /// refuses it. <see cref="RefusingHold" /> judges the kind of action, not its fields.
+    /// </summary>
+    private static readonly RestartInstanceAction PendingRestartProbe = new();
+
     private readonly object _gate = new();
 
     /// <summary>
@@ -71,13 +77,12 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
     private readonly Dictionary<Guid, PolicyRuntime> _runtime = new();
 
     /// <summary>
-    /// Active lifecycle holds, one per instance. A later hold replaces the one before it rather than
-    /// merging with it, so the newest policy to speak decides the scope.
+    /// Active lifecycle holds, one slot per instance and scope. The two scopes expire independently:
+    /// a short restart hold placed during a long maintenance hold must not end it early, because the
+    /// policies that wrote them do not know about each other. A second hold in the same scope does
+    /// replace the first — that one is the same author revising the same decision.
     /// </summary>
-    // ponytail: one entry per instance, last write wins. Two policies holding the same instance with
-    // different scopes is the case this cannot express; give the value a per-scope expiry if that
-    // ever becomes real.
-    private readonly Dictionary<Guid, AutomationSuppression> _suppressions = new();
+    private readonly Dictionary<(Guid InstanceId, AutomationSuppressionScope Scope), AutomationSuppression> _suppressions = new();
 
     private CancellationTokenSource? _runCancellation;
     private Task? _runTask;
@@ -241,13 +246,15 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
 
             // The trigger still fires when a hold is active — the hold refuses individual actions,
             // not the policy — so the reason names every target that would have one refused. Asked
-            // per target and per action through the same predicate execution uses, because a
-            // firing covering several instances can be held on some of them and not others.
+            // per target and per action through the same resolution and the same predicate
+            // execution uses: a firing covering several instances can be held on some of them and
+            // not others, and a daemon-wide trigger has no target of its own to be held on, but its
+            // actions can each name one that is.
             var held = evaluation.Targets
-                .Where(candidate => candidate is { } instanceId &&
-                                    policy.Actions.Any(action =>
-                                        RefusingHold(action, ResolveTarget(action, instanceId) ?? instanceId, now) is not null))
-                .Select(static candidate => candidate!.Value.ToString("D"))
+                .SelectMany(candidate => policy.Actions.Select(action => (Action: action, Target: ResolveTarget(action, candidate))))
+                .Where(candidate => candidate.Target is { } target && RefusingHold(candidate.Action, target, now) is not null)
+                .Select(static candidate => candidate.Target!.Value.ToString("D"))
+                .Distinct(StringComparer.Ordinal)
                 .ToArray();
             outcomes.Add(new AutomationTestOutcome(
                 policy.Id,
@@ -384,10 +391,15 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
         // Two intervals: one is the normal spacing, so anything older means the sampler itself
         // stopped observing and the newest record no longer describes the present.
         var interval = _metrics.SampleInterval;
-        var newest = _metrics.ReadRawWindow(now - interval * 2, now, 4).Samples
-            .LastOrDefault(static sample => !sample.Gap);
+        var newest = _metrics.ReadRawWindow(now - interval * 2, now, 4).Samples.LastOrDefault();
         if (newest is null)
             return TriggerEvaluation.Quiet("no monitoring sample covers the present");
+
+        // Strictly the newest record, gap included. Searching past a gap for the last real sample
+        // would answer a question about the present with evidence the sampler already disowned:
+        // the instance may well have recovered during the tick nobody observed.
+        if (newest.Gap)
+            return TriggerEvaluation.Quiet("the newest monitoring sample is a recorded gap");
 
         var silent = newest.Instances
             .Where(entry =>
@@ -726,15 +738,16 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
             case AuditRecordAction auditRecord:
                 // Target stays the instance id like every other automation record, so a
                 // target-filtered audit query returns these — filtering is an exact match, and a
-                // message in that field would hide the records this action exists to surface.
-                // The authored text rides in the detail field the other branches use for their
-                // outcome code, which is the only free-text column the audit schema has.
+                // message in that field would hide the records this action exists to surface. The
+                // authored text goes to Detail, the field that exists for it: ErrorCode is a closed
+                // vocabulary of outcome codes and stays null on a record that succeeded.
                 Audit(
                     policy?.Id,
                     action.Type,
                     triggerTarget?.ToString("D") ?? string.Empty,
                     succeeded: true,
-                    $"{auditRecord.Severity}: {auditRecord.Message}");
+                    errorCode: null,
+                    detail: $"{auditRecord.Severity}: {auditRecord.Message}");
                 return Ok(triggerTarget);
 
             case NotificationAction notification:
@@ -807,24 +820,13 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
                 _suppressions.Remove(expired);
             }
 
-            _suppressions[target] = entry;
+            _suppressions[(target, scope)] = entry;
         }
 
         return Audited(policy, actionType, target,
             RustyOptions.Result.Ok<string, API.Errors.DaemonError>(target.ToString("D")));
     }
 
-    /// <summary>
-    /// The hold that refuses this action against this instance, or null when nothing refuses it.
-    /// Execution and the dry run both ask this, so what mcsl.automation.test predicts and what a
-    /// tick actually does cannot drift apart.
-    /// </summary>
-    /// <remarks>
-    /// A restart is refused by either scope. A stop is refused only by a full maintenance hold: a
-    /// restart hold exists precisely to let an instance be brought down and left down. Everything
-    /// else — notifications, audit records, confirmation plans, and the hold-writing actions
-    /// themselves — is never refused.
-    /// </remarks>
     /// <summary>
     /// The instance an action acts on: its own if it names one, otherwise the trigger's target.
     /// </summary>
@@ -837,25 +839,36 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
         _ => triggerTarget
     };
 
+    /// <summary>
+    /// The hold that refuses this action against this instance, or null when nothing refuses it.
+    /// Execution and the dry run both ask this, so what mcsl.automation.test predicts and what a
+    /// tick actually does cannot drift apart.
+    /// </summary>
+    /// <remarks>
+    /// A restart is refused by either scope. A stop is refused only by a full maintenance hold: a
+    /// restart hold exists precisely to let an instance be brought down and left down. Everything
+    /// else — notifications, audit records, confirmation plans, and the hold-writing actions
+    /// themselves — is never refused.
+    /// </remarks>
     private AutomationSuppression? RefusingHold(AutomationAction action, Guid instanceId, DateTimeOffset now) =>
         action switch
         {
-            RestartInstanceAction => ActiveSuppression(instanceId, now),
-            StopInstanceAction => ActiveSuppression(instanceId, now) is { Scope: AutomationSuppressionScope.All } hold
-                ? hold
-                : null,
+            RestartInstanceAction =>
+                ActiveSuppression(instanceId, AutomationSuppressionScope.All, now) ??
+                ActiveSuppression(instanceId, AutomationSuppressionScope.Restarts, now),
+            StopInstanceAction => ActiveSuppression(instanceId, AutomationSuppressionScope.All, now),
             _ => null
         };
 
     /// <summary>
-    /// The hold currently covering an instance, or null. Expired entries are filtered rather than
+    /// The hold covering an instance in one scope, or null. Expired entries are filtered rather than
     /// removed so that every read of this state, including the wire-reachable dry run, is pure.
     /// </summary>
-    private AutomationSuppression? ActiveSuppression(Guid instanceId, DateTimeOffset now)
+    private AutomationSuppression? ActiveSuppression(Guid instanceId, AutomationSuppressionScope scope, DateTimeOffset now)
     {
         lock (_stateGate)
         {
-            return _suppressions.TryGetValue(instanceId, out var entry) && entry.UntilUtc > now
+            return _suppressions.TryGetValue((instanceId, scope), out var entry) && entry.UntilUtc > now
                 ? entry
                 : null;
         }
@@ -863,7 +876,8 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
 
     /// <summary>
     /// Every hold still in force, for mcsl.automation.get. A caller that cannot see the active holds
-    /// cannot tell a policy that is disabled from one whose actions are being refused.
+    /// cannot tell a policy that is disabled from one whose actions are being refused. An instance
+    /// held in both scopes at once appears twice, because the two expire at their own times.
     /// </summary>
     internal ImmutableArray<AutomationSuppression> ActiveSuppressions()
     {
@@ -875,6 +889,7 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
                 .. _suppressions.Values
                     .Where(entry => entry.UntilUtc > now)
                     .OrderBy(static entry => entry.InstanceId)
+                    .ThenBy(static entry => entry.Scope)
             ];
         }
     }
@@ -956,19 +971,36 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
                 }
             }
 
-            // An instance removed from the catalog takes its facts with it. A surviving status entry
-            // would keep a duration trigger firing forever on something that no longer exists — the
-            // status can never change again — and a surviving hold would be applied to whatever
-            // later reuses the id.
+            // An instance removed from the catalog takes every fact it left behind with it. A
+            // surviving status entry would keep a duration trigger firing forever on something that
+            // no longer exists — the status can never change again — surviving crash timestamps
+            // would keep a crash-loop trigger firing actions at a ghost id, and a surviving hold,
+            // pending restart, or backoff slot would be applied to whatever later reuses the id.
             var live = observed.Select(static entry => entry.Key).ToHashSet();
             foreach (var gone in _lastStatuses.Keys.Where(id => !live.Contains(id)).ToArray())
                 _lastStatuses.Remove(gone);
-            foreach (var gone in _suppressions.Keys.Where(id => !live.Contains(id)).ToArray())
+            foreach (var gone in _crashTimes.Keys.Where(id => !live.Contains(id)).ToArray())
+                _crashTimes.Remove(gone);
+            foreach (var gone in _suppressions.Keys.Where(key => !live.Contains(key.InstanceId)).ToArray())
                 _suppressions.Remove(gone);
+            _pendingRestartStarts.RemoveWhere(id => !live.Contains(id));
+            foreach (var runtime in _runtime.Values)
+                runtime.ForgetInstancesOutside(live);
         }
 
         foreach (var instanceId in pendingStarts)
         {
+            // The start half is a mutation of its own, issued a tick or more after the hold check
+            // that authorized the restart, so it meets the holds in force now rather than the ones
+            // in force then. A hold placed in between is a decision to keep the instance down, and
+            // it outranks a restart already under way — the pending entry is spent, not re-queued,
+            // because the condition that asked for the restart is long gone by the time it lifts.
+            if (RefusingHold(PendingRestartProbe, instanceId, now) is not null)
+            {
+                Audit(null, "instance.restart.start", instanceId.ToString("D"), false, "automation.suppressed");
+                continue;
+            }
+
             var start = await _authorizedInstances.StartInstanceAsync(new InstanceReference(instanceId), cancellationToken)
                 .ConfigureAwait(false);
             // The second half of a deferred restart is an authorized mutation like any other, so
@@ -1012,7 +1044,13 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
         return runtime;
     }
 
-    private void Audit(Guid? policyId, string permission, string? target, bool succeeded, string? errorCode)
+    private void Audit(
+        Guid? policyId,
+        string permission,
+        string? target,
+        bool succeeded,
+        string? errorCode,
+        string? detail = null)
     {
         try
         {
@@ -1027,7 +1065,8 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
                 null,
                 succeeded,
                 errorCode,
-                null));
+                null,
+                detail));
         }
         catch (Exception exception)
         {
@@ -1085,6 +1124,12 @@ internal sealed class AutomationEvaluator : IDisposable, IAsyncDisposable
             _backoff[instanceId] = (consecutiveRestarts, nextAllowed);
 
         internal void ClearBackoff(Guid instanceId) => _backoff.Remove(instanceId);
+
+        internal void ForgetInstancesOutside(HashSet<Guid> live)
+        {
+            foreach (var gone in _backoff.Keys.Where(id => !live.Contains(id)).ToArray())
+                _backoff.Remove(gone);
+        }
     }
 
     /// <summary>

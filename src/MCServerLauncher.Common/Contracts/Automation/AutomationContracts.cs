@@ -693,13 +693,17 @@ internal static class AutomationUnionStjHelper
         new($"Unknown {baseTypeName} discriminator '{discriminator}'. Known values: {string.Join(", ", knownValues.Order(StringComparer.Ordinal))}.");
 
     /// <summary>
-    /// Rejects any property the kind does not define, matching the strictness every source-generated
-    /// DTO gets from <c>JsonUnmappedMemberHandling.Disallow</c>.
+    /// Rejects any property the kind does not define or repeats, matching the strictness every
+    /// source-generated DTO gets from <c>JsonUnmappedMemberHandling.Disallow</c> and
+    /// <c>AllowDuplicateProperties = false</c>.
     /// </summary>
     /// <remarks>
     /// Ignoring an unknown property is the same failure as coercing a malformed one, and worse for
     /// the wildcard-capable kinds: a misspelled 'instance_id' reads as absent, absent means every
-    /// instance, and a policy meant for one instance would quietly act on the whole fleet.
+    /// instance, and a policy meant for one instance would quietly act on the whole fleet. A
+    /// duplicated property is the same harm by a different route — the union reads through a
+    /// <c>JsonDocument</c>, which keeps every copy and hands back the last, so a second
+    /// 'instance_id' of null would silently widen the policy the first one scoped.
     /// </remarks>
     internal static void RejectUnknownProperties(
         StjJsonElement obj,
@@ -707,6 +711,7 @@ internal static class AutomationUnionStjHelper
         string discriminator,
         string[] knownProperties)
     {
+        var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (var property in obj.EnumerateObject())
         {
             if (!knownProperties.Contains(property.Name, StringComparer.Ordinal))
@@ -714,6 +719,12 @@ internal static class AutomationUnionStjHelper
                 throw new StjJsonException(
                     $"Unknown property '{property.Name}' for {baseTypeName} '{discriminator}'. " +
                     $"Known properties: {string.Join(", ", knownProperties)}.");
+            }
+
+            if (!seen.Add(property.Name))
+            {
+                throw new StjJsonException(
+                    $"Duplicate property '{property.Name}' for {baseTypeName} '{discriminator}'.");
             }
         }
     }
@@ -739,13 +750,18 @@ internal static class AutomationUnionStjHelper
         return value;
     }
 
+    // A number JSON accepts but a double cannot hold (1e400) reads back as infinity. Keeping it
+    // would seat a threshold no reading can reach and then throw on the way back out, because
+    // infinity has no JSON form to persist the policy with.
     internal static double ReadDoubleOrDefault(StjJsonElement obj, string name, double fallback)
     {
         if (!TryGetScalar(obj, name, out var token))
             return fallback;
         if (token.ValueKind != StjJsonValueKind.Number)
             throw WrongType(name, "number");
-        return token.GetDouble();
+        return token.TryGetDouble(out var value) && double.IsFinite(value)
+            ? value
+            : throw WrongType(name, "finite number");
     }
 
     // Derived from the same naming policy the InstanceStatus converter uses, so a status added to
