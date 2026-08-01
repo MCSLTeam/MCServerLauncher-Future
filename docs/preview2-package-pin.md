@@ -82,7 +82,7 @@ baseline exists. `MCServerLauncher.Daemon.API` changed because the pinned SDK mo
 from `10.0.201` to `10.0.302`; its source is untouched. Both assemblies carry
 source-generated JSON metadata, and that generator ships with the SDK, which is why
 they moved and `MCServerLauncher.Daemon.Plugin.Sdk`, the packed generator,
-`NuGet.Versioning` and the `buildTransitive` assets did not — those five are
+`NuGet.Versioning` and the `buildTransitive` assets did not — those six are
 byte-identical to their `preview.4` entries.
 
 `PackageVersion` is a NuGet-level version and does not feed the assembly's
