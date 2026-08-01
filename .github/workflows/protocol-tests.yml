@@ -9,6 +9,9 @@ on:
 jobs:
   protocol-tests:
     runs-on: windows-latest
+    # Backstop only. The blame collector below should name the stuck test first;
+    # without this a hang would burn the 6-hour default before anyone notices.
+    timeout-minutes: 30
 
     steps:
       - name: Checkout code
@@ -26,4 +29,14 @@ jobs:
         run: dotnet build MCServerLauncher.slnx -c Release --no-restore
 
       - name: Run protocol tests (Release)
-        run: dotnet test tests/MCServerLauncher.ProtocolTests/MCServerLauncher.ProtocolTests.csproj -c Release --no-build --logger "console;verbosity=detailed"
+        run: dotnet test tests/MCServerLauncher.ProtocolTests/MCServerLauncher.ProtocolTests.csproj -c Release --no-build --logger "console;verbosity=detailed" --blame-hang --blame-hang-timeout 8m --blame-hang-dump-type mini --results-directory TestResults
+
+      # if: always() is the point: the artifacts that name a hang only exist on the
+      # run that failed or was killed.
+      - name: Upload hang diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: protocol-tests-hang-diagnostics
+          path: TestResults
+          if-no-files-found: ignore
