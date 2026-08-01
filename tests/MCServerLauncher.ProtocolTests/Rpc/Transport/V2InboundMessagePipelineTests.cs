@@ -290,7 +290,9 @@ public sealed class V2InboundMessagePipelineTests
             return new(application, sender, owner, files, pipeline);
         }
 
-        public async ValueTask DisposeAsync() => await Owner.DisposeAsync();
+        // Bounded for the same reason the pump awaits are: a wedged owner must fail here with a
+        // named timeout instead of holding the fixture until the CI blame collector kills the run.
+        public async ValueTask DisposeAsync() => await Owner.DisposeAsync().AsTask().WaitAsync(DrainTimeout);
     }
 
     private sealed class RecordingSender : IV2OutboundSender
