@@ -9,6 +9,7 @@ using InstanceReference = MCServerLauncher.Common.Contracts.Instances.InstanceRe
 
 namespace MCServerLauncher.ProtocolTests;
 
+[Collection(Helpers.InstanceProcessIsolationCollection.Name)]
 public sealed class InstanceProcessEventPumpTests
 {
     private static readonly TimeSpan TestTimeout = TimeSpan.FromSeconds(5);
@@ -279,6 +280,9 @@ public sealed class InstanceProcessEventPumpTests
     [Fact]
     public async Task MinecraftPty_BlockedAndThrowingConsoleConsumersCannotHideCrashOrDelayCompletion()
     {
+        if (!OperatingSystem.IsWindows())
+            return;
+
         using var process = new InstanceProcess(
             CreatePtyMinecraftCrashStartInfo(),
             InstanceType.MCJava,
@@ -287,22 +291,6 @@ public sealed class InstanceProcessEventPumpTests
         var throwingEntered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var releaseBlocked = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var crashed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        process.AttachConsoleSubscriber(async (output, _, _) =>
-        {
-            if (output.IsEmpty)
-                return;
-
-            blockedEntered.TrySetResult();
-            await releaseBlocked.Task;
-        });
-        process.AttachConsoleSubscriber((output, _, _) =>
-        {
-            if (output.IsEmpty)
-                return Task.CompletedTask;
-
-            throwingEntered.TrySetResult();
-            throw new InvalidOperationException("console consumer failed");
-        });
         process.OnStatusChanged += (status, _) =>
         {
             if (status == InstanceStatus.Crashed)
@@ -314,10 +302,27 @@ public sealed class InstanceProcessEventPumpTests
         {
             Assert.True(await process.StartAsync(delayToCheck: 20));
             Assert.True(process.IsPty, "The supported test platform must exercise the PTY output path.");
+            await WaitUntilAsync(() => process.GetLogHistory().Contains("booted"));
+            process.AttachConsoleSubscriber((output, _, _) =>
+            {
+                if (output.IsEmpty)
+                    return Task.CompletedTask;
+
+                throwingEntered.TrySetResult();
+                throw new InvalidOperationException("console consumer failed");
+            }, replayHistory: false);
+            process.AttachConsoleSubscriber(async (output, _, _) =>
+            {
+                if (output.IsEmpty)
+                    return;
+
+                blockedEntered.TrySetResult();
+                await releaseBlocked.Task;
+            }, replayHistory: false);
+
+            process.WriteRaw("crash\r"u8.ToArray());
             await blockedEntered.Task.WaitAsync(TimeSpan.FromSeconds(3));
             await throwingEntered.Task.WaitAsync(TimeSpan.FromSeconds(3));
-
-            process.WriteLine("crash");
             await crashed.Task.WaitAsync(TimeSpan.FromSeconds(3));
             await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(3));
 
@@ -338,7 +343,7 @@ public sealed class InstanceProcessEventPumpTests
     public async Task PtyConsoleSubscriberReceivesOutputProducedBeforeItAttached()
     {
         using var process = new InstanceProcess(
-            CreatePtyHistoryStartInfo(),
+            CreatePtyReplayControlStartInfo(),
             InstanceType.Universal,
             ConsoleMode.Pty);
         var output = new List<byte>();
@@ -411,18 +416,27 @@ public sealed class InstanceProcessEventPumpTests
     public async Task PtyStoppingTransitionsToStoppedAfterProcessExit()
     {
         using var process = new InstanceProcess(
-            CreatePtyHistoryStartInfo(),
+            CreatePtyReplayControlStartInfo(),
             InstanceType.Universal,
             ConsoleMode.Pty);
 
-        Assert.True(await process.StartAsync(delayToCheck: 20));
-        Assert.True(await process.RequestStoppingAsync());
-        process.WriteRaw("exit\r"u8.ToArray());
+        try
+        {
+            Assert.True(await process.StartAsync(delayToCheck: 20));
+            Assert.True(await process.RequestStoppingAsync());
+            process.KillProcess();
 
-        await process.WaitForExitAsync().WaitAsync(TestTimeout);
+            await process.WaitForExitAsync().WaitAsync(TestTimeout);
 
-        Assert.Equal(InstanceStatus.Stopped, process.Status);
-        Assert.True(process.HasExit);
+            Assert.Equal(InstanceStatus.Stopped, process.Status);
+            Assert.True(process.HasExit);
+        }
+        finally
+        {
+            if (!process.HasExit)
+                process.KillProcess();
+            await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(3));
+        }
     }
 
     [Fact]

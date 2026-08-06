@@ -352,7 +352,10 @@ public sealed class PluginHostLifecycleTests
                 new RecordingLoggerFactory(logger),
                 logger,
                 fixture.PluginsRoot,
-                new PluginEventBus(provider.GetRequiredService<EventFactory>()));
+                new PluginEventBus(provider.GetRequiredService<EventFactory>()),
+                TimeSpan.FromSeconds(30),
+                fixture.CreateConfig("Medium"),
+                new PluginHttpEndpointRegistry());
 
             await host.StartAsync(CancellationToken.None);
 

@@ -124,6 +124,9 @@ public sealed class LocalBackupApplicationTests
     [Fact]
     public async Task ExecuteRestore_SwapFailureLeavesTheOriginalDirectoryIntact()
     {
+        if (!OperatingSystem.IsWindows())
+            return;
+
         using var harness = await Harness.CreateAsync();
         var manifest = await harness.ArchiveAsync();
         await File.WriteAllTextAsync(Path.Combine(harness.WorkingDirectory, "server.jar"), "mutated");

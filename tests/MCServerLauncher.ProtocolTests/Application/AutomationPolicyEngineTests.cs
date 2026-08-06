@@ -409,13 +409,11 @@ public sealed class AutomationPolicyEngineTests
             harness.Time.Advance(TimeSpan.FromSeconds(15));
         }
 
-        // The segment is readable but not writable, so the next append is counted as a dropped
-        // record instead of thrown; the point it carried is simply gone.
         var segment = Directory.EnumerateFiles(harness.MonitoringRoot, "metrics-*.jsonl").Single();
-        using (new FileStream(segment, FileMode.Open, FileAccess.Read, FileShare.Read))
-        {
-            await harness.Metrics.SampleOnceAsync(CancellationToken.None);
-        }
+        File.Delete(segment);
+        Directory.CreateDirectory(segment);
+        await harness.Metrics.SampleOnceAsync(CancellationToken.None);
+        Directory.Delete(segment);
 
         Assert.Equal(1, harness.Metrics.DroppedRecords);
         harness.Time.Advance(TimeSpan.FromSeconds(15));
@@ -441,10 +439,10 @@ public sealed class AutomationPolicyEngineTests
         harness.Time.Advance(TimeSpan.FromSeconds(15));
 
         var segment = Directory.EnumerateFiles(harness.MonitoringRoot, "metrics-*.jsonl").Single();
-        using (new FileStream(segment, FileMode.Open, FileAccess.Read, FileShare.Read))
-        {
-            await harness.Metrics.SampleOnceAsync(CancellationToken.None);
-        }
+        File.Delete(segment);
+        Directory.CreateDirectory(segment);
+        await harness.Metrics.SampleOnceAsync(CancellationToken.None);
+        Directory.Delete(segment);
 
         Assert.Equal(1, harness.Metrics.DroppedRecords);
 

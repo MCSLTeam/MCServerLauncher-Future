@@ -23,7 +23,7 @@ using RustyOptions;
     "1.0.0",
     "PluginEntry.dll",
     "MCServerLauncher.PluginFixtures.ReturnedError.ApiMetadataMismatchPlugin",
-        "[1.0.0, 2.0.0)",
+    "[1.1.0, 2.0.0)",
         "event.publish\ninstance.query\nrpc.register",
         "4aaacf7d0883e55c750bf25a092cbb8074fc4955797396425d4331035e593792")]
 [assembly: GeneratedDaemonPluginMetadata(
@@ -41,7 +41,7 @@ using RustyOptions;
     "MCServerLauncher.PluginFixtures.ReturnedError.DigestMetadataMismatchPlugin",
         "[1.0.0, 2.0.0)",
         "event.publish\ninstance.query\nrpc.register",
-        "6448c66bba12547767b38bcd750f94b3bee2ff31508d00e3eee19f3699267c6b")]
+        "7448c66bba12547767b38bcd750f94b3bee2ff31508d00e3eee19f3699267c6b")]
 [assembly: GeneratedDaemonPluginMetadata(
     "fixture.metadata-duplicate",
     "1.0.0",
@@ -57,7 +57,7 @@ using RustyOptions;
     "MCServerLauncher.PluginFixtures.ReturnedError.DuplicateMetadataPlugin",
         "[1.0.0, 2.0.0)",
         "event.publish\ninstance.query\nrpc.register",
-        "b36d7222974737e0e38a4cf01d70d2a848da4d19144e3d26b16df0fbf4cf6e87")]
+        "c36d7222974737e0e38a4cf01d70d2a848da4d19144e3d26b16df0fbf4cf6e87")]
 
 namespace MCServerLauncher.PluginFixtures.ReturnedError;
 

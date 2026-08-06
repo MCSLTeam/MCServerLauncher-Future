@@ -348,7 +348,7 @@ internal sealed class BackupArchiveStore
             return false;
 
         var name = entry.FullName.Replace('/', Path.DirectorySeparatorChar);
-        if (string.IsNullOrWhiteSpace(name) || Path.IsPathRooted(name))
+        if (string.IsNullOrWhiteSpace(name) || Path.IsPathRooted(name) || IsWindowsDriveQualified(name))
             return false;
 
         var candidate = Path.GetFullPath(Path.Combine(stagingDirectory, name));
@@ -361,6 +361,11 @@ internal sealed class BackupArchiveStore
         destination = candidate;
         return true;
     }
+
+    private static bool IsWindowsDriveQualified(string path) =>
+        path.Length >= 2 &&
+        char.IsAsciiLetter(path[0]) &&
+        path[1] == ':';
 
     private void PersistUnderLock()
     {
