@@ -52,6 +52,7 @@
     <Project Path="tests/MCServerLauncher.WPF.Tests/MCServerLauncher.WPF.Tests.csproj" />
   </Folder>
   <Folder Name="/Tools/">
+    <Project Path="tools/inspect-manifests/inspect-manifests.csproj" />
     <Project Path="tools/MCServerLauncher.PerformanceGate/MCServerLauncher.PerformanceGate.csproj" />
     <Project Path="tools/MCServerLauncher.ProtocolDocs/MCServerLauncher.ProtocolDocs.csproj" />
   </Folder>

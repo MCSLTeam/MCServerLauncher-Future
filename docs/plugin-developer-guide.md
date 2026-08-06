@@ -30,7 +30,7 @@ and copies it beside the published entry assembly.
         "type": "Example.Plugin.Generated.DaemonPluginAdapter"
       },
       "requires": {
-        "api": "[2.0.0,3.0.0)",
+        "api": "[1.0.0,2.0.0)",
         "features": ["rpc.register"]
       }
     }

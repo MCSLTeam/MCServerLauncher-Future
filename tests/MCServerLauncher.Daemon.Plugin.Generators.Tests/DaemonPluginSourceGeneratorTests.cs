@@ -43,10 +43,10 @@ public sealed class DaemonPluginSourceGeneratorTests
             "assembly": "Example.Plugin.dll",
             "type": "Example.Plugin.Generated.DaemonPluginAdapter"
           },
-          "requires": {
-            "api": "[2.0.0,3.0.0)",
-            "features": ["event.publish", "instance.query", "rpc.register", "system.query"]
-          }
+                    "requires": {
+                        "api": "[1.0.0,2.0.0)",
+                        "features": ["event.publish", "instance.query", "rpc.register", "system.query"]
+                    }
         }
         """;
 
@@ -58,7 +58,7 @@ public sealed class DaemonPluginSourceGeneratorTests
         using MCServerLauncher.Daemon.Plugin.Sdk;
         using Microsoft.Extensions.DependencyInjection;
         using RustyOptions;
-
+                                                "api": "[1.0.0,2.0.0)",
         namespace Example.Plugin;
 
         [DaemonPluginModule]
@@ -305,7 +305,7 @@ public sealed class DaemonPluginSourceGeneratorTests
     {
         var normalizedInput = ManifestJson
             .Replace("\"version\": \"1.0.0\"", "\"version\": \"01.00\"", StringComparison.Ordinal)
-            .Replace("[2.0.0,3.0.0)", "[2.0, 3.0)", StringComparison.Ordinal);
+            .Replace("[1.0.0,2.0.0)", "[1.0, 2.0)", StringComparison.Ordinal);
         var reorderedInput = normalizedInput.Replace(
             "[\"event.publish\", \"instance.query\", \"rpc.register\", \"system.query\"]",
             "[\"system.query\", \"rpc.register\", \"instance.query\", \"event.publish\"]",
@@ -323,7 +323,7 @@ public sealed class DaemonPluginSourceGeneratorTests
         Assert.Contains(reorderedDiagnostics, diagnostic => diagnostic.Id == "MCSLPLG006");
         Assert.DoesNotContain(schemaDiagnostics, diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
         Assert.Contains("    \"1.0.0\",", normalizedGenerated, StringComparison.Ordinal);
-        Assert.Contains("    \"[2.0.0, 3.0.0)\",", normalizedGenerated, StringComparison.Ordinal);
+        Assert.Contains("    \"[1.0.0, 2.0.0)\",", normalizedGenerated, StringComparison.Ordinal);
         Assert.Equal(ExtractManifestDigest(normalizedGenerated), ExtractManifestDigest(reorderedGenerated));
         Assert.Equal(ExtractManifestDigest(normalizedGenerated), ExtractManifestDigest(schemaGenerated));
     }
@@ -360,7 +360,7 @@ public sealed class DaemonPluginSourceGeneratorTests
 
     [Theory]
     [InlineData("\"version\": \"1.0.0\"", "\"version\": \"1.0.0\", \"version\": \"1.0.1\"")]
-    [InlineData("\"requires\": {", "\"requires\": { \"api\": \"[2.0.0,3.0.0)\", \"api\": \"[3.0.0,4.0.0)\", \"features\": [], \"nested\": {")]
+    [InlineData("\"requires\": {", "\"requires\": { \"api\": \"[1.0.0,2.0.0)\", \"api\": \"[3.0.0,4.0.0)\", \"features\": [], \"nested\": {")]
     public void RejectsDuplicateJsonProperties(string original, string replacement)
     {
         var manifest = ManifestJson.Replace(original, replacement, StringComparison.Ordinal);
@@ -400,7 +400,7 @@ public sealed class DaemonPluginSourceGeneratorTests
     [Fact]
     public void ReportsUnsupportedApiRange()
     {
-        var manifest = ManifestJson.Replace("[2.0.0,3.0.0)", "[3.0.0,4.0.0)", StringComparison.Ordinal);
+        var manifest = ManifestJson.Replace("[1.0.0,2.0.0)", "[3.0.0,4.0.0)", StringComparison.Ordinal);
 
         var (diagnostics, _) = RunGenerator(ModuleSource, manifest);
 

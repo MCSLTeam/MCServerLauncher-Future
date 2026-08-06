@@ -12,9 +12,9 @@ using RustyOptions;
     "1.0.0",
     "PluginEntry.dll",
     "MCServerLauncher.PluginFixtures.InstanceHealth.InstanceHealthPlugin",
-    "[2.0.0, 3.0.0)",
+    "[1.0.0, 2.0.0)",
     "event.publish\ninstance.query\nrpc.register",
-    "5f5f79456836caee99486555451f837f41d156288b60cbb7bd53d9e65dd6e08c")]
+    "c09c54466798a563936d8dfe4626a8b9d41ca2e1add2904bd5b8b012d8b8d635")]
 
 namespace MCServerLauncher.PluginFixtures.InstanceHealth;
 

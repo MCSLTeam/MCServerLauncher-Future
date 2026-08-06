@@ -8,7 +8,7 @@
     "type": "MCServerLauncher.PluginFixtures.SdkGeneratedHealth.Generated.DaemonPluginAdapter"
   },
   "requires": {
-    "api": "[2.0.0,3.0.0)",
+    "api": "[1.0.0,2.0.0)",
     "features": ["network.http.listen"]
   }
 }

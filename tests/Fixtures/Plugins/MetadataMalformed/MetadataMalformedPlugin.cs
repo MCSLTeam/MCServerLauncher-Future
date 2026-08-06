@@ -7,9 +7,9 @@ using RustyOptions;
     "1.0.0",
     "PluginEntry.dll",
     "MCServerLauncher.PluginFixtures.MetadataMalformed.MetadataMalformedPlugin",
-    "[2.0.0, 3.0.0)",
+    "[1.0.0, 2.0.0)",
     "event.publish\n\nrpc.register",
-    "0000000000000000000000000000000000000000000000000000000000000000")]
+    "c2353bbd44ee217a06c6c01627d07cdaab2f166f0f8f4fccd308b8d5c9053043")]
 
 namespace MCServerLauncher.PluginFixtures.MetadataMalformed;
 

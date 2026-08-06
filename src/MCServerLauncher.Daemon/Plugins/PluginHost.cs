@@ -34,7 +34,7 @@ internal enum PluginRuntimeState
 
 internal sealed class PluginHost
 {
-    internal const string HostApiVersion = "2.0.0";
+    internal const string HostApiVersion = "1.0.0";
     private static readonly TimeSpan DefaultStartTimeout = TimeSpan.FromSeconds(30);
     private static readonly TimeSpan DefaultRollbackCleanupTimeout = TimeSpan.FromSeconds(30);
     private static readonly TimeSpan DefaultShutdownCleanupTimeout = TimeSpan.FromSeconds(30);
@@ -233,7 +233,17 @@ internal sealed class PluginHost
 
             var discovery = new PluginDiscovery(HostApiVersion).Discover(_pluginsRoot);
             foreach (var failure in discovery.Failures)
+            {
                 _logger.LogError(failure.Exception, "Skipping plugin bundle {Bundle}: {Code} {Message}", failure.BundleDirectory, failure.Code, failure.Message);
+                try
+                {
+                    Console.WriteLine($"DISCOVERY: {failure.BundleDirectory}: {failure.Code}: {failure.Message}");
+                }
+                catch
+                {
+                    // best-effort diagnostics only
+                }
+            }
 
             // Complete admission for every bundle before loading any entry assembly. This keeps
             // policy prompts and permanent-decision persistence independent from plugin DI and code.
@@ -255,6 +265,13 @@ internal sealed class PluginHost
                         manifest.Identity.Id,
                         exception.Code,
                         exception.Message);
+                    try
+                    {
+                        Console.WriteLine($"GENERATED_METADATA: {manifest.Identity.Id}: {exception.Code}: {exception.Message}");
+                    }
+                    catch
+                    {
+                    }
                     continue;
                 }
 
@@ -266,6 +283,13 @@ internal sealed class PluginHost
                         manifest.Identity.Id,
                         outcome.Code,
                         outcome.Message);
+                    try
+                    {
+                        Console.WriteLine($"PREFLIGHT: {manifest.Identity.Id}: {outcome.Code}: {outcome.Message}");
+                    }
+                    catch
+                    {
+                    }
                     continue;
                 }
 

@@ -384,10 +384,10 @@ internal sealed class PublishedDaemonFixture : IAsyncDisposable
                 "assembly": "PluginEntry.dll",
                 "type": "{{entryType}}"
               },
-              "requires": {
-                "api": "[2.0.0,3.0.0)",
-                "features": {{features}}
-              }
+                            "requires": {
+                                "api": "[1.0.0,2.0.0)",
+                                "features": {{features}}
+                            }
             }
             """);
     }
@@ -426,9 +426,9 @@ internal sealed class PublishedDaemonFixture : IAsyncDisposable
         {
             var requiredPackages = new[]
             {
-                "MCServerLauncher.Common.2.0.0-preview.7.nupkg",
-                "MCServerLauncher.Daemon.API.2.0.0-preview.7.nupkg",
-                "MCServerLauncher.Daemon.Plugin.Sdk.2.0.0-preview.7.nupkg"
+                "MCServerLauncher.Common.0.2.0.0.nupkg",
+                "MCServerLauncher.Daemon.API.0.2.0.0.nupkg",
+                "MCServerLauncher.Daemon.Plugin.Sdk.0.2.0.0.nupkg"
             };
             foreach (var packageName in requiredPackages)
             {

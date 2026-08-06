@@ -1626,7 +1626,7 @@ public sealed class PluginHostLifecycleTests
                     "type": "{{entryType}}"
                   },
                   "requires": {
-                    "api": "[2.0.0,3.0.0)",
+                    "api": "[1.0.0,2.0.0)",
                     "features": {{serializedFeatures}}
                   }
                 }

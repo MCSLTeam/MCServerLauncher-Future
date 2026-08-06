@@ -91,7 +91,7 @@ internal static class PluginManifestParser
     internal const string CanonicalSchemaUri =
         "https://mcsl-team.github.io/schemas/mcsl-plugin-2.0.schema.json";
 
-    private const string HostApiVersion = "2.0.0";
+    private const string HostApiVersion = "1.0.0";
     private const string DigestDomain = "mcsl-plugin-manifest-v2";
 
     private static readonly HashSet<string> KnownFeatures = new(StringComparer.Ordinal)

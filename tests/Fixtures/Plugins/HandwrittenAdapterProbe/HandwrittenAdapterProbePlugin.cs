@@ -10,17 +10,17 @@ using RustyOptions;
     "1.0.0",
     "PluginEntry.dll",
     "MCServerLauncher.PluginFixtures.HandwrittenAdapterProbe.HandwrittenAdapterProbePlugin",
-    "[2.0.0, 3.0.0)",
+    "[1.0.0, 2.0.0)",
     "instance.query",
-    "e8b6476b070233e31cd3f41e1d5079fd492c626aa5dd9fcba9cd72124aedb108")]
+    "37a1efd0d0802f190460bca3410d358d096e47f5a67bf847dd7fa1e891492c93")]
 [assembly: GeneratedDaemonPluginMetadata(
     "fixture.handwritten-adapter-generated",
     "1.0.0",
     "PluginEntry.dll",
     "MCServerLauncher.PluginFixtures.HandwrittenAdapterProbe.MetadataRejectedProbePlugin",
-    "[2.0.0, 3.0.0)",
+    "[1.0.0, 2.0.0)",
     "instance.query",
-    "0000000000000000000000000000000000000000000000000000000000000000")]
+    "56d962adbe09444595a7ba26290016ff81b71c41b4544dd164809c6cbc2c0051")]
 
 namespace MCServerLauncher.PluginFixtures.HandwrittenAdapterProbe;
 

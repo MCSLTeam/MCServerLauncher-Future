@@ -11,9 +11,9 @@ using RustyOptions;
     "1.0.0",
     "PluginEntry.dll",
     "MCServerLauncher.ExternalCompileFixture.ExternalCompilePlugin",
-    "[2.0.0, 3.0.0)",
+    "[1.0.0, 2.0.0)",
     "event.publish\ninstance.query\nrpc.register",
-    "72359393f00a7d0bfbed2f1b684a8583146b0212c1ac29bc8477f37af1815d61")]
+    "3277e1b6d65f1dfc36328070353f04757259bca2d283672861e39fbf1cd8c0ce")]
 
 namespace MCServerLauncher.ExternalCompileFixture;
 

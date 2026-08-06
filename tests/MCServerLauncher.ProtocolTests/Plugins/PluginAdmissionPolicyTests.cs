@@ -484,7 +484,7 @@ public sealed class PluginAdmissionPolicyTests
             "PluginEntry.dll",
             "PluginEntry",
             NuGetVersion.Parse("1.0.0"),
-            VersionRange.Parse("[2.0.0,3.0.0)"),
+            VersionRange.Parse("[1.0.0,2.0.0)"),
             frozen,
             "/bundle",
             "/bundle/PluginEntry.dll",

@@ -7,9 +7,9 @@ using RustyOptions;
     "1.0.0",
     "PluginEntry.dll",
     "MCServerLauncher.PluginFixtures.StartThrowing.StartThrowingPlugin",
-    "[2.0.0, 3.0.0)",
+    "[1.0.0, 2.0.0)",
     "event.publish\ninstance.query\nrpc.register",
-    "5ef74201b140943c67cb36368c707124dc33bc1b57ad580601a6b606a3b88f4e")]
+    "5c5a8443d184a5ac1e7fb64c521081df09ded8886bb29b9cfbd02cabbbde6477")]
 
 namespace MCServerLauncher.PluginFixtures.StartThrowing;
 

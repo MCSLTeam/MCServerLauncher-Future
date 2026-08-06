@@ -8,9 +8,9 @@ using RustyOptions;
     "1.0.0",
     "PluginEntry.dll",
     "MCServerLauncher.PluginFixtures.StartHanging.LateHttpRegistrationPlugin",
-    "[2.0.0, 3.0.0)",
+    "[1.0.0, 2.0.0)",
     "network.http.listen",
-    "12dc8111bc8ec1f51d01a90e7511899fb7ab9b1e9d0da5bc2578bee88ebafc46")]
+    "5ac6c33c7ca55c6bf3ae770d4748440a4c0403fcbf6ec8e44ed66ddd8c055b01")]
 
 namespace MCServerLauncher.PluginFixtures.StartHanging;
 

@@ -105,7 +105,7 @@ internal static class PluginSdkDiagnostics
     public static readonly DiagnosticDescriptor UnsupportedApiRange = new(
         id: "MCSLPLG013",
         title: "Unsupported plugin API range",
-        messageFormat: "Manifest API range '{0}' does not include Plugin API 2.0.0",
+        messageFormat: "Manifest API range '{0}' does not include Plugin API 1.0.0",
         category: Category,
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);

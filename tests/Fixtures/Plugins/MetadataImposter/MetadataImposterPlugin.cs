@@ -6,7 +6,7 @@ using RustyOptions;
     "1.0.0",
     "PluginEntry.dll",
     "MCServerLauncher.PluginFixtures.MetadataImposter.MetadataImposterPlugin",
-    "[2.0.0, 3.0.0)",
+    "[1.0.0, 2.0.0)",
     "event.publish\ninstance.query\nrpc.register",
     "0000000000000000000000000000000000000000000000000000000000000000")]
 

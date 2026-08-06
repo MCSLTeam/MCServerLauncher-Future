@@ -7,9 +7,9 @@ using RustyOptions;
     "1.0.0",
     "PluginEntry.dll",
     "MCServerLauncher.PluginFixtures.StartReturnedError.StartReturnedErrorPlugin",
-    "[2.0.0, 3.0.0)",
+    "[1.0.0, 2.0.0)",
     "event.publish\ninstance.query\nrpc.register",
-    "7e39b20218c299fa1569d82ff0f11575f451305ca2d19614193e420c1148721a")]
+    "e61bec6f93b774b29283b2e75bb57266d03c6c57649bdce76c1b271a533b6348")]
 
 namespace MCServerLauncher.PluginFixtures.StartReturnedError;
 

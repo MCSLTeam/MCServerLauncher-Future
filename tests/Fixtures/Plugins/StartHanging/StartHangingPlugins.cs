@@ -11,49 +11,49 @@ using RustyOptions;
     "1.0.0",
     "PluginEntry.dll",
     "MCServerLauncher.PluginFixtures.StartHanging.NeverCompletingStartPlugin",
-    "[2.0.0, 3.0.0)",
+    "[1.0.0, 2.0.0)",
     "event.publish\ninstance.query\nrpc.register",
-    "514ef77f364b028f43471542b8b2455804d0f2a286b2acdd59f3fece4fae5f76")]
+    "578b58100a99bc6b354541855cec3c05ffc83e275f24e2db39904234544f56af")]
 [assembly: GeneratedDaemonPluginMetadata(
     "fixture.start-blocking-lifetime-cancellation",
     "1.0.0",
     "PluginEntry.dll",
     "MCServerLauncher.PluginFixtures.StartHanging.BlockingLifetimeCancellationPlugin",
-    "[2.0.0, 3.0.0)",
+    "[1.0.0, 2.0.0)",
     "event.publish\ninstance.query\nrpc.register",
-    "bcf1feaf105224149502fe70060faa4a3954b971f2fe5cc745b9a19267832354")]
+    "f012eb2092b13853002385cc80b1126b2971035322744d3282920736c929d9aa")]
 [assembly: GeneratedDaemonPluginMetadata(
     "fixture.start-blocking-start-cancellation",
     "1.0.0",
     "PluginEntry.dll",
     "MCServerLauncher.PluginFixtures.StartHanging.BlockingStartCancellationPlugin",
-    "[2.0.0, 3.0.0)",
+    "[1.0.0, 2.0.0)",
     "event.publish\ninstance.query\nrpc.register",
-    "63caee1c2b3b180aa738483b1d00d638ed5b622e8c3d9dc8a9b586486224af4f")]
+    "8a81929c28341c00ac1abafffa83c1df2e7792477d3625f20224f421b738b731")]
 [assembly: GeneratedDaemonPluginMetadata(
     "fixture.start-ignores-cancellation",
     "1.0.0",
     "PluginEntry.dll",
     "MCServerLauncher.PluginFixtures.StartHanging.IgnoresCancellationStartPlugin",
-    "[2.0.0, 3.0.0)",
+    "[1.0.0, 2.0.0)",
     "event.publish\ninstance.query\nrpc.register",
-    "b2e1500368a2ad24479e84004459691d5f7a68da14c1c81237871c105bd7aa91")]
+    "f2a7b5eb5dcb07702d9f649391ee1f045953185149aeae75d5ab826c16e19aac")]
 [assembly: GeneratedDaemonPluginMetadata(
     "fixture.start-late-success",
     "1.0.0",
     "PluginEntry.dll",
     "MCServerLauncher.PluginFixtures.StartHanging.DelayedRegisteredSuccessPlugin",
-    "[2.0.0, 3.0.0)",
+    "[1.0.0, 2.0.0)",
     "event.publish\ninstance.query\nrpc.register",
-    "f5f6795447c4ad608ad104e4e6225168dbaf092f912a89e230f03a6159ae6a02")]
+    "46c16f3c594d7b992f4918618cda0bc341a01b28fc0915757ee739536b56239f")]
 [assembly: GeneratedDaemonPluginMetadata(
     "fixture.start-synchronously-blocks",
     "1.0.0",
     "PluginEntry.dll",
     "MCServerLauncher.PluginFixtures.StartHanging.SynchronouslyBlockingStartPlugin",
-    "[2.0.0, 3.0.0)",
+    "[1.0.0, 2.0.0)",
     "event.publish\ninstance.query\nrpc.register",
-    "e6d169328216692a66602fe65f31a877564ad0dcda32ef6d223701dfba0e465f")]
+    "d3eab94c25aeb2fd6c41698582440aff869121936255a085c00e5ce5ec4aedfe")]
 
 namespace MCServerLauncher.PluginFixtures.StartHanging;
 

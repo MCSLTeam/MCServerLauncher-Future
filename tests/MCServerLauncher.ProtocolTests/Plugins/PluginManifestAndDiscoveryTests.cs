@@ -12,18 +12,18 @@ public sealed class PluginManifestAndDiscoveryTests
         using var fixture = PluginFixture.Create("community.instance-health");
         fixture.WriteManifest(
             "community.instance-health",
-            "1.2.3",
+            "1.0.0",
             "PluginEntry.dll",
             "Community.InstanceHealth.InstanceHealthPlugin",
-            "[2.0.0,3.0.0)",
+            "[1.0.0,2.0.0)",
             "event.publish",
             "instance.query",
             "rpc.register");
 
-        var manifest = PluginManifestReader.ReadAndValidate(fixture.BundleDirectory, "2.0.0");
+        var manifest = PluginManifestReader.ReadAndValidate(fixture.BundleDirectory, "1.0.0");
 
         Assert.Equal("community.instance-health", manifest.Identity.Id);
-        Assert.Equal("1.2.3", manifest.Identity.Version);
+        Assert.Equal("1.0.0", manifest.Identity.Version);
         Assert.Equal("PluginEntry.dll", manifest.EntryAssembly);
         Assert.Equal("Community.InstanceHealth.InstanceHealthPlugin", manifest.EntryType);
         Assert.True(manifest.HasFeature(PluginFeature.RpcRegister));
@@ -36,41 +36,41 @@ public sealed class PluginManifestAndDiscoveryTests
     {
         using var first = PluginFixture.Create("first");
         using var second = PluginFixture.Create("second");
-        first.WriteRawManifest(
-            """
-            {
-              "package": { "id": "community.instance-health", "version": "01.02" },
-              "entry": {
-                "assembly": "PluginEntry.dll",
-                "type": "Community.InstanceHealth.InstanceHealthPlugin"
-              },
-              "requires": {
-                "api": "[2.0,3.0)",
-                "features": ["rpc.register", "event.publish", "instance.query"]
-              }
-            }
-            """);
-        second.WriteRawManifest(
+                first.WriteRawManifest(
+                        """
+                        {
+                            "package": { "id": "community.instance-health", "version": "01.00" },
+                            "entry": {
+                                "assembly": "PluginEntry.dll",
+                                "type": "Community.InstanceHealth.InstanceHealthPlugin"
+                            },
+                            "requires": {
+                                "api": "[1.0,2.0)",
+                                "features": ["rpc.register", "event.publish", "instance.query"]
+                            }
+                        }
+                        """);
+                second.WriteRawManifest(
             """
             {
               "$schema": "https://mcsl-team.github.io/schemas/mcsl-plugin-2.0.schema.json",
               "requires": {
-                "features": ["event.publish", "instance.query", "rpc.register"],
-                "api": "[2.0.0, 3.0.0)"
+                                "features": ["event.publish", "instance.query", "rpc.register"],
+                                "api": "[1.0.0, 2.0.0)"
               },
               "entry": {
                 "type": "Community.InstanceHealth.InstanceHealthPlugin",
                 "assembly": "PluginEntry.dll"
               },
-              "package": { "version": "1.2.0", "id": "community.instance-health" }
+            "package": { "version": "1.0.0", "id": "community.instance-health" }
             }
             """);
 
-        var firstManifest = PluginManifestReader.ReadAndValidate(first.BundleDirectory, "2.0.0");
-        var secondManifest = PluginManifestReader.ReadAndValidate(second.BundleDirectory, "2.0.0");
+        var firstManifest = PluginManifestReader.ReadAndValidate(first.BundleDirectory, "1.0.0");
+        var secondManifest = PluginManifestReader.ReadAndValidate(second.BundleDirectory, "1.0.0");
 
-        Assert.Equal("1.2.0", firstManifest.Identity.Version);
-        Assert.Equal("[2.0.0, 3.0.0)", firstManifest.ApiVersionRange.ToNormalizedString());
+        Assert.Equal("1.0.0", firstManifest.Identity.Version);
+        Assert.Equal("[1.0.0, 2.0.0)", firstManifest.ApiVersionRange.ToNormalizedString());
         Assert.Equal(firstManifest.ManifestDigest, secondManifest.ManifestDigest);
     }
 
@@ -81,24 +81,24 @@ public sealed class PluginManifestAndDiscoveryTests
         fixture.WriteRawManifest(
             """
             {
-              "package": {
-                "id": "community.instance-health",
-                "version": "1.0.0",
-                "version": "1.0.1"
-              },
+                            "package": {
+                                "id": "community.instance-health",
+                                "version": "1.0.0",
+                                "version": "1.0.0"
+                            },
               "entry": {
                 "assembly": "PluginEntry.dll",
                 "type": "Community.InstanceHealth.InstanceHealthPlugin"
               },
               "requires": {
-                "api": "[2.0.0,3.0.0)",
+                "api": "[1.0.0,2.0.0)",
                 "features": ["rpc.register"]
               }
             }
             """);
 
         var exception = Assert.Throws<PluginManifestException>(
-            () => PluginManifestReader.ReadAndValidate(fixture.BundleDirectory, "2.0.0"));
+            () => PluginManifestReader.ReadAndValidate(fixture.BundleDirectory, "1.0.0"));
 
         Assert.Equal("manifest_invalid", exception.Code);
     }
@@ -116,7 +116,7 @@ public sealed class PluginManifestAndDiscoveryTests
             "rpc.register");
 
         var rangeException = Assert.Throws<PluginManifestException>(
-            () => PluginManifestReader.ReadAndValidate(fixture.BundleDirectory, "2.0.0"));
+            () => PluginManifestReader.ReadAndValidate(fixture.BundleDirectory, "1.0.0"));
         Assert.Equal("api_version_unsupported", rangeException.Code);
 
         fixture.WriteManifest(
@@ -124,11 +124,11 @@ public sealed class PluginManifestAndDiscoveryTests
             "1.0.0",
             "PluginEntry.dll",
             "Community.InstanceHealth.InstanceHealthPlugin",
-            "[2.0.0,3.0.0)",
+            "[1.0.0,2.0.0)",
             "unknown.feature");
 
         var featureException = Assert.Throws<PluginManifestException>(
-            () => PluginManifestReader.ReadAndValidate(fixture.BundleDirectory, "2.0.0"));
+            () => PluginManifestReader.ReadAndValidate(fixture.BundleDirectory, "1.0.0"));
         Assert.Equal("feature_unsupported", featureException.Code);
     }
 
@@ -141,11 +141,11 @@ public sealed class PluginManifestAndDiscoveryTests
             "1.0.0",
             "PluginEntry.dll",
             "Community.InstanceHealth.InstanceHealthPlugin",
-            "[2.0.0,3.0.0)",
+            "[1.0.0,2.0.0)",
             "event.subscribe");
 
         var exception = Assert.Throws<PluginManifestException>(
-            () => PluginManifestReader.ReadAndValidate(fixture.BundleDirectory, "2.0.0"));
+            () => PluginManifestReader.ReadAndValidate(fixture.BundleDirectory, "1.0.0"));
         Assert.Equal("feature_unimplemented", exception.Code);
     }
 
@@ -160,10 +160,10 @@ public sealed class PluginManifestAndDiscoveryTests
             "1.0.0",
             "PluginEntry.dll",
             "Community.InstanceHealth.InstanceHealthPlugin",
-            "[2.0.0,3.0.0)",
+            "[1.0.0,2.0.0)",
             " rpc.register");
         var paddedException = Assert.Throws<PluginManifestException>(
-            () => PluginManifestReader.ReadAndValidate(padded.BundleDirectory, "2.0.0"));
+            () => PluginManifestReader.ReadAndValidate(padded.BundleDirectory, "1.0.0"));
         Assert.Equal("feature_invalid", paddedException.Code);
 
         // Malformed identifiers must be reported as feature_invalid, not feature_unsupported.
@@ -173,10 +173,10 @@ public sealed class PluginManifestAndDiscoveryTests
             "1.0.0",
             "PluginEntry.dll",
             "Community.InstanceHealth.InstanceHealthPlugin",
-            "[2.0.0,3.0.0)",
+            "[1.0.0,2.0.0)",
             "rpc/register");
         var malformedException = Assert.Throws<PluginManifestException>(
-            () => PluginManifestReader.ReadAndValidate(malformed.BundleDirectory, "2.0.0"));
+            () => PluginManifestReader.ReadAndValidate(malformed.BundleDirectory, "1.0.0"));
         Assert.Equal("feature_invalid", malformedException.Code);
     }
 
@@ -189,11 +189,11 @@ public sealed class PluginManifestAndDiscoveryTests
             "1.0.0",
             "PluginEntry.dll",
             "Community.InstanceHealth.InstanceHealthPlugin",
-            "[2.0.0,3.0.0)",
+            "[1.0.0,2.0.0)",
             ["rpc.register", "rpc.register"]);
 
         var duplicateException = Assert.Throws<PluginManifestException>(
-            () => PluginManifestReader.ReadAndValidate(duplicateFixture.BundleDirectory, "2.0.0"));
+            () => PluginManifestReader.ReadAndValidate(duplicateFixture.BundleDirectory, "1.0.0"));
         Assert.Equal("feature_duplicate", duplicateException.Code);
 
         var root = Directory.CreateTempSubdirectory("mcsl-plugin-duplicates-").FullName;
@@ -206,17 +206,17 @@ public sealed class PluginManifestAndDiscoveryTests
                 "1.0.0",
                 "PluginEntry.dll",
                 "Community.InstanceHealth.InstanceHealthPlugin",
-                "[2.0.0,3.0.0)",
+                "[1.0.0,2.0.0)",
                 "rpc.register");
             second.WriteManifest(
                 "community.instance-health",
                 "1.0.1",
                 "PluginEntry.dll",
                 "Community.InstanceHealth.InstanceHealthPlugin",
-                "[2.0.0,3.0.0)",
+                "[1.0.0,2.0.0)",
                 "rpc.register");
 
-            var result = new PluginDiscovery("2.0.0").Discover(root);
+            var result = new PluginDiscovery("1.0.0").Discover(root);
 
             Assert.Empty(result.Plugins);
             Assert.Equal(2, result.Failures.Count(failure => failure.Code == "duplicate_id"));
@@ -237,12 +237,12 @@ public sealed class PluginManifestAndDiscoveryTests
             "1.0.0",
             "PluginEntry.dll",
             "Community.InstanceHealth.InstanceHealthPlugin",
-            "[2.0.0,3.0.0)",
+            "[1.0.0,2.0.0)",
             "rpc.register",
             extraJson: ",\"unexpected\":true");
 
         var manifestException = Assert.Throws<PluginManifestException>(
-            () => PluginManifestReader.ReadAndValidate(fixture.BundleDirectory, "2.0.0"));
+            () => PluginManifestReader.ReadAndValidate(fixture.BundleDirectory, "1.0.0"));
         Assert.Equal("manifest_invalid", manifestException.Code);
 
         fixture.WriteManifest(
@@ -250,11 +250,11 @@ public sealed class PluginManifestAndDiscoveryTests
             "1.0.0",
             "PluginEntry.dll",
             "Community.InstanceHealth.InstanceHealthPlugin",
-            "[2.0.0,3.0.0)",
+            "[1.0.0,2.0.0)",
             "rpc.register");
         var assemblyException = Assert.Throws<PluginAssemblyException>(
             () => PluginAssemblyPolicy.ValidateBundle(
-                PluginManifestReader.ReadAndValidate(fixture.BundleDirectory, "2.0.0")));
+                PluginManifestReader.ReadAndValidate(fixture.BundleDirectory, "1.0.0")));
         Assert.Equal("forbidden_reference", assemblyException.Code);
 
         using var nestedFixture = PluginFixture.Create(
@@ -266,7 +266,7 @@ public sealed class PluginManifestAndDiscoveryTests
             "1.0.0",
             "PluginEntry.dll",
             "MCServerLauncher.ExternalCompileFixture.ExternalCompilePlugin",
-            "[2.0.0,3.0.0)",
+            "[1.0.0,2.0.0)",
             "rpc.register");
         var nestedDirectory = Path.Combine(nestedFixture.BundleDirectory, "deps");
         Directory.CreateDirectory(nestedDirectory);
@@ -279,7 +279,7 @@ public sealed class PluginManifestAndDiscoveryTests
 
         var nestedException = Assert.Throws<PluginAssemblyException>(
             () => PluginAssemblyPolicy.ValidateBundle(
-                PluginManifestReader.ReadAndValidate(nestedFixture.BundleDirectory, "2.0.0")));
+                PluginManifestReader.ReadAndValidate(nestedFixture.BundleDirectory, "1.0.0")));
         Assert.Equal("forbidden_reference", nestedException.Code);
     }
 
