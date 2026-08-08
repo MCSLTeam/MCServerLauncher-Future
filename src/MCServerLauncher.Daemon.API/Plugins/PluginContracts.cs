@@ -43,6 +43,31 @@ public interface IPluginEventPublisher<TData, TMeta>
         CancellationToken cancellationToken = default);
 }
 
+public delegate ValueTask PluginEventHandler<TData, TMeta>(
+    DaemonEventField<TMeta> meta,
+    DaemonEventField<TData> data,
+    CancellationToken cancellationToken);
+
+public interface IPluginEventSubscriber
+{
+    Result<Unit, DaemonError> Subscribe<TData, TMeta>(
+        EventDescriptor<TData, TMeta> descriptor,
+        PluginEventHandler<TData, TMeta> handler,
+        DaemonEventField<TMeta> metaFilter = default);
+}
+
+public interface IPluginProviderRegistry
+{
+    Result<Unit, DaemonError> Export<TContract>(TContract implementation)
+        where TContract : class;
+}
+
+public interface IPluginProviderImports
+{
+    Result<TContract, DaemonError> Import<TContract>(string pluginId)
+        where TContract : class;
+}
+
 /// <summary>
 /// Granted application surfaces bound to one explicit caller. Every property returns an
 /// authorization proxy; the host never exposes the underlying application implementation.
@@ -91,6 +116,12 @@ public interface IPluginContext : IPluginAuthorizedApplications
     IPluginRpcRegistrar Rpc { get; }
 
     IPluginEventRegistrar Events { get; }
+
+    IPluginEventSubscriber Subscriptions { get; }
+
+    IPluginProviderRegistry Providers { get; }
+
+    IPluginProviderImports Imports { get; }
 
     /// <summary>
     /// Cold-start configuration reader (base API; not a feature).

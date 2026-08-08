@@ -8,7 +8,7 @@
     <UseWPF>true</UseWPF>
     <LangVersion>14</LangVersion>
     <Platforms>AnyCPU;ARM64;x64;x86</Platforms>
-    <PublishSingleFile>true</PublishSingleFile>
+    <PublishSingleFile Condition="'$(RuntimeIdentifier)' != ''">true</PublishSingleFile>
 	  <EnableWindowsTargeting>true</EnableWindowsTargeting>
 	  <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
   </PropertyGroup>

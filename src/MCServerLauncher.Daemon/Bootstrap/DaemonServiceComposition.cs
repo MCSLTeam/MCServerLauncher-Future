@@ -153,7 +153,8 @@ internal static class DaemonServiceComposition
             serviceProvider.GetRequiredService<VerifiedPrincipalAuthority>(),
             rollbackCleanupTimeout: null,
             shutdownCleanupTimeout: null,
-            auditSink: serviceProvider.GetRequiredService<IAuditSink>()));
+            auditSink: serviceProvider.GetRequiredService<IAuditSink>(),
+            domainEvents: serviceProvider.GetRequiredService<IDomainEventPort>()));
         var protocolCatalogAccessor = new FrozenProtocolCatalogAccessor();
         a.RegisterSingleton(protocolCatalogAccessor);
         a.RegisterSingleton<IFrozenProtocolCatalogAccessor>(protocolCatalogAccessor);

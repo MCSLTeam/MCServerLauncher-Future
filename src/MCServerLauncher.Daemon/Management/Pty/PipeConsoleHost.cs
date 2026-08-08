@@ -20,6 +20,9 @@ internal sealed class PipeConsoleHost : IInstanceConsoleHost
     public int? ProcessId => null;
     public bool OwnsProcessLifecycle => false;
 
+    public Task WaitForExitAsync(CancellationToken cancellationToken) =>
+        _process.WaitForExitAsync(cancellationToken);
+
     private StreamWriter Stdin => _stdin ??= _process.StandardInput;
 
     public void NotifyProcessExited()

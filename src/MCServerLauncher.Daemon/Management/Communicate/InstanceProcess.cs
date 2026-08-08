@@ -272,7 +272,7 @@ public class InstanceProcess : DisposableObject
         if (completion is null)
         {
             if (_process is not null)
-                await _process.WaitForExitAsync(ct).ConfigureAwait(false);
+                await WaitForProcessExitAsync(_process, _consoleHost, ct).ConfigureAwait(false);
             await AwaitTrackedPublicationsAsync(ct).ConfigureAwait(false);
             return;
         }
@@ -333,8 +333,9 @@ public class InstanceProcess : DisposableObject
             // Process.Kill is asynchronous. A failure must propagate so the manager keeps the
             // binding and per-instance gate closed instead of reporting a false halt success.
             KillProcess();
+            _consoleHost?.NotifyProcessExited();
 
-            await WaitForActualExitAsync(process).ConfigureAwait(false);
+            await WaitForProcessExitAsync(process, _consoleHost, CancellationToken.None).ConfigureAwait(false);
             await Task.WhenAll(descendants.Select(WaitForActualExitAsync)).ConfigureAwait(false);
 
             var completion = _completionTask;
@@ -564,8 +565,7 @@ public class InstanceProcess : DisposableObject
         {
             try
             {
-                if (!_process.HasExited)
-                    await _process.WaitForExitAsync(CancellationToken.None).ConfigureAwait(false);
+                await WaitForProcessExitAsync(_process, _consoleHost, CancellationToken.None).ConfigureAwait(false);
             }
             catch (InvalidOperationException)
             {
@@ -651,7 +651,7 @@ public class InstanceProcess : DisposableObject
         {
             try
             {
-                await _process.WaitForExitAsync(CancellationToken.None).ConfigureAwait(false);
+                await WaitForProcessExitAsync(_process, _consoleHost, CancellationToken.None).ConfigureAwait(false);
             }
             catch (InvalidOperationException)
             {
@@ -1013,6 +1013,21 @@ public class InstanceProcess : DisposableObject
         }
 
         return descendants;
+    }
+
+    private static async Task WaitForProcessExitAsync(
+        Process process,
+        IInstanceConsoleHost? host,
+        CancellationToken cancellationToken)
+    {
+        if (host?.OwnsProcessLifecycle == true)
+        {
+            await host.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
+        if (!process.HasExited)
+            await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task WaitForActualExitAsync(Process process)

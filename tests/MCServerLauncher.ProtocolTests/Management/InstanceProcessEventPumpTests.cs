@@ -369,7 +369,7 @@ public sealed class InstanceProcessEventPumpTests
         finally
         {
             if (!process.HasExit)
-                process.KillProcess();
+                await process.KillAndDrainAsync(CancellationToken.None);
             await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(3));
         }
     }
@@ -388,6 +388,7 @@ public sealed class InstanceProcessEventPumpTests
         {
             Assert.True(await process.StartAsync(delayToCheck: 20));
             await WaitUntilAsync(() => process.GetLogHistory().Contains("history-ready"));
+            Assert.True(process.IsPty, "The supported test platform must exercise the PTY output path.");
 
             process.AttachConsoleSubscriber((chunk, _, _) =>
             {
@@ -407,7 +408,7 @@ public sealed class InstanceProcessEventPumpTests
         finally
         {
             if (!process.HasExit)
-                process.KillProcess();
+                await process.KillAndDrainAsync(CancellationToken.None);
             await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(3));
         }
     }
@@ -424,7 +425,7 @@ public sealed class InstanceProcessEventPumpTests
         {
             Assert.True(await process.StartAsync(delayToCheck: 20));
             Assert.True(await process.RequestStoppingAsync());
-            process.KillProcess();
+            await process.KillAndDrainAsync(CancellationToken.None);
 
             await process.WaitForExitAsync().WaitAsync(TestTimeout);
 

@@ -58,7 +58,7 @@ public sealed class DaemonPluginSourceGeneratorTests
         using MCServerLauncher.Daemon.Plugin.Sdk;
         using Microsoft.Extensions.DependencyInjection;
         using RustyOptions;
-                                                "api": "[1.0.0,2.0.0)",
+
         namespace Example.Plugin;
 
         [DaemonPluginModule]
@@ -329,6 +329,60 @@ public sealed class DaemonPluginSourceGeneratorTests
     }
 
     [Fact]
+    public void DependenciesContributeToManifestDigestDeterministically()
+    {
+        var withDependencies = WithDependencySection(
+            """
+              "dependencies": {
+                "version": 1,
+                "plugins": [
+                  { "id": "community.provider-b", "version": "[2.0,3.0)" },
+                  { "id": "community.provider-a", "version": "[1.0.0,2.0.0)" }
+                ]
+              }
+            """);
+        var reorderedDependencies = WithDependencySection(
+            """
+              "dependencies": {
+                "plugins": [
+                  { "version": "[1.0.0, 2.0.0)", "id": "community.provider-a" },
+                  { "version": "[2.0.0, 3.0.0)", "id": "community.provider-b" }
+                ],
+                "version": 1
+              }
+            """);
+
+        var (baseDiagnostics, baseGenerated) = RunGenerator(ModuleSource, ManifestJson);
+        var (dependencyDiagnostics, dependencyGenerated) = RunGenerator(ModuleSource, withDependencies);
+        var (reorderedDiagnostics, reorderedGenerated) = RunGenerator(ModuleSource, reorderedDependencies);
+
+        Assert.DoesNotContain(baseDiagnostics, diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
+        Assert.DoesNotContain(dependencyDiagnostics, diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
+        Assert.DoesNotContain(reorderedDiagnostics, diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
+        Assert.NotEqual(ExtractManifestDigest(baseGenerated), ExtractManifestDigest(dependencyGenerated));
+        Assert.Equal(ExtractManifestDigest(dependencyGenerated), ExtractManifestDigest(reorderedGenerated));
+    }
+
+    [Fact]
+    public void ReportsInvalidDependencyGrammar()
+    {
+        var manifest = WithDependencySection(
+            """
+              "dependencies": {
+                "version": 1,
+                "contracts": [
+                  { "assembly": "Example.Contracts.dll", "version": "[1.0.0,2.0.0)" }
+                ]
+              }
+            """);
+
+        var (diagnostics, _) = RunGenerator(ModuleSource, manifest);
+
+        Assert.Contains(diagnostics, diagnostic => diagnostic.Id == "MCSLPLG003");
+        Assert.Contains("Field 'dependencies.contracts[].sha256' is required", diagnostics.First(diagnostic => diagnostic.Id == "MCSLPLG003").GetMessage(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void ParsesEscapedCanonicalValuesWithoutStringBoundaryConfusion()
     {
         var manifest = ManifestJson
@@ -504,6 +558,14 @@ public sealed class DaemonPluginSourceGeneratorTests
         "[\"event.publish\", \"instance.query\", \"rpc.register\", \"system.query\"]",
         featureArray,
         StringComparison.Ordinal);
+
+    private static string WithDependencySection(string section)
+    {
+        var marker = "\n}";
+        var index = ManifestJson.LastIndexOf(marker, StringComparison.Ordinal);
+        Assert.True(index >= 0, "Manifest fixture did not contain a root closing brace marker.");
+        return ManifestJson[..index] + ",\n" + section + ManifestJson[index..];
+    }
 
     private static string CreatePreviewManifest(params string[] features)
     {

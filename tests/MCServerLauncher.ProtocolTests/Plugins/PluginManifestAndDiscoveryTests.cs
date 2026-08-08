@@ -75,6 +75,218 @@ public sealed class PluginManifestAndDiscoveryTests
     }
 
     [Fact]
+    public void ReadsVersionedPluginDependenciesAndNormalizesDigest()
+    {
+        using var first = PluginFixture.Create("consumer-a");
+        using var second = PluginFixture.Create("consumer-b");
+        first.WriteManifest(
+            "community.consumer",
+            "1.0.0",
+            "PluginEntry.dll",
+            "Community.Consumer.Plugin",
+            "[1.0.0,2.0.0)",
+            "rpc.register",
+            """
+            ,"dependencies": {
+              "version": 1,
+              "plugins": [
+                { "id": "community.provider-b", "version": "[2.0, 3.0)" },
+                { "id": "community.provider-a", "version": "[1.0.0,2.0.0)" }
+              ]
+            }
+            """);
+        second.WriteManifest(
+            "community.consumer",
+            "01.00",
+            "PluginEntry.dll",
+            "Community.Consumer.Plugin",
+            "[1.0, 2.0)",
+            "rpc.register",
+            """
+            ,"dependencies": {
+              "plugins": [
+                { "version": "[1.0.0, 2.0.0)", "id": "community.provider-a" },
+                { "version": "[2.0.0, 3.0.0)", "id": "community.provider-b" }
+              ],
+              "version": 1
+            }
+            """);
+
+        var firstManifest = PluginManifestReader.ReadAndValidate(first.BundleDirectory, "1.0.0");
+        var secondManifest = PluginManifestReader.ReadAndValidate(second.BundleDirectory, "1.0.0");
+
+        Assert.Equal(
+            ["community.provider-a", "community.provider-b"],
+            firstManifest.PluginDependencies.Select(static dependency => dependency.Id).ToArray());
+        Assert.Equal("[1.0.0, 2.0.0)", firstManifest.PluginDependencies[0].NormalizedVersionRange);
+        Assert.Equal(firstManifest.ManifestDigest, secondManifest.ManifestDigest);
+    }
+
+    [Fact]
+    public void RejectsInvalidPluginDependencies()
+    {
+        using var fixture = PluginFixture.Create("community.consumer");
+        fixture.WriteManifest(
+            "community.consumer",
+            "1.0.0",
+            "PluginEntry.dll",
+            "Community.Consumer.Plugin",
+            "[1.0.0,2.0.0)",
+            "rpc.register",
+            """
+            ,"dependencies": {
+              "plugins": [{ "id": "community.provider", "version": "[1.0.0,2.0.0)" }]
+            }
+            """);
+        var missingVersion = Assert.Throws<PluginManifestException>(
+            () => PluginManifestReader.ReadAndValidate(fixture.BundleDirectory, "1.0.0"));
+        Assert.Equal("dependencies_version_missing", missingVersion.Code);
+
+        fixture.WriteManifest(
+            "community.consumer",
+            "1.0.0",
+            "PluginEntry.dll",
+            "Community.Consumer.Plugin",
+            "[1.0.0,2.0.0)",
+            "rpc.register",
+            """
+            ,"dependencies": {
+              "version": 1,
+              "plugins": [{ "id": "community.consumer", "version": "[1.0.0,2.0.0)" }]
+            }
+            """);
+        var self = Assert.Throws<PluginManifestException>(
+            () => PluginManifestReader.ReadAndValidate(fixture.BundleDirectory, "1.0.0"));
+        Assert.Equal("dependency_self", self.Code);
+
+        fixture.WriteManifest(
+            "community.consumer",
+            "1.0.0",
+            "PluginEntry.dll",
+            "Community.Consumer.Plugin",
+            "[1.0.0,2.0.0)",
+            "rpc.register",
+            """
+            ,"dependencies": {
+              "version": 1,
+              "plugins": [
+                { "id": "community.provider", "version": "[1.0.0,2.0.0)" },
+                { "id": "community.provider", "version": "[1.0.0,2.0.0)" }
+              ]
+            }
+            """);
+        var duplicate = Assert.Throws<PluginManifestException>(
+            () => PluginManifestReader.ReadAndValidate(fixture.BundleDirectory, "1.0.0"));
+        Assert.Equal("dependency_duplicate", duplicate.Code);
+    }
+
+    [Fact]
+    public void DependencyPlannerOrdersProvidersAndSkipsBrokenGraphs()
+    {
+        var root = Directory.CreateTempSubdirectory("mcsl-plugin-dependencies-").FullName;
+        try
+        {
+            using var provider = PluginFixture.Create("z-provider", root, typeof(MCServerLauncher.ExternalCompileFixture.ExternalCompilePlugin).Assembly.Location);
+            using var consumer = PluginFixture.Create("a-consumer", root, typeof(MCServerLauncher.ExternalCompileFixture.ExternalCompilePlugin).Assembly.Location);
+            provider.WriteManifest(
+                "community.provider",
+                "1.2.0",
+                "PluginEntry.dll",
+                "MCServerLauncher.ExternalCompileFixture.ExternalCompilePlugin",
+                "[1.0.0,2.0.0)",
+                "rpc.register");
+            consumer.WriteManifest(
+                "community.consumer",
+                "1.0.0",
+                "PluginEntry.dll",
+                "MCServerLauncher.ExternalCompileFixture.ExternalCompilePlugin",
+                "[1.0.0,2.0.0)",
+                "rpc.register",
+                """
+                ,"dependencies": {
+                  "version": 1,
+                  "plugins": [{ "id": "community.provider", "version": "[1.0.0,2.0.0)" }]
+                }
+                """);
+
+            var discovered = new PluginDiscovery("1.0.0").Discover(root);
+            var planned = PluginDependencyPlanner.Plan(discovered.Plugins);
+
+            Assert.Empty(planned.Failures);
+            Assert.Equal(["community.provider", "community.consumer"], planned.OrderedPlugins.Select(static plugin => plugin.Identity.Id).ToArray());
+
+            consumer.WriteManifest(
+                "community.consumer",
+                "1.0.0",
+                "PluginEntry.dll",
+                "MCServerLauncher.ExternalCompileFixture.ExternalCompilePlugin",
+                "[1.0.0,2.0.0)",
+                "rpc.register",
+                """
+                ,"dependencies": {
+                  "version": 1,
+                  "plugins": [{ "id": "community.missing", "version": "[1.0.0,2.0.0)" }]
+                }
+                """);
+            var missing = PluginDependencyPlanner.Plan(new PluginDiscovery("1.0.0").Discover(root).Plugins);
+            Assert.Equal(["community.provider"], missing.OrderedPlugins.Select(static plugin => plugin.Identity.Id).ToArray());
+            Assert.Contains(missing.Failures, failure => failure.PluginId == "community.consumer" && failure.Code == "dependency_missing");
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+                Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void DependencyPlannerRejectsCycles()
+    {
+        var root = Directory.CreateTempSubdirectory("mcsl-plugin-cycle-").FullName;
+        try
+        {
+            using var first = PluginFixture.Create("first", root, typeof(MCServerLauncher.ExternalCompileFixture.ExternalCompilePlugin).Assembly.Location);
+            using var second = PluginFixture.Create("second", root, typeof(MCServerLauncher.ExternalCompileFixture.ExternalCompilePlugin).Assembly.Location);
+            first.WriteManifest(
+                "community.first",
+                "1.0.0",
+                "PluginEntry.dll",
+                "MCServerLauncher.ExternalCompileFixture.ExternalCompilePlugin",
+                "[1.0.0,2.0.0)",
+                "rpc.register",
+                """
+                ,"dependencies": {
+                  "version": 1,
+                  "plugins": [{ "id": "community.second", "version": "[1.0.0,2.0.0)" }]
+                }
+                """);
+            second.WriteManifest(
+                "community.second",
+                "1.0.0",
+                "PluginEntry.dll",
+                "MCServerLauncher.ExternalCompileFixture.ExternalCompilePlugin",
+                "[1.0.0,2.0.0)",
+                "rpc.register",
+                """
+                ,"dependencies": {
+                  "version": 1,
+                  "plugins": [{ "id": "community.first", "version": "[1.0.0,2.0.0)" }]
+                }
+                """);
+
+            var planned = PluginDependencyPlanner.Plan(new PluginDiscovery("1.0.0").Discover(root).Plugins);
+
+            Assert.Empty(planned.OrderedPlugins);
+            Assert.Equal(2, planned.Failures.Count(static failure => failure.Code == "dependency_cycle"));
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+                Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public void RejectsDuplicateJsonProperties()
     {
         using var fixture = PluginFixture.Create("duplicate-json");
@@ -133,7 +345,7 @@ public sealed class PluginManifestAndDiscoveryTests
     }
 
     [Fact]
-    public void RejectsUnimplementedFeature()
+    public void AcceptsEventSubscribeFeature()
     {
         using var fixture = PluginFixture.Create("community.instance-health");
         fixture.WriteManifest(
@@ -144,9 +356,8 @@ public sealed class PluginManifestAndDiscoveryTests
             "[1.0.0,2.0.0)",
             "event.subscribe");
 
-        var exception = Assert.Throws<PluginManifestException>(
-            () => PluginManifestReader.ReadAndValidate(fixture.BundleDirectory, "1.0.0"));
-        Assert.Equal("feature_unimplemented", exception.Code);
+        var manifest = PluginManifestReader.ReadAndValidate(fixture.BundleDirectory, "1.0.0");
+        Assert.True(manifest.HasFeature(PluginFeature.EventSubscribe));
     }
 
     [Fact]

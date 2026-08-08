@@ -50,6 +50,9 @@ internal sealed class WindowsConPtyConsoleHost : IInstanceConsoleHost
 
     public Process Process => _process;
 
+    public Task WaitForExitAsync(CancellationToken cancellationToken) =>
+        _process.WaitForExitAsync(cancellationToken);
+
     public static WindowsConPtyConsoleHost Start(ProcessStartInfo startInfo, ushort columns, ushort rows)
     {
         ArgumentNullException.ThrowIfNull(startInfo);

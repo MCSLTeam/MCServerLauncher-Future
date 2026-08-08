@@ -253,6 +253,7 @@ internal sealed class PluginContext : IPluginContext
     private readonly IPluginPrivateStorage? _storage;
     private readonly IPluginHttpEndpointPolicy? _httpEndpoints;
     private readonly IPluginAuthentication? _authentication;
+    private readonly IPluginEventSubscriber? _subscriptions;
     private readonly PluginApplicationAuthorizer _applications;
 
     internal PluginContext(
@@ -265,6 +266,9 @@ internal sealed class PluginContext : IPluginContext
         IPluginPrivateStorage? storage,
         IPluginHttpEndpointPolicy? httpEndpoints,
         IPluginAuthentication? authentication,
+        IPluginEventSubscriber? subscriptions,
+        IPluginProviderRegistry providers,
+        IPluginProviderImports imports,
         Task activation,
         CancellationToken lifetimeToken)
     {
@@ -278,6 +282,9 @@ internal sealed class PluginContext : IPluginContext
         _storage = storage;
         _httpEndpoints = httpEndpoints;
         _authentication = authentication;
+        _subscriptions = subscriptions;
+        Providers = providers ?? throw new ArgumentNullException(nameof(providers));
+        Imports = imports ?? throw new ArgumentNullException(nameof(imports));
         Activation = activation ?? throw new ArgumentNullException(nameof(activation));
         LifetimeToken = lifetimeToken;
     }
@@ -291,6 +298,13 @@ internal sealed class PluginContext : IPluginContext
     public IPluginRpcRegistrar Rpc { get; }
 
     public IPluginEventRegistrar Events { get; }
+
+    public IPluginEventSubscriber Subscriptions =>
+        _subscriptions ?? throw new InvalidOperationException("The plugin did not declare the 'event.subscribe' feature.");
+
+    public IPluginProviderRegistry Providers { get; }
+
+    public IPluginProviderImports Imports { get; }
 
     /// <summary>
     /// Revokes the plugin's file capability and closes every session it still holds. The host calls

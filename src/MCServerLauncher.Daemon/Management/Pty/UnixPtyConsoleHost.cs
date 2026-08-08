@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -16,6 +17,8 @@ internal sealed class UnixPtyConsoleHost : IInstanceConsoleHost
     private readonly FileStream _readStream;
     private readonly FileStream _writeStream;
     private readonly Process _process;
+    private readonly object _exitTaskGate = new();
+    private Task? _exitTask;
     // Serialize writers only (binary console + WriteLine); never share a lock with blocking reads.
     private readonly SemaphoreSlim _writeGate = new(1, 1);
 
@@ -46,8 +49,23 @@ internal sealed class UnixPtyConsoleHost : IInstanceConsoleHost
 
     public Process Process => _process;
 
+    public Task WaitForExitAsync(CancellationToken cancellationToken)
+    {
+        Task exitTask;
+        lock (_exitTaskGate)
+            exitTask = _exitTask ??= Task.Run(WaitForChildExit);
+        return exitTask.WaitAsync(cancellationToken);
+    }
+
     public void NotifyProcessExited()
     {
+        try
+        {
+            _writeStream.Dispose();
+        }
+        catch
+        {
+        }
     }
 
     public static UnixPtyConsoleHost CreateViaForkPty(ProcessStartInfo startInfo, ushort columns, ushort rows)
@@ -293,11 +311,35 @@ internal sealed class UnixPtyConsoleHost : IInstanceConsoleHost
             : forkpty_libc(out amaster, IntPtr.Zero, IntPtr.Zero, ref winp);
     }
 
+    private void WaitForChildExit()
+    {
+        while (true)
+        {
+            var result = waitpid(_process.Id, out _, 0);
+            if (result == _process.Id)
+                return;
+
+            if (result != -1)
+                continue;
+
+            var error = Marshal.GetLastPInvokeError();
+            if (error == 4) // EINTR
+                continue;
+            if (error == 10) // ECHILD: already reaped by another waiter.
+                return;
+
+            throw new Win32Exception(error);
+        }
+    }
+
     [DllImport("libutil", EntryPoint = "forkpty", SetLastError = true)]
     private static extern int forkpty_libutil(out int amaster, IntPtr name, IntPtr termp, ref Winsize winp);
 
     [DllImport("libc", EntryPoint = "forkpty", SetLastError = true)]
     private static extern int forkpty_libc(out int amaster, IntPtr name, IntPtr termp, ref Winsize winp);
+
+    [DllImport("libc", SetLastError = true)]
+    private static extern int waitpid(int pid, out int status, int options);
 
     [DllImport("libc", SetLastError = true)]
     private static extern int ioctl(int fd, ulong request, ref Winsize arg);

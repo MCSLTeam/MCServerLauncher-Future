@@ -88,10 +88,10 @@ public static class FeatureCatalog
         Descriptor(PluginFeature.EventPublish, "Publish typed plugin events into the daemon event bus.", PluginFeatureRisk.Medium, [], implemented: true),
         Descriptor(
             PluginFeature.EventSubscribe,
-            "Subscribe to typed application events (Phase 7 / Contracts plan).",
+            "Subscribe to typed application events.",
             PluginFeatureRisk.Medium,
             [],
-            implemented: false),
+            implemented: true),
         Descriptor(
             PluginFeature.InstanceQuery,
             "Read instance catalog, reports, logs, and settings.",

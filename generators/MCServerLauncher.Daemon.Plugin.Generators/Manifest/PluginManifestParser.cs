@@ -31,6 +31,38 @@ internal sealed class PluginManifestIssue
     public string? ConflictingValue { get; }
 }
 
+internal sealed class ParsedPluginDependency
+{
+    public ParsedPluginDependency(string id, string versionRange)
+    {
+        Id = id;
+        VersionRange = versionRange;
+    }
+
+    public string Id { get; }
+
+    public string VersionRange { get; }
+}
+
+internal sealed class ParsedContractDependency
+{
+    public ParsedContractDependency(string assembly, string assemblyName, string versionRange, string sha256)
+    {
+        Assembly = assembly;
+        AssemblyName = assemblyName;
+        VersionRange = versionRange;
+        Sha256 = sha256;
+    }
+
+    public string Assembly { get; }
+
+    public string AssemblyName { get; }
+
+    public string VersionRange { get; }
+
+    public string Sha256 { get; }
+}
+
 internal sealed class ParsedPluginManifest
 {
     public ParsedPluginManifest(
@@ -41,6 +73,8 @@ internal sealed class ParsedPluginManifest
         string apiRange,
         IReadOnlyList<string> sourceFeatures,
         IReadOnlyList<string> features,
+        IReadOnlyList<ParsedPluginDependency> pluginDependencies,
+        IReadOnlyList<ParsedContractDependency> contractDependencies,
         string digest,
         bool apiRangeSupported,
         IReadOnlyList<PluginManifestIssue> issues,
@@ -53,6 +87,8 @@ internal sealed class ParsedPluginManifest
         ApiRange = apiRange;
         SourceFeatures = sourceFeatures;
         Features = features;
+        PluginDependencies = pluginDependencies;
+        ContractDependencies = contractDependencies;
         Digest = digest;
         ApiRangeSupported = apiRangeSupported;
         Issues = issues;
@@ -72,6 +108,10 @@ internal sealed class ParsedPluginManifest
     public IReadOnlyList<string> SourceFeatures { get; }
 
     public IReadOnlyList<string> Features { get; }
+
+    public IReadOnlyList<ParsedPluginDependency> PluginDependencies { get; }
+
+    public IReadOnlyList<ParsedContractDependency> ContractDependencies { get; }
 
     public string Digest { get; }
 
@@ -139,7 +179,7 @@ internal static class PluginManifestParser
                 });
 
             var root = RequireObject(document.RootElement, "$");
-            ValidateProperties(root, "$", "$schema", "package", "entry", "requires");
+            ValidateProperties(root, "$", "$schema", "package", "entry", "requires", "dependencies");
 
             var schema = ReadOptionalString(root, "$schema", "$");
             if (schema is not null && !string.Equals(schema, CanonicalSchemaUri, StringComparison.Ordinal))
@@ -151,7 +191,7 @@ internal static class PluginManifestParser
             var package = RequireObjectProperty(root, "package", "$");
             ValidateProperties(package, "$.package", "id", "version");
             var packageId = RequireString(package, "id", "$.package");
-            ValidatePluginId(packageId);
+            ValidatePluginId(packageId, "package.id");
             var packageVersionText = RequireString(package, "version", "$.package");
             if (!NuGetVersion.TryParse(packageVersionText, out var packageVersion))
                 throw new InvalidOperationException("Field 'package.version' is not a valid NuGet version.");
@@ -160,7 +200,7 @@ internal static class PluginManifestParser
             var entry = RequireObjectProperty(root, "entry", "$");
             ValidateProperties(entry, "$.entry", "assembly", "type");
             var entryAssembly = RequireString(entry, "assembly", "$.entry");
-            ValidateEntryAssembly(entryAssembly);
+            ValidateEntryAssembly(entryAssembly, "entry.assembly");
             var entryType = RequireString(entry, "type", "$.entry");
             ValidateEntryType(entryType);
 
@@ -218,13 +258,16 @@ internal static class PluginManifestParser
                 }
             }
 
+            var (pluginDependencies, contractDependencies) = ParseDependencies(root, packageId);
             var digest = ComputeNormalizedDigest(
                 packageId,
                 normalizedPackageVersion,
                 entryAssembly,
                 entryType,
                 normalizedApiRange,
-                normalizedFeatures);
+                normalizedFeatures,
+                pluginDependencies,
+                contractDependencies);
 
             return new ParsedPluginManifest(
                 packageId,
@@ -234,6 +277,8 @@ internal static class PluginManifestParser
                 normalizedApiRange,
                 sourceFeatures,
                 normalizedFeatures,
+                pluginDependencies,
+                contractDependencies,
                 digest,
                 apiRangeSupported,
                 issues,
@@ -247,6 +292,102 @@ internal static class PluginManifestParser
     }
 
     public static bool IsFeatureKnown(string value) => KnownFeatures.Contains(value);
+
+    private static (List<ParsedPluginDependency> Plugins, List<ParsedContractDependency> Contracts) ParseDependencies(JsonElement root, string packageId)
+    {
+        if (!root.TryGetProperty("dependencies", out var dependenciesElement))
+            return (new List<ParsedPluginDependency>(), new List<ParsedContractDependency>());
+
+        var dependencies = RequireObject(dependenciesElement, "$.dependencies");
+        ValidateProperties(dependencies, "$.dependencies", "version", "plugins", "contracts");
+        if (!dependencies.TryGetProperty("version", out var versionElement))
+            throw new InvalidOperationException("Field 'dependencies.version' is required.");
+        if (versionElement.ValueKind != JsonValueKind.Number || !versionElement.TryGetInt32(out var version) || version != 1)
+            throw new InvalidOperationException("Field 'dependencies.version' must be 1.");
+
+        return (
+            ParsePluginDependencies(dependencies, packageId),
+            ParseContractDependencies(dependencies));
+    }
+
+    private static List<ParsedPluginDependency> ParsePluginDependencies(JsonElement dependencies, string packageId)
+    {
+        if (!dependencies.TryGetProperty("plugins", out var pluginsElement))
+            return new List<ParsedPluginDependency>();
+        if (pluginsElement.ValueKind != JsonValueKind.Array)
+            throw new InvalidOperationException("Field 'dependencies.plugins' must be an array.");
+
+        var parsed = new List<ParsedPluginDependency>();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var pluginElement in pluginsElement.EnumerateArray())
+        {
+            var plugin = RequireObject(pluginElement, "$.dependencies.plugins[]");
+            ValidateProperties(plugin, "$.dependencies.plugins[]", "id", "version");
+            var id = RequireString(plugin, "id", "$.dependencies.plugins[]");
+            ValidatePluginId(id, "dependencies.plugins[].id");
+            if (string.Equals(id, packageId, StringComparison.Ordinal))
+                throw new InvalidOperationException($"Plugin dependency '{id}' must not reference the current plugin.");
+            if (!seen.Add(id))
+                throw new InvalidOperationException($"Plugin dependency '{id}' is declared more than once.");
+
+            var versionText = RequireString(plugin, "version", "$.dependencies.plugins[]");
+            if (!VersionRange.TryParse(versionText, out var versionRange))
+                throw new InvalidOperationException("Field 'dependencies.plugins[].version' is not a valid NuGet version range.");
+            parsed.Add(new ParsedPluginDependency(id, versionRange.ToNormalizedString()));
+        }
+
+        parsed.Sort(static (left, right) => StringComparer.Ordinal.Compare(left.Id, right.Id));
+        return parsed;
+    }
+
+    private static List<ParsedContractDependency> ParseContractDependencies(JsonElement dependencies)
+    {
+        if (!dependencies.TryGetProperty("contracts", out var contractsElement))
+            return new List<ParsedContractDependency>();
+        if (contractsElement.ValueKind != JsonValueKind.Array)
+            throw new InvalidOperationException("Field 'dependencies.contracts' must be an array.");
+
+        var parsed = new List<ParsedContractDependency>();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var contractElement in contractsElement.EnumerateArray())
+        {
+            var contract = RequireObject(contractElement, "$.dependencies.contracts[]");
+            ValidateProperties(contract, "$.dependencies.contracts[]", "assembly", "version", "sha256");
+            var assembly = RequireString(contract, "assembly", "$.dependencies.contracts[]");
+            ValidateEntryAssembly(assembly, "dependencies.contracts[].assembly");
+            var assemblyName = Path.GetFileNameWithoutExtension(assembly);
+            if (string.IsNullOrWhiteSpace(assemblyName))
+                throw new InvalidOperationException($"Contract dependency assembly '{assembly}' is invalid.");
+            if (!seen.Add(assemblyName))
+                throw new InvalidOperationException($"Contract dependency assembly '{assemblyName}' is declared more than once.");
+
+            var versionText = RequireString(contract, "version", "$.dependencies.contracts[]");
+            if (!VersionRange.TryParse(versionText, out var versionRange))
+                throw new InvalidOperationException("Field 'dependencies.contracts[].version' is not a valid NuGet version range.");
+
+            var sha256 = RequireString(contract, "sha256", "$.dependencies.contracts[]").ToLowerInvariant();
+            if (!IsSha256Hex(sha256))
+                throw new InvalidOperationException("Field 'dependencies.contracts[].sha256' is not a SHA-256 hex fingerprint.");
+
+            parsed.Add(new ParsedContractDependency(assembly, assemblyName, versionRange.ToNormalizedString(), sha256));
+        }
+
+        parsed.Sort(static (left, right) => StringComparer.Ordinal.Compare(left.AssemblyName, right.AssemblyName));
+        return parsed;
+    }
+
+    private static bool IsSha256Hex(string value)
+    {
+        if (value.Length != 64)
+            return false;
+        foreach (var character in value)
+        {
+            if (character is not (>= '0' and <= '9') and not (>= 'a' and <= 'f'))
+                return false;
+        }
+
+        return true;
+    }
 
     private static JsonElement RequireObject(JsonElement value, string path)
     {
@@ -300,7 +441,7 @@ internal static class PluginManifestParser
         }
     }
 
-    private static void ValidatePluginId(string value)
+    private static void ValidatePluginId(string value, string field)
     {
         var segmentStart = true;
         for (var index = 0; index < value.Length; index++)
@@ -312,23 +453,23 @@ internal static class PluginManifestParser
             if (character == '.')
             {
                 if (segmentStart || index == value.Length - 1 || value[index - 1] == '-')
-                    throw new InvalidOperationException("Field 'package.id' is not a canonical plugin id.");
+                    throw new InvalidOperationException($"Field '{field}' is not a canonical plugin id.");
                 segmentStart = true;
                 continue;
             }
 
             if (segmentStart && !isAsciiLetter && !isDigit)
-                throw new InvalidOperationException("Field 'package.id' is not a canonical plugin id.");
+                throw new InvalidOperationException($"Field '{field}' is not a canonical plugin id.");
             if (!isAsciiLetter && !isDigit && character != '-')
-                throw new InvalidOperationException("Field 'package.id' is not a canonical plugin id.");
+                throw new InvalidOperationException($"Field '{field}' is not a canonical plugin id.");
             if (index == value.Length - 1 && character == '-')
-                throw new InvalidOperationException("Field 'package.id' is not a canonical plugin id.");
+                throw new InvalidOperationException($"Field '{field}' is not a canonical plugin id.");
 
             segmentStart = false;
         }
     }
 
-    private static void ValidateEntryAssembly(string value)
+    private static void ValidateEntryAssembly(string value, string field)
     {
         if (!value.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) ||
             Path.IsPathRooted(value) ||
@@ -336,7 +477,7 @@ internal static class PluginManifestParser
             HasControlCharacter(value))
         {
             throw new InvalidOperationException(
-                "Field 'entry.assembly' must be a relative file name ending in .dll.");
+                $"Field '{field}' must be a relative file name ending in .dll.");
         }
     }
 
@@ -393,7 +534,9 @@ internal static class PluginManifestParser
         string entryAssembly,
         string entryType,
         string apiRange,
-        IReadOnlyList<string> features)
+        IReadOnlyList<string> features,
+        IReadOnlyList<ParsedPluginDependency> pluginDependencies,
+        IReadOnlyList<ParsedContractDependency> contractDependencies)
     {
         var builder = new StringBuilder();
         AppendDigestValue(builder, DigestDomain);
@@ -405,6 +548,29 @@ internal static class PluginManifestParser
         AppendDigestValue(builder, features.Count.ToString(System.Globalization.CultureInfo.InvariantCulture));
         foreach (var feature in features)
             AppendDigestValue(builder, feature);
+
+        if (pluginDependencies.Count > 0)
+        {
+            AppendDigestValue(builder, "dependencies.plugins");
+            AppendDigestValue(builder, pluginDependencies.Count.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            foreach (var dependency in pluginDependencies)
+            {
+                AppendDigestValue(builder, dependency.Id);
+                AppendDigestValue(builder, dependency.VersionRange);
+            }
+        }
+
+        if (contractDependencies.Count > 0)
+        {
+            AppendDigestValue(builder, "dependencies.contracts");
+            AppendDigestValue(builder, contractDependencies.Count.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            foreach (var dependency in contractDependencies)
+            {
+                AppendDigestValue(builder, dependency.Assembly);
+                AppendDigestValue(builder, dependency.VersionRange);
+                AppendDigestValue(builder, dependency.Sha256);
+            }
+        }
 
         using var sha = SHA256.Create();
         return ToHex(sha.ComputeHash(Encoding.UTF8.GetBytes(builder.ToString())));
@@ -430,6 +596,8 @@ internal static class PluginManifestParser
             apiRange: string.Empty,
             sourceFeatures: Array.Empty<string>(),
             features: Array.Empty<string>(),
+            pluginDependencies: Array.Empty<ParsedPluginDependency>(),
+            contractDependencies: Array.Empty<ParsedContractDependency>(),
             digest: string.Empty,
             apiRangeSupported: false,
             issues: Array.Empty<PluginManifestIssue>(),

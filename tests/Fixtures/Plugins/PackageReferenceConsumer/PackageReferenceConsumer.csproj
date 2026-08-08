@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="MCServerLauncher.Daemon.Plugin.Sdk" Version="0.2.0.0" />
+    <PackageReference Include="MCServerLauncher.Daemon.Plugin.Sdk" Version="1.0.0" />
   </ItemGroup>
 
 </Project>

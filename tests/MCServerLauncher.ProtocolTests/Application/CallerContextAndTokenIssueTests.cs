@@ -86,7 +86,7 @@ public sealed class CallerContextAndTokenIssueTests
         Assert.True(host.HasPermission("mcsl.file.download.read")); // file.read reaches contents
         Assert.False(host.HasPermission("mcsl.backup.create")); // undeclared feature contributes nothing
         Assert.False(host.HasPermission("mcsl.file.upload.open")); // file.write was not declared
-        // event.subscribe is declared but unimplemented, so it expands to nothing.
+        // event.subscribe is host-local infrastructure and has no RPC permission expansion.
         Assert.False(host.IsMainToken);
     }
 

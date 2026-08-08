@@ -1,12 +1,10 @@
 # Preview-2 Package Pin
 
-Status: internal baseline `2.0.0-preview.7` (2026-08-01) for MCP-6+.
-No Release exists for `preview.7`, and none is planned. `2.0.0-preview.2` was
-published as a Release on 2026-07-24 and is superseded — it is history, not a
-supported baseline, and preview.3/.4/.5/.6/.7 deliberately did not follow it. SDK-9b
-closes the Preview-2 gate as an **internal implementation and test acceptance
-state only**; public package distribution (GitHub Release assets or nuget.org)
-requires explicitly reopening SDK-9a/9b via the staged conditions in the spec.
+Status: internal package baseline (2026-08-08): `MCServerLauncher.Daemon.Plugin.Sdk` and
+`MCServerLauncher.Daemon.API` use base version `1.0.0`; `MCServerLauncher.Common`
+uses base version `0.2.0.0` (`0.2.0` after NuGet package-version normalization).
+The prior `2.0.0-preview.7` record remains the Preview-2 acceptance history, but
+these package base versions are the current source-of-truth for local-feed tests.
 Decision source: `docs/spec/2026-07-20-plugin-sdk-mcp-decisions.md`,
 sections 1, 10, and 12. Preview-1 history: `docs/preview1-package-pin.md`.
 
@@ -102,17 +100,17 @@ that mix caches (NU1403), which is the same reason preview.2 was retired.
 
 | Package id | Version |
 |---|---|
-| `MCServerLauncher.Daemon.Plugin.Sdk` | `2.0.0-preview.7` |
-| `MCServerLauncher.Daemon.API` | `2.0.0-preview.7` |
-| `MCServerLauncher.Common` | `2.0.0-preview.7` |
+| `MCServerLauncher.Daemon.Plugin.Sdk` | `1.0.0` |
+| `MCServerLauncher.Daemon.API` | `1.0.0` |
+| `MCServerLauncher.Common` | `0.2.0` |
 
 Consumers MUST pin exact versions, without floating ranges, and should use a
 lockfile.
 
 ### Dependency pins in packages
 
-- `MCServerLauncher.Daemon.API` -> `MCServerLauncher.Common = [2.0.0-preview.7]`
-- `MCServerLauncher.Daemon.Plugin.Sdk` -> `MCServerLauncher.Daemon.API = [2.0.0-preview.7]`
+- `MCServerLauncher.Daemon.API` -> `MCServerLauncher.Common = [0.2.0]`
+- `MCServerLauncher.Daemon.Plugin.Sdk` -> `MCServerLauncher.Daemon.API = [1.0.0]`
 - `MCServerLauncher.Daemon.Plugin.Sdk` embeds both the generator and its
   `NuGet.Versioning.dll` analyzer dependency.
 - `MCServerLauncher.Daemon.Plugin.Sdk` carries `buildTransitive` props and
@@ -149,33 +147,34 @@ one written by a client that ignores it, carries CRLF and hashes differently:
 git show HEAD:src/MCServerLauncher.Daemon.Plugin.Sdk/buildTransitive/MCServerLauncher.Daemon.Plugin.Sdk.props | sha256sum
 ```
 
-### `MCServerLauncher.Common.2.0.0-preview.7.nupkg`
+### `MCServerLauncher.Common.0.2.0.nupkg`
 
 | Entry | SHA-256 |
 |---|---|
 | `lib/net10.0/MCServerLauncher.Common.dll` | `0d124217380de3863791d7e2b06f929bd4bb45a2ba7a837f33b7d07c6b3d3f49` |
 
-### `MCServerLauncher.Daemon.API.2.0.0-preview.7.nupkg`
+### `MCServerLauncher.Daemon.API.1.0.0.nupkg`
 
 | Entry | SHA-256 |
 |---|---|
-| `lib/net10.0/MCServerLauncher.Daemon.API.dll` | `e8c687821125a22a4928939b1a5df65932b30a23a6d131f52f532be85c0be922` |
+| `lib/net10.0/MCServerLauncher.Daemon.API.dll` | `6ce48241b8fc6e20686e87aad85a669e2f1a16f80ab8618624f48a2b6e84efeb` |
 | `buildTransitive/MCServerLauncher.Daemon.API.targets` | `81a79275e7ab2a10cf08ac950c27692db1e7455387944377b06047b0a340c17c` |
 
-### `MCServerLauncher.Daemon.Plugin.Sdk.2.0.0-preview.7.nupkg`
+### `MCServerLauncher.Daemon.Plugin.Sdk.1.0.0.nupkg`
 
 | Entry | SHA-256 |
 |---|---|
-| `lib/net10.0/MCServerLauncher.Daemon.Plugin.Sdk.dll` | `7b675275b82cc6ecbd51793cd2c4cfd217dbf6b784bf5aeb21bda36cf51a850c` |
-| `analyzers/dotnet/cs/MCServerLauncher.Daemon.Plugin.Generators.dll` | `dd0e1a4f4b7b49d994910ae0afd63347e1d6f342fadd5f04f0511f501da6fcbb` |
+| `lib/net10.0/MCServerLauncher.Daemon.Plugin.Sdk.dll` | `c52be37810be8730f28f6577162b30c838c02c3ca5f2790f6eeea36035f3d0da` |
+| `analyzers/dotnet/cs/MCServerLauncher.Daemon.Plugin.Generators.dll` | `f89eb858c2d0dfeb9f0847c5d49d5c5012ff87999ae38993e535f814d8215e5f` |
 | `analyzers/dotnet/cs/NuGet.Versioning.dll` | `5ccab32f44a29834becbf640cfac4b119edce8496a02e94ef20e1b1d2e652b26` |
 | `buildTransitive/MCServerLauncher.Daemon.Plugin.Sdk.props` | `c0dd9844c62950e9cf678c9bb067dd030876afa4d263eedd0d146ce52e5eb895` |
 | `buildTransitive/MCServerLauncher.Daemon.Plugin.Sdk.targets` | `e383f4a71ef90a5ad1a25049291c6e877c980d6acac7095ba00778a53f544573` |
 
-The SDK payload DLL fingerprint is unchanged from preview.2 onward: the SDK
-assembly itself carries no Preview-2 surface, only the generator does. It is stable
-across versions but not across every intermediate state of `Common` within a
-version's development, as the note above records.
+The SDK package id now carries the recorded `1.0.0` project version in source,
+so the SDK facade and packed generator fingerprints below are the authoritative
+current-tree values. Earlier preview notes about unchanged SDK entries describe
+the historical branch states only; `PinnedPayloadHashesMatchTheAcceptanceRecord`
+remains the arbiter for this checkout.
 
 Build the candidate packages with:
 
@@ -188,12 +187,11 @@ dotnet pack src/MCServerLauncher.Daemon.Plugin.Sdk/MCServerLauncher.Daemon.Plugi
 
 ## Preview-2 implemented FeatureCatalog freeze
 
-Preview-2 completes the grantable feature *vocabulary* — every feature name a
-manifest may declare is now implemented except `event.subscribe`. It does not
-follow that every domain behind those names is feature-complete: automation ships
-a subset of its planned surface (see "Scope delivered" below). Monitoring metrics
-and the triggers that read them are now both complete.
-Implemented and grantable for admission:
+Preview-2 plus the completed Phase 7 contracts work now implements the full grantable
+feature vocabulary. It does not follow that every domain behind those names is
+feature-complete: automation ships a subset of its planned surface (see "Scope
+delivered" below). Monitoring metrics and the triggers that read them are now both
+complete. Implemented and grantable for admission:
 
 | Feature | Risk |
 |---|---|
@@ -214,17 +212,13 @@ Implemented and grantable for admission:
 | `auth.verify` | Medium |
 | `network.http.listen` | High |
 
-Host infrastructure also implements `rpc.register` and `event.publish`.
+Host infrastructure also implements `rpc.register`, `event.publish`, and `event.subscribe`.
+`event.subscribe` is host-local infrastructure and carries no RPC permission expansion.
+`FeatureCatalogPreview1Tests` asserts no known feature remains unimplemented, so a
+future feature landing unimplemented fails loudly rather than silently widening this
+freeze.
 
-`event.subscribe` is the **only** remaining unimplemented feature and stays
-that way deliberately: the feature-application plan keeps it owned by the
-separate Phase 7 Contracts/dependency-DAG plan. Declaring it in a manifest
-still causes an atomic admission skip.
-`FeatureCatalogPreview1Tests` asserts it is the only unimplemented entry, so a
-future feature landing unimplemented fails loudly rather than silently
-widening this freeze.
-
-A `grant_level` of Medium now admits 17 features; Low admits 7.
+A `grant_level` of Medium now admits 18 features; Low admits 7.
 
 ## New in Preview-2
 
@@ -236,7 +230,7 @@ A `grant_level` of Medium now admits 17 features; Low admits 7.
 - Remote parity: `IDaemonApplication` carries all ten domains and
   `DaemonClient` exposes them, so a remote caller composes the surface a local
   caller does.
-- Remaining plugin features `file.read`, `file.write`, `event-rule.manage`.
+- Phase-7 plugin closure: `file.read`, `file.write`, `event-rule.manage`, and `event.subscribe` are implemented and grantable; `event.subscribe` is host-local infrastructure with no RPC permission expansion.
 
 ## Scope delivered vs planned
 
@@ -258,15 +252,15 @@ audit contract member they needed.
 | Automation triggers | `crash-loop`, `unexpected-exit`, `sustained-metric` (including `system_disk_percent`), `maintenance-window`, `unresponsive`, `status-duration` | — |
 | Automation actions | `restart-instance`, `stop-instance`, `notification`, `confirmation-plan`, `maintenance-state`, `restart-suppression`, `explicit-audit` | diagnostics |
 
-The remaining deferred item widens a closed union, so adding it is not a drop-in:
-it needs its `JsonTypeInfo`, converter discriminator, daemon/RPC/DaemonClient
-parity, validation, and protocol tests. It is tracked as a follow-up issue with
-acceptance criteria rather than folded into this baseline.
+The Phase-7 closure now implements the formerly deferred plugin feature surface. Future
+additive plugin surfaces that widen closed protocol unions must still add explicit
+`JsonTypeInfo`, converter discriminators, daemon/RPC/DaemonClient parity, validation,
+and protocol tests before they can enter the SDK baseline.
 
 ## Consumer pin
 
 ```xml
-<PackageReference Include="MCServerLauncher.Daemon.Plugin.Sdk" Version="2.0.0-preview.7" />
+<PackageReference Include="MCServerLauncher.Daemon.Plugin.Sdk" Version="1.0.0" />
 ```
 
 Local-feed restore requires the three nupkgs above and nuget.org for

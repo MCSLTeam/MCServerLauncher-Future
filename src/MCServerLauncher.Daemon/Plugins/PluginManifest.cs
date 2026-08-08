@@ -35,6 +35,39 @@ internal sealed class PluginManifestRequiresDocument
     public string[]? Features { get; set; }
 }
 
+internal sealed class PluginManifestPluginDependencyDocument
+{
+    [JsonPropertyName("id")]
+    public string? Id { get; set; }
+
+    [JsonPropertyName("version")]
+    public string? Version { get; set; }
+}
+
+internal sealed class PluginManifestContractDependencyDocument
+{
+    [JsonPropertyName("assembly")]
+    public string? Assembly { get; set; }
+
+    [JsonPropertyName("version")]
+    public string? Version { get; set; }
+
+    [JsonPropertyName("sha256")]
+    public string? Sha256 { get; set; }
+}
+
+internal sealed class PluginManifestDependenciesDocument
+{
+    [JsonPropertyName("version")]
+    public int? Version { get; set; }
+
+    [JsonPropertyName("plugins")]
+    public PluginManifestPluginDependencyDocument[]? Plugins { get; set; }
+
+    [JsonPropertyName("contracts")]
+    public PluginManifestContractDependencyDocument[]? Contracts { get; set; }
+}
+
 internal sealed class PluginManifestDocument
 {
     [JsonPropertyName("$schema")]
@@ -48,6 +81,9 @@ internal sealed class PluginManifestDocument
 
     [JsonPropertyName("requires")]
     public PluginManifestRequiresDocument? Requires { get; set; }
+
+    [JsonPropertyName("dependencies")]
+    public PluginManifestDependenciesDocument? Dependencies { get; set; }
 }
 
 [JsonSourceGenerationOptions(
@@ -56,6 +92,22 @@ internal sealed class PluginManifestDocument
 [JsonSerializable(typeof(PluginManifestDocument))]
 internal partial class PluginHostJsonContext : JsonSerializerContext;
 
+internal sealed record PluginManifestPluginDependency(
+    string Id,
+    VersionRange VersionRange)
+{
+    internal string NormalizedVersionRange => VersionRange.ToNormalizedString();
+}
+
+internal sealed record PluginManifestContractDependency(
+    string Assembly,
+    string AssemblyName,
+    VersionRange VersionRange,
+    string Sha256)
+{
+    internal string NormalizedVersionRange => VersionRange.ToNormalizedString();
+}
+
 internal sealed record PluginManifest(
     PluginIdentity Identity,
     string EntryAssembly,
@@ -63,6 +115,8 @@ internal sealed record PluginManifest(
     NuGetVersion Version,
     VersionRange ApiVersionRange,
     FrozenSet<PluginFeature> Features,
+    ImmutableArray<PluginManifestPluginDependency> PluginDependencies,
+    ImmutableArray<PluginManifestContractDependency> ContractDependencies,
     string BundleDirectory,
     string EntryAssemblyPath,
     string ManifestDigest)
@@ -181,6 +235,7 @@ internal static class PluginManifestReader
             throw new PluginManifestException("entry_missing", $"The plugin entry assembly '{entryAssembly}' does not exist.");
 
         var features = ParseFeatures(document.Requires.Features);
+        var (pluginDependencies, contractDependencies) = ParseDependencies(document.Dependencies, identity.Id);
 
         var normalizedFeatures = features
             .Select(static feature => feature.Value)
@@ -192,7 +247,9 @@ internal static class PluginManifestReader
             entryAssembly,
             entryType,
             apiVersionRange.ToNormalizedString(),
-            normalizedFeatures);
+            normalizedFeatures,
+            pluginDependencies,
+            contractDependencies);
 
         return new PluginManifest(
             identity,
@@ -201,6 +258,8 @@ internal static class PluginManifestReader
             version,
             apiVersionRange,
             features,
+            pluginDependencies,
+            contractDependencies,
             fullBundleDirectory,
             entryAssemblyPath,
             manifestDigest);
@@ -235,6 +294,128 @@ internal static class PluginManifestReader
         {
             throw new PluginManifestException("entry_type_invalid", "The plugin entry type must be an unqualified CLR type name.");
         }
+    }
+
+    private static (ImmutableArray<PluginManifestPluginDependency> Plugins, ImmutableArray<PluginManifestContractDependency> Contracts) ParseDependencies(
+        PluginManifestDependenciesDocument? dependencies,
+        string packageId)
+    {
+        if (dependencies is null)
+        {
+            return (
+                ImmutableArray<PluginManifestPluginDependency>.Empty,
+                ImmutableArray<PluginManifestContractDependency>.Empty);
+        }
+
+        if (dependencies.Version is null)
+            throw new PluginManifestException("dependencies_version_missing", "The plugin manifest dependencies.version field is required when dependencies is present.");
+        if (dependencies.Version != 1)
+            throw new PluginManifestException("dependencies_version_unsupported", "The plugin manifest dependencies.version field must be 1.");
+
+        return (
+            ParsePluginDependencies(dependencies.Plugins, packageId),
+            ParseContractDependencies(dependencies.Contracts));
+    }
+
+    private static ImmutableArray<PluginManifestPluginDependency> ParsePluginDependencies(
+        PluginManifestPluginDependencyDocument[]? plugins,
+        string packageId)
+    {
+        plugins ??= [];
+        var parsed = ImmutableArray.CreateBuilder<PluginManifestPluginDependency>(plugins.Length);
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var dependency in plugins)
+        {
+            if (dependency is null)
+                throw new PluginManifestException("dependency_invalid", "Plugin dependency entries must be objects.");
+
+            var id = Require(dependency.Id, "dependencies.plugins[].id");
+            var versionText = Require(dependency.Version, "dependencies.plugins[].version");
+            try
+            {
+                _ = ProtocolIdentifier.ValidatePluginId(id, nameof(id));
+            }
+            catch (ArgumentException exception)
+            {
+                throw new PluginManifestException("dependency_invalid", $"Plugin dependency id '{id}' is invalid.", exception);
+            }
+
+            if (string.Equals(id, packageId, StringComparison.Ordinal))
+                throw new PluginManifestException("dependency_self", $"Plugin '{packageId}' must not depend on itself.");
+            if (!seen.Add(id))
+                throw new PluginManifestException("dependency_duplicate", $"Plugin dependency '{id}' is declared more than once.");
+
+            VersionRange versionRange;
+            try
+            {
+                versionRange = VersionRange.Parse(versionText);
+            }
+            catch (Exception exception) when (exception is ArgumentException or FormatException)
+            {
+                throw new PluginManifestException("dependency_invalid", $"Plugin dependency '{id}' has an invalid version range.", exception);
+            }
+
+            parsed.Add(new PluginManifestPluginDependency(id, versionRange));
+        }
+
+        return parsed
+            .OrderBy(static dependency => dependency.Id, StringComparer.Ordinal)
+            .ToImmutableArray();
+    }
+
+    private static ImmutableArray<PluginManifestContractDependency> ParseContractDependencies(
+        PluginManifestContractDependencyDocument[]? contracts)
+    {
+        contracts ??= [];
+        var parsed = ImmutableArray.CreateBuilder<PluginManifestContractDependency>(contracts.Length);
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var dependency in contracts)
+        {
+            if (dependency is null)
+                throw new PluginManifestException("contract_dependency_invalid", "Contract dependency entries must be objects.");
+
+            var assembly = Require(dependency.Assembly, "dependencies.contracts[].assembly");
+            ValidateEntryName(assembly, "dependencies.contracts[].assembly");
+            var assemblyName = Path.GetFileNameWithoutExtension(assembly);
+            if (string.IsNullOrWhiteSpace(assemblyName))
+                throw new PluginManifestException("contract_dependency_invalid", $"Contract dependency assembly '{assembly}' is invalid.");
+            if (!seen.Add(assemblyName))
+                throw new PluginManifestException("contract_dependency_duplicate", $"Contract dependency assembly '{assemblyName}' is declared more than once.");
+
+            var versionText = Require(dependency.Version, "dependencies.contracts[].version");
+            VersionRange versionRange;
+            try
+            {
+                versionRange = VersionRange.Parse(versionText);
+            }
+            catch (Exception exception) when (exception is ArgumentException or FormatException)
+            {
+                throw new PluginManifestException("contract_dependency_invalid", $"Contract dependency '{assemblyName}' has an invalid version range.", exception);
+            }
+
+            var sha256 = Require(dependency.Sha256, "dependencies.contracts[].sha256").ToLowerInvariant();
+            if (!IsSha256Hex(sha256))
+                throw new PluginManifestException("contract_dependency_invalid", $"Contract dependency '{assemblyName}' has an invalid SHA-256 fingerprint.");
+
+            parsed.Add(new PluginManifestContractDependency(assembly, assemblyName, versionRange, sha256));
+        }
+
+        return parsed
+            .OrderBy(static dependency => dependency.AssemblyName, StringComparer.Ordinal)
+            .ToImmutableArray();
+    }
+
+    private static bool IsSha256Hex(string value)
+    {
+        if (value.Length != 64)
+            return false;
+        foreach (var character in value)
+        {
+            if (character is not (>= '0' and <= '9') and not (>= 'a' and <= 'f'))
+                return false;
+        }
+
+        return true;
     }
 
     private static FrozenSet<PluginFeature> ParseFeatures(string[]? values)

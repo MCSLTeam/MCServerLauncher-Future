@@ -448,6 +448,7 @@ public sealed class DaemonPluginSourceGenerator : IIncrementalGenerator
     {
         "Rpc" => "rpc.register",
         "Events" => "event.publish",
+        "Subscriptions" => "event.subscribe",
         "InstanceCatalog" or "InstanceQueries" => "instance.query",
         "InstanceManagement" => "instance.manage",
         "OperationQueries" => "operation.query",
@@ -484,6 +485,7 @@ public sealed class DaemonPluginSourceGenerator : IIncrementalGenerator
             : "global::" + moduleNs + "." + registrationTypeName;
         var hasRpc = manifest.Features.Contains("rpc.register");
         var hasEvents = manifest.Features.Contains("event.publish");
+        var hasEventSubscribe = manifest.Features.Contains("event.subscribe");
         var hasInstanceQuery = manifest.Features.Contains("instance.query");
         var hasInstanceManage = manifest.Features.Contains("instance.manage");
         var hasOperationQuery = manifest.Features.Contains("operation.query");
@@ -516,6 +518,17 @@ public sealed class DaemonPluginSourceGenerator : IIncrementalGenerator
             featureProperties.AppendLine(
                 "        public global::MCServerLauncher.Daemon.API.Plugins.IPluginEventRegistrar Events { get; }");
         }
+
+        if (hasEventSubscribe)
+        {
+            featureProperties.AppendLine(
+                "        public global::MCServerLauncher.Daemon.API.Plugins.IPluginEventSubscriber Subscriptions { get; }");
+        }
+
+        featureProperties.AppendLine(
+            "        public global::MCServerLauncher.Daemon.API.Plugins.IPluginProviderRegistry Providers { get; }");
+        featureProperties.AppendLine(
+            "        public global::MCServerLauncher.Daemon.API.Plugins.IPluginProviderImports Imports { get; }");
 
         if (hasInstanceQuery)
         {
@@ -628,6 +641,10 @@ public sealed class DaemonPluginSourceGenerator : IIncrementalGenerator
             featureCtorAssignments.AppendLine("            Rpc = context.Rpc;");
         if (hasEvents)
             featureCtorAssignments.AppendLine("            Events = context.Events;");
+        if (hasEventSubscribe)
+            featureCtorAssignments.AppendLine("            Subscriptions = context.Subscriptions;");
+        featureCtorAssignments.AppendLine("            Providers = context.Providers;");
+        featureCtorAssignments.AppendLine("            Imports = context.Imports;");
         if (hasInstanceQuery)
         {
             featureCtorAssignments.AppendLine("            InstanceCatalog = context.InstanceCatalog;");
@@ -699,6 +716,10 @@ public sealed class DaemonPluginSourceGenerator : IIncrementalGenerator
             "            services.Add(new global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor(typeof(global::MCServerLauncher.Daemon.API.Plugins.IPluginErrorFactory), context.Errors));");
         registrationBody.AppendLine(
             "            services.Add(new global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor(typeof(global::MCServerLauncher.Daemon.API.Plugins.IPluginConfiguration), context.Configuration));");
+        registrationBody.AppendLine(
+            "            services.Add(new global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor(typeof(global::MCServerLauncher.Daemon.API.Plugins.IPluginProviderRegistry), context.Providers));");
+        registrationBody.AppendLine(
+            "            services.Add(new global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor(typeof(global::MCServerLauncher.Daemon.API.Plugins.IPluginProviderImports), context.Imports));");
         if (hasRpc)
         {
             registrationBody.AppendLine(
@@ -709,6 +730,12 @@ public sealed class DaemonPluginSourceGenerator : IIncrementalGenerator
         {
             registrationBody.AppendLine(
                 "            services.Add(new global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor(typeof(global::MCServerLauncher.Daemon.API.Plugins.IPluginEventRegistrar), context.Events));");
+        }
+
+        if (hasEventSubscribe)
+        {
+            registrationBody.AppendLine(
+                "            services.Add(new global::Microsoft.Extensions.DependencyInjection.ServiceDescriptor(typeof(global::MCServerLauncher.Daemon.API.Plugins.IPluginEventSubscriber), context.Subscriptions));");
         }
 
         if (hasStorage)

@@ -12,11 +12,24 @@ namespace MCServerLauncher.Daemon.Plugins;
 internal sealed class PluginLoadContext : AssemblyLoadContext
 {
     private readonly AssemblyDependencyResolver _resolver;
+    private readonly PluginManifest? _manifest;
+    private readonly PluginContractAssemblyResolver? _contractResolver;
 
     internal PluginLoadContext(string entryAssemblyPath, string pluginId)
+        : this(entryAssemblyPath, pluginId, manifest: null, contractResolver: null)
+    {
+    }
+
+    internal PluginLoadContext(
+        string entryAssemblyPath,
+        string pluginId,
+        PluginManifest? manifest,
+        PluginContractAssemblyResolver? contractResolver)
         : base($"MCServerLauncher.Plugin.{pluginId}", isCollectible: false)
     {
         _resolver = new AssemblyDependencyResolver(entryAssemblyPath);
+        _manifest = manifest;
+        _contractResolver = contractResolver;
     }
 
     [UnconditionalSuppressMessage(
@@ -28,6 +41,12 @@ internal sealed class PluginLoadContext : AssemblyLoadContext
         ArgumentNullException.ThrowIfNull(assemblyName);
         if (PluginAssemblyPolicy.IsShared(assemblyName.Name))
             return ResolveSharedAssembly(assemblyName.Name!);
+        if (_manifest is not null &&
+            _contractResolver is not null &&
+            _contractResolver.TryResolve(_manifest, assemblyName, out var contractAssembly))
+        {
+            return contractAssembly;
+        }
 
         var assemblyPath = _resolver.ResolveAssemblyToPath(assemblyName);
         return assemblyPath is null ? null : LoadFromAssemblyPath(assemblyPath);
@@ -50,7 +69,7 @@ internal sealed class PluginLoadContext : AssemblyLoadContext
         return libraryPath is null ? IntPtr.Zero : LoadUnmanagedDllFromPath(libraryPath);
     }
 
-    private static Assembly ResolveSharedAssembly(string name) => name switch
+    internal static Assembly ResolveSharedAssembly(string name) => name switch
     {
         "MCServerLauncher.Daemon.API" => typeof(IDaemonPlugin).Assembly,
         // Resolve the actual shared Common contract assembly. RustyOptions.Unit is

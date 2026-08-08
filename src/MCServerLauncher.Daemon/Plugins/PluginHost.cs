@@ -54,6 +54,7 @@ internal sealed class PluginHost
     private readonly IEventRuleApplication? _eventRuleApplication;
     private readonly IFileApplication? _fileApplication;
     private readonly IAuditSink? _auditSink;
+    private readonly IDomainEventPort? _domainEvents;
     private readonly ILoggerFactory _loggerFactory;
     private readonly ILogger<PluginHost> _logger;
     private readonly IPluginEventBus _eventBus;
@@ -68,6 +69,8 @@ internal sealed class PluginHost
     private readonly List<PluginRuntime> _runtimes = [];
     private readonly List<PluginRuntime> _started = [];
     private readonly List<FailedLoadCleanup> _failedLoadCleanups = [];
+    private readonly PluginProviderRegistry _providerRegistry = new();
+    private PluginContractAssemblyResolver? _contractResolver;
     private readonly OwnedTaskSupervisor _failedPluginCleanupSupervisor;
     private readonly SemaphoreSlim _operationGate = new(1, 1);
     private Task? _shutdownCleanupDeadlineDriver;
@@ -156,7 +159,8 @@ internal sealed class PluginHost
         VerifiedPrincipalAuthority? verifiedPrincipals = null,
         TimeSpan? rollbackCleanupTimeout = null,
         TimeSpan? shutdownCleanupTimeout = null,
-        IAuditSink? auditSink = null)
+        IAuditSink? auditSink = null,
+        IDomainEventPort? domainEvents = null)
     {
         _instances = instances ?? throw new ArgumentNullException(nameof(instances));
         _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
@@ -205,6 +209,7 @@ internal sealed class PluginHost
         _eventRuleApplication = eventRuleApplication;
         _fileApplication = fileApplication;
         _auditSink = auditSink;
+        _domainEvents = domainEvents;
     }
 
     /// <summary>
@@ -274,7 +279,30 @@ internal sealed class PluginHost
                 admitted.Add(manifest);
             }
 
-            foreach (var manifest in admitted)
+            var contractAdmission = PluginContractAssemblyResolver.Create(admitted.ToImmutableArray());
+            _contractResolver = contractAdmission.Resolver;
+            foreach (var failure in contractAdmission.Failures)
+            {
+                _logger.LogWarning(
+                    "Plugin {PluginId} failed contract admission ({Code}): {Message} Skipping bundle {Bundle}.",
+                    failure.PluginId,
+                    failure.Code,
+                    failure.Message,
+                    failure.BundleDirectory);
+            }
+
+            var dependencyAdmission = PluginDependencyPlanner.Plan(contractAdmission.Plugins);
+            foreach (var failure in dependencyAdmission.Failures)
+            {
+                _logger.LogWarning(
+                    "Plugin {PluginId} failed dependency admission ({Code}): {Message} Skipping bundle {Bundle}.",
+                    failure.PluginId,
+                    failure.Code,
+                    failure.Message,
+                    failure.BundleDirectory);
+            }
+
+            foreach (var manifest in dependencyAdmission.OrderedPlugins)
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 var runtime = await TryLoadAsync(manifest).ConfigureAwait(false);
@@ -287,9 +315,23 @@ internal sealed class PluginHost
             }
 
             await ValidateGlobalDraftsAsync().ConfigureAwait(false);
+            var runtimesById = _runtimes.ToDictionary(static runtime => runtime.Manifest.Identity.Id, StringComparer.Ordinal);
             foreach (var runtime in _runtimes.Where(static runtime => runtime.State == PluginRuntimeState.Validated))
             {
                 cancellationToken.ThrowIfCancellationRequested();
+                var failedDependency = runtime.Manifest.PluginDependencies.FirstOrDefault(dependency =>
+                    !runtimesById.TryGetValue(dependency.Id, out var dependencyRuntime) ||
+                    dependencyRuntime.State != PluginRuntimeState.Started);
+                if (failedDependency is not null)
+                {
+                    await FailAsync(
+                            runtime,
+                            "dependency_failed",
+                            $"Plugin dependency '{failedDependency.Id}' did not start successfully.")
+                        .ConfigureAwait(false);
+                    continue;
+                }
+
                 await StartPluginAsync(runtime, cancellationToken).ConfigureAwait(false);
             }
 
@@ -372,6 +414,7 @@ internal sealed class PluginHost
                 runtime.State = PluginRuntimeState.Stopping;
                 CloseHttpEndpointAdmission(runtime);
                 CancelLifetime(runtime, "stop");
+                _providerRegistry.Remove(runtime.Manifest.Identity.Id);
                 // Stop accepting plugin-originated events before invoking plugin code.
                 runtime.Draft.Clear();
                 runtime.EventOwner.Dispose(_logger, runtime.Manifest.Identity.Id);
@@ -452,6 +495,7 @@ internal sealed class PluginHost
             {
                 CloseHttpEndpointAdmission(runtime);
                 CancelLifetime(runtime, "cleanup");
+                _providerRegistry.Remove(runtime.Manifest.Identity.Id);
                 runtime.Draft.Clear();
                 runtime.EventOwner.Dispose(_logger, runtime.Manifest.Identity.Id);
                 runtime.Activation.TrySetCanceled();
@@ -529,7 +573,11 @@ internal sealed class PluginHost
             // Load only the immutable bytes whose metadata was validated. Dependency resolution
             // remains rooted at the bundle path, but replacing that path cannot change entry IL.
             var entryAssemblyImage = GeneratedPluginMetadataReader.ReadValidatedImage(manifest);
-            var loadContext = new PluginLoadContext(manifest.EntryAssemblyPath, manifest.Identity.Id);
+            var loadContext = new PluginLoadContext(
+                manifest.EntryAssemblyPath,
+                manifest.Identity.Id,
+                manifest,
+                _contractResolver);
             var assembly = loadContext.LoadEntryAssembly(entryAssemblyImage);
             var pluginType = assembly.GetType(manifest.EntryType, throwOnError: true, ignoreCase: false);
             if (pluginType is null || !typeof(IGeneratedDaemonPluginAdapter).IsAssignableFrom(pluginType))
@@ -550,6 +598,19 @@ internal sealed class PluginHost
             lifetime = new CancellationTokenSource();
             var activation = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             var eventOwner = new PluginEventOwnerLedger();
+            IPluginEventSubscriber? subscriptions = null;
+            if (manifest.HasFeature(PluginFeature.EventSubscribe))
+            {
+                if (_domainEvents is null)
+                {
+                    throw new InvalidOperationException(
+                        "Plugin declared event.subscribe but the host was constructed without IDomainEventPort.");
+                }
+
+                var domainOwner = _domainEvents.CreateOwner($"Plugin.{manifest.Identity.Id}");
+                eventOwner.Track(new PluginDomainEventOwnerHandle(_domainEvents, domainOwner));
+                subscriptions = new PluginEventSubscriber(manifest, _domainEvents, domainOwner, errors);
+            }
 
             PluginConfiguration configuration;
             try
@@ -615,6 +676,9 @@ internal sealed class PluginHost
                 storage,
                 httpPolicy,
                 authentication,
+                subscriptions,
+                _providerRegistry.CreateExporter(manifest, errors),
+                _providerRegistry.CreateImports(manifest, errors),
                 activation.Task,
                 lifetime.Token);
             var runtime = new PluginRuntime(
@@ -1330,6 +1394,7 @@ internal sealed class PluginHost
             runtime.Manifest.Identity.Version,
             stage,
             message);
+        _providerRegistry.Remove(runtime.Manifest.Identity.Id);
         CancelLifetime(runtime, stage);
         runtime.Draft.Clear();
         runtime.EventOwner.Dispose(_logger, runtime.Manifest.Identity.Id);
@@ -1375,6 +1440,7 @@ internal sealed class PluginHost
                 stage,
                 message);
 
+        _providerRegistry.Remove(runtime.Manifest.Identity.Id);
         CancelLifetime(runtime, stage);
         runtime.Draft.Clear();
         runtime.EventOwner.Dispose(_logger, runtime.Manifest.Identity.Id);
@@ -1401,6 +1467,7 @@ internal sealed class PluginHost
             error.Code,
             error.Message,
             error.Details);
+        _providerRegistry.Remove(runtime.Manifest.Identity.Id);
         CancelLifetime(runtime, stage);
         runtime.Draft.Clear();
         runtime.EventOwner.Dispose(_logger, runtime.Manifest.Identity.Id);

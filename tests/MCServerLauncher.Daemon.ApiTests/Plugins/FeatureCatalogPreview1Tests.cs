@@ -21,7 +21,7 @@ public sealed class FeatureCatalogPreview1Tests
             PluginFeature.AuditQuery.Value,
             PluginFeature.MonitoringQuery.Value,
             PluginFeature.AutomationManage.Value,
-            // Preview-2 remaining features.
+            // Preview-2/Phase-7 closure features.
             PluginFeature.EventRuleManage.Value,
             PluginFeature.FileRead.Value,
             PluginFeature.FileWrite.Value,
@@ -31,6 +31,7 @@ public sealed class FeatureCatalogPreview1Tests
             // Host infrastructure features that are implemented for generated plugins.
             PluginFeature.RpcRegister.Value,
             PluginFeature.EventPublish.Value,
+            PluginFeature.EventSubscribe.Value,
         ];
 
         var implemented = FeatureCatalog.All
@@ -143,6 +144,7 @@ public sealed class FeatureCatalogPreview1Tests
         Assert.Empty(FeatureCatalog.MethodsFor(PluginFeature.AuthVerify));
         Assert.Empty(FeatureCatalog.MethodsFor(PluginFeature.NetworkHttpListen));
         Assert.Empty(FeatureCatalog.MethodsFor(PluginFeature.StoragePrivate));
+        Assert.Empty(FeatureCatalog.MethodsFor(PluginFeature.EventSubscribe));
 
         // SDK-8 (Preview-2): the audit/monitoring/automation trio is implemented.
         Assert.True(FeatureCatalog.IsImplemented(PluginFeature.AuditQuery));
@@ -151,15 +153,11 @@ public sealed class FeatureCatalogPreview1Tests
         Assert.True(FeatureCatalog.IsImplemented(PluginFeature.EventRuleManage));
         Assert.True(FeatureCatalog.IsImplemented(PluginFeature.FileRead));
         Assert.True(FeatureCatalog.IsImplemented(PluginFeature.FileWrite));
+        Assert.True(FeatureCatalog.IsImplemented(PluginFeature.EventSubscribe));
 
-        // event.subscribe is the only feature left unimplemented, and deliberately so: the
-        // feature-application plan keeps it owned by the separate Phase 7 contracts work.
-        Assert.False(FeatureCatalog.IsImplemented(PluginFeature.EventSubscribe));
-        Assert.Equal(
-            [PluginFeature.EventSubscribe.Value],
-            FeatureCatalog.All
-                .Where(descriptor => !descriptor.IsImplemented)
-                .Select(descriptor => descriptor.Feature.Value));
+        Assert.Empty(FeatureCatalog.All
+            .Where(descriptor => !descriptor.IsImplemented)
+            .Select(descriptor => descriptor.Feature.Value));
     }
 
     [Fact]

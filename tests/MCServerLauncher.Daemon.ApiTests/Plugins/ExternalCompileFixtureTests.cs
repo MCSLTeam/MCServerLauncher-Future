@@ -35,7 +35,11 @@ public sealed class ExternalCompileFixtureTests
             "src",
             "MCServerLauncher.Daemon.API",
             "MCServerLauncher.Daemon.API.csproj");
-        var root = Directory.CreateTempSubdirectory("mcsl-verified-principal-probe-").FullName;
+        var root = Path.Combine(
+            repositoryRoot,
+            "artifacts",
+            $"mcsl-verified-principal-probe-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
         try
         {
             var projectPath = Path.Combine(root, "ExternalVerifiedPrincipalProbe.csproj");

@@ -7,7 +7,7 @@
     <LangVersion>14</LangVersion>
     <IsPackable>true</IsPackable>
     <PackageId>MCServerLauncher.Daemon.Plugin.Sdk</PackageId>
-    <PackageVersion>0.2.0.0</PackageVersion>
+    <PackageVersion>1.0.0</PackageVersion>
     <Authors>MCSLTeam</Authors>
     <Description>
       Developer SDK for MCServerLauncher Future plugins: feature-gated source generation,

@@ -340,7 +340,10 @@ internal sealed class PublishedDaemonFixture : IAsyncDisposable
 
         if (Directory.Exists(fullPath))
         {
-            var candidate = Path.Combine(fullPath, "MCServerLauncher.Daemon.exe");
+            var executableName = OperatingSystem.IsWindows()
+                ? "MCServerLauncher.Daemon.exe"
+                : "MCServerLauncher.Daemon";
+            var candidate = Path.Combine(fullPath, executableName);
             if (File.Exists(candidate))
                 return candidate;
         }
@@ -426,9 +429,9 @@ internal sealed class PublishedDaemonFixture : IAsyncDisposable
         {
             var requiredPackages = new[]
             {
-                "MCServerLauncher.Common.0.2.0.0.nupkg",
-                "MCServerLauncher.Daemon.API.0.2.0.0.nupkg",
-                "MCServerLauncher.Daemon.Plugin.Sdk.0.2.0.0.nupkg"
+                "MCServerLauncher.Common.0.2.0.nupkg",
+                "MCServerLauncher.Daemon.API.1.0.0.nupkg",
+                "MCServerLauncher.Daemon.Plugin.Sdk.1.0.0.nupkg"
             };
             foreach (var packageName in requiredPackages)
             {
