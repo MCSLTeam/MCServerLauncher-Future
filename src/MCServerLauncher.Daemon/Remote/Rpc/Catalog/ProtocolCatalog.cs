@@ -495,6 +495,7 @@ internal sealed class ProtocolCatalogBuilder
     private readonly Dictionary<EventName, ProtocolDefinition<EventDescriptor>> _events = new(EventNameComparer.Instance);
     private readonly Dictionary<RpcMethod, RpcBinding> _rpcBindings = new(RpcMethodComparer.Instance);
     private readonly Dictionary<EventName, EventBinding> _eventBindings = new(EventNameComparer.Instance);
+    private readonly Dictionary<string, HashSet<string>> _extensionCommands = new(StringComparer.Ordinal);
     private FrozenProtocolCatalog? _catalog;
 
     public ProtocolCatalogBuilder(OpenRpcInfo documentInfo)
@@ -566,6 +567,31 @@ internal sealed class ProtocolCatalogBuilder
             if (!_eventBindings.TryAdd(name, binding))
             {
                 throw new ArgumentException($"The event binding '{name.Value}' is already registered.", nameof(binding));
+            }
+        }
+    }
+
+    public void AddPluginExtensionCommands(ProtocolExecutionOwner owner, IEnumerable<string> commands)
+    {
+        ArgumentNullException.ThrowIfNull(owner);
+        ArgumentNullException.ThrowIfNull(commands);
+        if (owner.Kind != ProtocolExecutionOwnerKind.Plugin || owner.Plugin is null)
+            throw new ArgumentException("Extension command declarations require a plugin owner.", nameof(owner));
+
+        lock (_gate)
+        {
+            EnsureMutable();
+            if (!_extensionCommands.TryGetValue(owner.Plugin.Id, out var declared))
+            {
+                declared = new HashSet<string>(StringComparer.Ordinal);
+                _extensionCommands.Add(owner.Plugin.Id, declared);
+            }
+
+            foreach (var command in commands)
+            {
+                ArgumentException.ThrowIfNullOrWhiteSpace(command);
+                if (!declared.Add(command))
+                    throw new ArgumentException($"The extension command '{command}' is already declared for plugin '{owner.Plugin.Id}'.", nameof(commands));
             }
         }
     }
@@ -670,10 +696,16 @@ internal sealed class ProtocolCatalogBuilder
                     registration.Descriptor.Name,
                     new FrozenEventBinding(registration.Owner, registration.Descriptor, _eventBindings[registration.Descriptor.Name])))
                 .ToFrozenDictionary(EventNameComparer.Instance);
+            var frozenExtensionCommands = _extensionCommands
+                .ToFrozenDictionary(
+                    static item => item.Key,
+                    static item => item.Value.ToFrozenSet(StringComparer.Ordinal),
+                    StringComparer.Ordinal);
 
             var catalog = new FrozenProtocolCatalog(
                 frozenRpcs,
                 frozenEvents,
+                frozenExtensionCommands,
                 rpcs.Select(static registration => registration.Descriptor).ToImmutableArray(),
                 events.Select(static registration => registration.Descriptor).ToImmutableArray(),
                 document,
@@ -896,6 +928,7 @@ internal static class ProtocolCatalogNamePolicy
 internal sealed class FrozenProtocolCatalog(
     FrozenDictionary<RpcMethod, FrozenRpcBinding> rpcs,
     FrozenDictionary<EventName, FrozenEventBinding> events,
+    FrozenDictionary<string, FrozenSet<string>> extensionCommands,
     ImmutableArray<RpcDescriptor> rpcDefinitions,
     ImmutableArray<EventDescriptor> eventDefinitions,
     OpenRpcDocument document,
@@ -905,6 +938,8 @@ internal sealed class FrozenProtocolCatalog(
     public FrozenDictionary<RpcMethod, FrozenRpcBinding> Rpcs { get; } = rpcs ?? throw new ArgumentNullException(nameof(rpcs));
 
     public FrozenDictionary<EventName, FrozenEventBinding> Events { get; } = events ?? throw new ArgumentNullException(nameof(events));
+
+    public FrozenDictionary<string, FrozenSet<string>> ExtensionCommands { get; } = extensionCommands ?? throw new ArgumentNullException(nameof(extensionCommands));
 
     public ImmutableArray<RpcDescriptor> RpcDefinitions { get; } = rpcDefinitions.IsDefault
         ? throw new ArgumentException("RPC definitions cannot be default.", nameof(rpcDefinitions))
@@ -934,6 +969,9 @@ internal sealed class FrozenProtocolCatalog(
         ArgumentNullException.ThrowIfNull(name);
         return Events.TryGetValue(name, out binding!);
     }
+
+    public bool IsExtensionCommandDeclared(string pluginId, string command) =>
+        ExtensionCommands.TryGetValue(pluginId, out var commands) && commands.Contains(command);
 }
 
 internal interface IFrozenProtocolCatalogAccessor

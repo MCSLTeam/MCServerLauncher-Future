@@ -148,6 +148,8 @@ public sealed class PluginPhase7RuntimeTests
             features.ToFrozenSet(),
             plugins.IsDefault ? ImmutableArray<PluginManifestPluginDependency>.Empty : plugins,
             contracts.IsDefault ? ImmutableArray<PluginManifestContractDependency>.Empty : contracts,
+            ImmutableArray<PluginManifestExtensionPoint>.Empty,
+            ImmutableArray<PluginManifestCommand>.Empty,
             bundleDirectory,
             entryAssemblyPath,
             PluginManifestDigest.Compute(

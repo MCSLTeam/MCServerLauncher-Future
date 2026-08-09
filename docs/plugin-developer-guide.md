@@ -43,7 +43,56 @@ cycle, missing dependency, or catalog conflict skips the affected bundle atomica
 
 A Phase 7 manifest may add an optional versioned dependency section. It is additive;
 old manifests remain valid and `package`, `entry`, `requires.api`, and
-`requires.features` keep their Preview-2 meaning. `dependencies.plugins` declares
+`requires.features` keep their Preview-2 meaning. It may also declare formal
+`extensionPoints`; those declarations are admission metadata, not a way to access
+private daemon internals. Unknown ids, kind mismatches, duplicate declarations,
+conflicts, and unsupported replacements are rejected at build time by the SDK
+generator and again by the daemon manifest reader.
+
+    {
+      "extensionPoints": [
+        {
+          "id": "provider.java",
+          "kind": "provider",
+          "priority": 10,
+          "conflicts": ["provider.serverCore"]
+        }
+      ]
+    }
+
+Use only catalogued extension point ids such as `provider.java`,
+`registry.template`, `pipeline.instance.create`, `hook.instance.lifecycle`,
+`override.process.launcher`, `ui.panel`, `event.daemon`, and `command.daemon`.
+Do not declare private implementation targets such as `private.instanceBase.patch`;
+reflection patching, Harmony patching, monkey patching, root service replacement,
+and daemon singleton access are outside the extension system.
+
+Daemon-backed Extension Protocol commands are declared separately in `commands` and
+must be paired with `command.daemon` plus `rpc.register`. The command `id` is the
+relative plugin RPC command used by `mcsl.extension.dispatch`; the daemon maps it to
+`plugin.<plugin>.rpc.<command>` only after confirming the manifest declared it.
+Daemon-pushed Extension Protocol updates use `plugin.<plugin>.event.extension`, created
+with `PluginExtensionProtocol.CreateExtensionEvent(pluginId)`, and must be paired with
+`event.daemon` plus `event.publish`. Build `state.patch`, `state.snapshot`, and `event`
+payloads with `PluginExtensionProtocol.StatePatch(...)`, `StateSnapshot(...)`, and
+`Event(...)` so unsafe keys and non-object payloads are rejected before publishing.
+
+    {
+      "extensionPoints": [
+        { "id": "command.daemon", "kind": "command" },
+        { "id": "event.daemon", "kind": "event" }
+      ],
+      "commands": [
+        {
+          "id": "refresh",
+          "title": "Refresh",
+          "description": "Refreshes panel state.",
+          "target": "daemon"
+        }
+      ]
+    }
+
+`dependencies.plugins` declares
 startup-order/provider dependencies; `dependencies.contracts` declares shared typed
 Contracts assemblies by file name, NuGet-style version range, and SHA-256 fingerprint.
 

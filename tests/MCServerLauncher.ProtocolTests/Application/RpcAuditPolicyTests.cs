@@ -1,7 +1,9 @@
+using System.Text.Json;
 using MCServerLauncher.Common.Contracts.Backup;
 using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.Contracts.Auth;
+using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Common.Contracts.Provisioning;
 using MCServerLauncher.Daemon.API.Protocol;
 using MCServerLauncher.Daemon.ApplicationCore.Audit;
@@ -70,6 +72,31 @@ public sealed class RpcAuditPolicyTests
         Assert.Equal("a/level.dat -> b/level.dat", transfer.Target);
         Assert.False(transfer.Succeeded);
         Assert.Equal("file.not_found", transfer.ErrorCode);
+
+        using var extensionRequest = JsonDocument.Parse(
+            """
+            {
+              "protocol": "mcsl.extension.v1",
+              "type": "request",
+              "id": "request-1",
+              "plugin": "community.example.status-panel",
+              "command": "refresh",
+              "params": { "secret": "do-not-record" }
+            }
+            """);
+        var extension = RpcAuditPolicy.CreateEvent(
+            "mcsl.extension.dispatch",
+            "mcsl.extension.dispatch",
+            "user-a",
+            null,
+            new ExtensionProtocolDispatchRequest(extensionRequest.RootElement.Clone()),
+            result: null,
+            succeeded: true,
+            errorCode: null);
+        Assert.Equal("community.example.status-panel:refresh", extension.Target);
+        Assert.DoesNotContain(
+            new[] { extension.Target, extension.Method, extension.Permission, extension.ErrorCode, extension.ConfirmedBy },
+            value => value?.Contains("do-not-record", StringComparison.Ordinal) == true);
     }
 
     [Fact]

@@ -95,6 +95,14 @@ public sealed class DaemonClient : IDaemonApplication, IAsyncDisposable
         CancellationToken cancellationToken = default) =>
         _invoker.InvokeAsync(BuiltInProtocolDefinitions.DiscoverRpc, new EmptyRequest(), cancellationToken);
 
+    public Task<Result<ExtensionProtocolDispatchResult, DaemonError>> DispatchExtensionProtocolAsync(
+        ExtensionProtocolDispatchRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        return _invoker.InvokeAsync(BuiltInProtocolDefinitions.DispatchExtensionProtocol, request, cancellationToken);
+    }
+
     public async Task<Result<DaemonConsoleSession, DaemonError>> OpenConsoleAsync(
         ConsoleOpenRequest request,
         CancellationToken cancellationToken = default)

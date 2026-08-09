@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
+using MCServerLauncher.Daemon.API.Plugins;
 
 namespace MCServerLauncher.Daemon.Plugins;
 
@@ -16,7 +17,9 @@ internal static class PluginManifestDigest
         string apiRange,
         IReadOnlyList<string> features,
         IReadOnlyList<PluginManifestPluginDependency>? pluginDependencies = null,
-        IReadOnlyList<PluginManifestContractDependency>? contractDependencies = null)
+        IReadOnlyList<PluginManifestContractDependency>? contractDependencies = null,
+        IReadOnlyList<PluginManifestExtensionPoint>? extensionPoints = null,
+        IReadOnlyList<PluginManifestCommand>? commands = null)
     {
         var builder = new StringBuilder();
         Append(builder, DigestDomain);
@@ -54,9 +57,55 @@ internal static class PluginManifestDigest
             }
         }
 
+        if (extensionPoints is { Count: > 0 })
+        {
+            Append(builder, "extensionPoints");
+            Append(builder, extensionPoints.Count.ToString(CultureInfo.InvariantCulture));
+            foreach (var extensionPoint in extensionPoints
+                         .OrderBy(static item => item.Id, StringComparer.Ordinal))
+            {
+                Append(builder, extensionPoint.Id);
+                Append(builder, ToDigestKind(extensionPoint.Kind));
+                Append(builder, extensionPoint.Priority.ToString(CultureInfo.InvariantCulture));
+                Append(builder, extensionPoint.Replaces ?? string.Empty);
+                Append(builder, extensionPoint.DefaultFor ?? string.Empty);
+                IEnumerable<string> conflicts = extensionPoint.Conflicts.IsDefault
+                    ? Array.Empty<string>()
+                    : extensionPoint.Conflicts.Order(StringComparer.Ordinal);
+                foreach (var conflict in conflicts)
+                    Append(builder, conflict);
+            }
+        }
+
+        if (commands is { Count: > 0 })
+        {
+            Append(builder, "commands");
+            Append(builder, commands.Count.ToString(CultureInfo.InvariantCulture));
+            foreach (var command in commands.OrderBy(static item => item.Id, StringComparer.Ordinal))
+            {
+                Append(builder, command.Id);
+                Append(builder, command.Title ?? string.Empty);
+                Append(builder, command.Description ?? string.Empty);
+                Append(builder, command.Target);
+            }
+        }
+
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(builder.ToString())))
             .ToLowerInvariant();
     }
+
+    private static string ToDigestKind(PluginExtensionPointKind kind) => kind switch
+    {
+        PluginExtensionPointKind.Provider => "provider",
+        PluginExtensionPointKind.Registry => "registry",
+        PluginExtensionPointKind.Pipeline => "pipeline",
+        PluginExtensionPointKind.Hook => "hook",
+        PluginExtensionPointKind.Override => "override",
+        PluginExtensionPointKind.Ui => "ui",
+        PluginExtensionPointKind.Event => "event",
+        PluginExtensionPointKind.Command => "command",
+        _ => kind.ToString()
+    };
 
     private static void Append(StringBuilder builder, string value)
     {

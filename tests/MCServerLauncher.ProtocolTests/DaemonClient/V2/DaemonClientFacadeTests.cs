@@ -98,7 +98,7 @@ public sealed class DaemonClientFacadeTests
                 .Select(static property => property.Name)
                 .Order());
         Assert.Equal(
-            ["ConnectAsync", "DiscoverAsync", "DisposeAsync", "InvokeAsync", "OpenConsoleAsync", "PingAsync", "RestartInstanceAsync", "SubscribeAsync"],
+            ["ConnectAsync", "DiscoverAsync", "DispatchExtensionProtocolAsync", "DisposeAsync", "InvokeAsync", "OpenConsoleAsync", "PingAsync", "RestartInstanceAsync", "SubscribeAsync"],
             type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly)
                 .Where(static method => !method.IsSpecialName)
                 .Select(static method => method.Name)
@@ -109,6 +109,13 @@ public sealed class DaemonClientFacadeTests
         var pingCancellation = Assert.Single(ping.GetParameters());
         Assert.Equal(typeof(CancellationToken), pingCancellation.ParameterType);
         Assert.True(pingCancellation.IsOptional);
+        var dispatch = type.GetMethod(nameof(MCServerLauncher.DaemonClient.DaemonClient.DispatchExtensionProtocolAsync));
+        Assert.NotNull(dispatch);
+        Assert.Equal(typeof(Task<Result<ExtensionProtocolDispatchResult, DaemonError>>), dispatch.ReturnType);
+        Assert.Equal(
+            [typeof(ExtensionProtocolDispatchRequest), typeof(CancellationToken)],
+            dispatch.GetParameters().Select(static parameter => parameter.ParameterType));
+        Assert.True(dispatch.GetParameters()[1].IsOptional);
         var openConsole = type.GetMethod(nameof(MCServerLauncher.DaemonClient.DaemonClient.OpenConsoleAsync));
         Assert.NotNull(openConsole);
         Assert.Equal(typeof(Task<Result<DaemonConsoleSession, DaemonError>>), openConsole.ReturnType);

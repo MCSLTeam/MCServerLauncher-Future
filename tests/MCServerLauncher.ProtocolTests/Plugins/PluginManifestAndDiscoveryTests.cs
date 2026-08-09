@@ -1,4 +1,5 @@
 using System.Reflection;
+using MCServerLauncher.Daemon.API.Plugins;
 using MCServerLauncher.Daemon.API.Protocol;
 using MCServerLauncher.Daemon.Plugins;
 
@@ -29,6 +30,183 @@ public sealed class PluginManifestAndDiscoveryTests
         Assert.True(manifest.HasFeature(PluginFeature.RpcRegister));
         Assert.True(manifest.HasFeature(PluginFeature.EventPublish));
         Assert.True(manifest.HasFeature(PluginFeature.InstanceQuery));
+    }
+
+    [Fact]
+    public void ReadsManifestExtensionPointsAndIncludesThemInSemanticDigest()
+    {
+        using var first = PluginFixture.Create("extension-points-a");
+        using var second = PluginFixture.Create("extension-points-b");
+        first.WriteManifest(
+            "community.java-provider",
+            "1.0.0",
+            "PluginEntry.dll",
+            "Community.JavaProvider.Plugin",
+            "[1.0.0,2.0.0)",
+            "system.query",
+            """
+            ,"extensionPoints": [
+              {
+                "kind": "provider",
+                "id": "provider.java",
+                "priority": 10,
+                "conflicts": ["provider.serverCore"]
+              }
+            ]
+            """);
+        second.WriteManifest(
+            "community.java-provider",
+            "01.00",
+            "PluginEntry.dll",
+            "Community.JavaProvider.Plugin",
+            "[1.0, 2.0)",
+            "system.query",
+            """
+            ,"extensionPoints": [
+              {
+                "conflicts": ["provider.serverCore"],
+                "priority": 10,
+                "id": "provider.java",
+                "kind": "provider"
+              }
+            ]
+            """);
+
+        var firstManifest = PluginManifestReader.ReadAndValidate(first.BundleDirectory, "1.0.0");
+        var secondManifest = PluginManifestReader.ReadAndValidate(second.BundleDirectory, "1.0.0");
+
+        var extensionPoint = Assert.Single(firstManifest.ExtensionPoints);
+        Assert.Equal("provider.java", extensionPoint.Id);
+        Assert.Equal(PluginExtensionPointKind.Provider, extensionPoint.Kind);
+        Assert.Equal(10, extensionPoint.Priority);
+        Assert.Equal(firstManifest.ManifestDigest, secondManifest.ManifestDigest);
+    }
+
+    [Fact]
+    public void ReadsManifestCommandsAndIncludesThemInSemanticDigest()
+    {
+        using var first = PluginFixture.Create("commands-a");
+        using var second = PluginFixture.Create("commands-b");
+        first.WriteManifest(
+            "community.command-panel",
+            "1.0.0",
+            "PluginEntry.dll",
+            "Community.CommandPanel.Plugin",
+            "[1.0.0,2.0.0)",
+            "rpc.register",
+            """
+            ,"extensionPoints": [
+              { "kind": "command", "id": "command.daemon" }
+            ],
+            "commands": [
+              {
+                "id": "refresh",
+                "title": "Refresh",
+                "description": "Refreshes panel state.",
+                "target": "daemon"
+              }
+            ]
+            """);
+        second.WriteManifest(
+            "community.command-panel",
+            "01.00",
+            "PluginEntry.dll",
+            "Community.CommandPanel.Plugin",
+            "[1.0, 2.0)",
+            "rpc.register",
+            """
+            ,"commands": [
+              {
+                "target": "daemon",
+                "description": "Refreshes panel state.",
+                "title": "Refresh",
+                "id": "refresh"
+              }
+            ],
+            "extensionPoints": [
+              { "id": "command.daemon", "kind": "command" }
+            ]
+            """);
+
+        var firstManifest = PluginManifestReader.ReadAndValidate(first.BundleDirectory, "1.0.0");
+        var secondManifest = PluginManifestReader.ReadAndValidate(second.BundleDirectory, "1.0.0");
+
+        var command = Assert.Single(firstManifest.Commands);
+        Assert.Equal("refresh", command.Id);
+        Assert.Equal("daemon", command.Target);
+        Assert.Equal(firstManifest.ManifestDigest, secondManifest.ManifestDigest);
+    }
+
+    [Fact]
+    public void RejectsManifestCommandsWithoutDaemonCommandExtensionPoint()
+    {
+        using var fixture = PluginFixture.Create("commands-missing-extension-point");
+        fixture.WriteManifest(
+            "community.command-panel",
+            "1.0.0",
+            "PluginEntry.dll",
+            "Community.CommandPanel.Plugin",
+            "[1.0.0,2.0.0)",
+            "rpc.register",
+            """
+            ,"commands": [
+              { "id": "refresh", "target": "daemon" }
+            ]
+            """);
+
+        var exception = Assert.Throws<PluginManifestException>(
+            () => PluginManifestReader.ReadAndValidate(fixture.BundleDirectory, "1.0.0"));
+
+        Assert.Equal("command_extension_point_missing", exception.Code);
+    }
+
+    [Fact]
+    public void RejectsManifestCommandsWithoutRpcRegisterFeature()
+    {
+        using var fixture = PluginFixture.Create("commands-missing-feature");
+        fixture.WriteManifest(
+            "community.command-panel",
+            "1.0.0",
+            "PluginEntry.dll",
+            "Community.CommandPanel.Plugin",
+            "[1.0.0,2.0.0)",
+            "system.query",
+            """
+            ,"extensionPoints": [
+              { "kind": "command", "id": "command.daemon" }
+            ],
+            "commands": [
+              { "id": "refresh", "target": "daemon" }
+            ]
+            """);
+
+        var exception = Assert.Throws<PluginManifestException>(
+            () => PluginManifestReader.ReadAndValidate(fixture.BundleDirectory, "1.0.0"));
+
+        Assert.Equal("command_feature_missing", exception.Code);
+    }
+
+    [Fact]
+    public void RejectsUnknownManifestExtensionPointDeclarations()
+    {
+        using var fixture = PluginFixture.Create("private-patch");
+        fixture.WriteManifest(
+            "community.private-patch",
+            "1.0.0",
+            "PluginEntry.dll",
+            "Community.PrivatePatch.Plugin",
+            "[1.0.0,2.0.0)",
+            "system.query",
+            """
+            ,"extensionPoints": [
+              { "kind": "override", "id": "private.instanceBase.patch" }
+            ]
+            """);
+
+        var exception = Assert.Throws<PluginManifestException>(
+            () => PluginManifestReader.ReadAndValidate(fixture.BundleDirectory, "1.0.0"));
+
+        Assert.Equal("extension_point_unknown", exception.Code);
     }
 
     [Fact]
@@ -178,6 +356,144 @@ public sealed class PluginManifestAndDiscoveryTests
         var duplicate = Assert.Throws<PluginManifestException>(
             () => PluginManifestReader.ReadAndValidate(fixture.BundleDirectory, "1.0.0"));
         Assert.Equal("dependency_duplicate", duplicate.Code);
+    }
+
+    [Fact]
+    public void ExtensionPointPlannerRejectsCrossPluginConflictsAndDuplicateOverrides()
+    {
+        var root = Directory.CreateTempSubdirectory("mcsl-plugin-extension-points-").FullName;
+        try
+        {
+            using var javaProvider = PluginFixture.Create("java-provider", root, typeof(MCServerLauncher.ExternalCompileFixture.ExternalCompilePlugin).Assembly.Location);
+            using var serverCoreProvider = PluginFixture.Create("server-core-provider", root, typeof(MCServerLauncher.ExternalCompileFixture.ExternalCompilePlugin).Assembly.Location);
+            using var processOverrideA = PluginFixture.Create("override-a", root, typeof(MCServerLauncher.ExternalCompileFixture.ExternalCompilePlugin).Assembly.Location);
+            using var processOverrideB = PluginFixture.Create("override-b", root, typeof(MCServerLauncher.ExternalCompileFixture.ExternalCompilePlugin).Assembly.Location);
+
+            javaProvider.WriteManifest(
+                "community.java-provider",
+                "1.0.0",
+                "PluginEntry.dll",
+                "MCServerLauncher.ExternalCompileFixture.ExternalCompilePlugin",
+                "[1.0.0,2.0.0)",
+                "system.query",
+                """
+                ,"extensionPoints": [
+                  { "id": "provider.java", "kind": "provider", "conflicts": ["provider.serverCore"] }
+                ]
+                """);
+            serverCoreProvider.WriteManifest(
+                "community.server-core-provider",
+                "1.0.0",
+                "PluginEntry.dll",
+                "MCServerLauncher.ExternalCompileFixture.ExternalCompilePlugin",
+                "[1.0.0,2.0.0)",
+                "system.query",
+                """
+                ,"extensionPoints": [
+                  { "id": "provider.serverCore", "kind": "provider" }
+                ]
+                """);
+            processOverrideA.WriteManifest(
+                "community.override-a",
+                "1.0.0",
+                "PluginEntry.dll",
+                "MCServerLauncher.ExternalCompileFixture.ExternalCompilePlugin",
+                "[1.0.0,2.0.0)",
+                "system.query",
+                """
+                ,"extensionPoints": [
+                  { "id": "override.process.launcher", "kind": "override", "replaces": "builtin.processLauncher" }
+                ]
+                """);
+            processOverrideB.WriteManifest(
+                "community.override-b",
+                "1.0.0",
+                "PluginEntry.dll",
+                "MCServerLauncher.ExternalCompileFixture.ExternalCompilePlugin",
+                "[1.0.0,2.0.0)",
+                "system.query",
+                """
+                ,"extensionPoints": [
+                  { "id": "override.process.launcher", "kind": "override", "replaces": "builtin.processLauncher" }
+                ]
+                """);
+
+            var discovered = new PluginDiscovery("1.0.0").Discover(root);
+            var planned = PluginExtensionPointPlanner.Plan(discovered.Plugins);
+
+            Assert.Empty(planned.Plugins);
+            Assert.Equal(4, planned.Failures.Length);
+            Assert.Contains(planned.Failures, failure => failure.PluginId == "community.java-provider" && failure.Code == "extension_point_conflict");
+            Assert.Contains(planned.Failures, failure => failure.PluginId == "community.server-core-provider" && failure.Code == "extension_point_conflict");
+            Assert.Contains(planned.Failures, failure => failure.PluginId == "community.override-a" && failure.Code == "extension_point_duplicate");
+            Assert.Contains(planned.Failures, failure => failure.PluginId == "community.override-b" && failure.Code == "extension_point_duplicate");
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+                Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void DependencyPlannerBlocksConsumersAfterExtensionPointAdmissionSkipsProvider()
+    {
+        var root = Directory.CreateTempSubdirectory("mcsl-plugin-extension-dependencies-").FullName;
+        try
+        {
+            using var provider = PluginFixture.Create("provider", root, typeof(MCServerLauncher.ExternalCompileFixture.ExternalCompilePlugin).Assembly.Location);
+            using var conflict = PluginFixture.Create("conflict", root, typeof(MCServerLauncher.ExternalCompileFixture.ExternalCompilePlugin).Assembly.Location);
+            using var consumer = PluginFixture.Create("consumer", root, typeof(MCServerLauncher.ExternalCompileFixture.ExternalCompilePlugin).Assembly.Location);
+            provider.WriteManifest(
+                "community.provider",
+                "1.0.0",
+                "PluginEntry.dll",
+                "MCServerLauncher.ExternalCompileFixture.ExternalCompilePlugin",
+                "[1.0.0,2.0.0)",
+                "system.query",
+                """
+                ,"extensionPoints": [
+                  { "id": "provider.java", "kind": "provider", "conflicts": ["provider.serverCore"] }
+                ]
+                """);
+            conflict.WriteManifest(
+                "community.conflict",
+                "1.0.0",
+                "PluginEntry.dll",
+                "MCServerLauncher.ExternalCompileFixture.ExternalCompilePlugin",
+                "[1.0.0,2.0.0)",
+                "system.query",
+                """
+                ,"extensionPoints": [
+                  { "id": "provider.serverCore", "kind": "provider" }
+                ]
+                """);
+            consumer.WriteManifest(
+                "community.consumer",
+                "1.0.0",
+                "PluginEntry.dll",
+                "MCServerLauncher.ExternalCompileFixture.ExternalCompilePlugin",
+                "[1.0.0,2.0.0)",
+                "system.query",
+                """
+                ,"dependencies": {
+                  "version": 1,
+                  "plugins": [{ "id": "community.provider", "version": "[1.0.0,2.0.0)" }]
+                }
+                """);
+
+            var discovered = new PluginDiscovery("1.0.0").Discover(root);
+            var extensionAdmission = PluginExtensionPointPlanner.Plan(discovered.Plugins);
+            var dependencyAdmission = PluginDependencyPlanner.Plan(extensionAdmission.Plugins);
+
+            Assert.Equal(["community.consumer"], extensionAdmission.Plugins.Select(static plugin => plugin.Identity.Id).ToArray());
+            Assert.Contains(dependencyAdmission.Failures, failure => failure.PluginId == "community.consumer" && failure.Code == "dependency_missing");
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+                Directory.Delete(root, recursive: true);
+        }
     }
 
     [Fact]

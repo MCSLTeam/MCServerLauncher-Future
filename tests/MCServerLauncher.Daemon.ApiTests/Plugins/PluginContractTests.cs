@@ -78,6 +78,71 @@ public sealed class PluginContractTests
         Assert.NotNull(descriptor.Documentation);
     }
 
+    [Fact]
+    public void ExtensionProtocolHelperCreatesPluginOwnedEventDescriptor()
+    {
+        var descriptor = PluginExtensionProtocol.CreateExtensionEvent("community.instance-health");
+
+        Assert.Equal("plugin.community.instance-health.event.extension", descriptor.Name.Value);
+        Assert.Equal(descriptor.Name.Value, descriptor.Permission.Value);
+        Assert.Equal(typeof(ExtensionProtocolDispatchResult), descriptor.DataTypeInfo.Type);
+        Assert.Null(descriptor.MetaTypeInfo);
+        Assert.True(descriptor.DataTypeInfo.IsReadOnly);
+    }
+
+    [Fact]
+    public void ExtensionProtocolHelperCreatesStateAndEventEnvelopes()
+    {
+        using var patch = JsonDocument.Parse("""{ "status": "ready", "metrics": { "cpu": 37.5 } }""");
+        var statePatch = PluginExtensionProtocol.StatePatch(
+            "community.instance-health",
+            3,
+            patch.RootElement);
+
+        Assert.Equal(PluginExtensionProtocol.Version, statePatch.Envelope.GetProperty("protocol").GetString());
+        Assert.Equal("state.patch", statePatch.Envelope.GetProperty("type").GetString());
+        Assert.Equal("community.instance-health", statePatch.Envelope.GetProperty("plugin").GetString());
+        Assert.Equal(3, statePatch.Envelope.GetProperty("revision").GetInt64());
+        Assert.Equal("ready", statePatch.Envelope.GetProperty("patch").GetProperty("status").GetString());
+
+        using var data = JsonDocument.Parse("""{ "line": "started" }""");
+        using var meta = JsonDocument.Parse("""{ "source": "daemon" }""");
+        var eventEnvelope = PluginExtensionProtocol.Event(
+            "community.instance-health",
+            "daemon.instance.log",
+            1,
+            data.RootElement,
+            meta.RootElement);
+
+        Assert.Equal("event", eventEnvelope.Envelope.GetProperty("type").GetString());
+        Assert.Equal("daemon.instance.log", eventEnvelope.Envelope.GetProperty("name").GetString());
+        Assert.Equal("started", eventEnvelope.Envelope.GetProperty("data").GetProperty("line").GetString());
+        Assert.Equal("daemon", eventEnvelope.Envelope.GetProperty("meta").GetProperty("source").GetString());
+    }
+
+    [Fact]
+    public void ExtensionProtocolHelperRejectsInvalidEnvelopePayloads()
+    {
+        using var unsafePatch = JsonDocument.Parse("""{ "__proto__": { "polluted": true } }""");
+        Assert.Throws<ArgumentException>(() => PluginExtensionProtocol.StatePatch(
+            "community.instance-health",
+            1,
+            unsafePatch.RootElement));
+
+        using var arrayPayload = JsonDocument.Parse("""[1, 2, 3]""");
+        Assert.Throws<ArgumentException>(() => PluginExtensionProtocol.Event(
+            "community.instance-health",
+            "daemon.instance.log",
+            1,
+            arrayPayload.RootElement));
+
+        using var patch = JsonDocument.Parse("""{ "status": "ready" }""");
+        Assert.Throws<ArgumentOutOfRangeException>(() => PluginExtensionProtocol.StatePatch(
+            "community.instance-health",
+            -1,
+            patch.RootElement));
+    }
+
     [Theory]
     [InlineData("plugin.other.rpc.get")]
     [InlineData("mcsl.instance.start")]

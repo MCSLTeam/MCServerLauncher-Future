@@ -487,6 +487,8 @@ public sealed class PluginAdmissionPolicyTests
             frozen,
             ImmutableArray<PluginManifestPluginDependency>.Empty,
             ImmutableArray<PluginManifestContractDependency>.Empty,
+            ImmutableArray<PluginManifestExtensionPoint>.Empty,
+            ImmutableArray<PluginManifestCommand>.Empty,
             "/bundle",
             "/bundle/PluginEntry.dll",
             manifestDigest);

@@ -135,6 +135,7 @@ internal sealed class PluginRegistrationDraft(
     internal void AddTo(ProtocolCatalogBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+        builder.AddPluginExtensionCommands(Owner, Manifest.Commands.Select(static command => command.Id));
         foreach (var registration in _registrations)
             registration.AddTo(builder);
     }

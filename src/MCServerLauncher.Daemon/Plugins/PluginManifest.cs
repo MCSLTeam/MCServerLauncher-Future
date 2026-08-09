@@ -68,6 +68,42 @@ internal sealed class PluginManifestDependenciesDocument
     public PluginManifestContractDependencyDocument[]? Contracts { get; set; }
 }
 
+internal sealed class PluginManifestExtensionPointDocument
+{
+    [JsonPropertyName("id")]
+    public string? Id { get; set; }
+
+    [JsonPropertyName("kind")]
+    public string? Kind { get; set; }
+
+    [JsonPropertyName("priority")]
+    public int? Priority { get; set; }
+
+    [JsonPropertyName("replaces")]
+    public string? Replaces { get; set; }
+
+    [JsonPropertyName("conflicts")]
+    public string[]? Conflicts { get; set; }
+
+    [JsonPropertyName("defaultFor")]
+    public string? DefaultFor { get; set; }
+}
+
+internal sealed class PluginManifestCommandDocument
+{
+    [JsonPropertyName("id")]
+    public string? Id { get; set; }
+
+    [JsonPropertyName("title")]
+    public string? Title { get; set; }
+
+    [JsonPropertyName("description")]
+    public string? Description { get; set; }
+
+    [JsonPropertyName("target")]
+    public string? Target { get; set; }
+}
+
 internal sealed class PluginManifestDocument
 {
     [JsonPropertyName("$schema")]
@@ -84,6 +120,12 @@ internal sealed class PluginManifestDocument
 
     [JsonPropertyName("dependencies")]
     public PluginManifestDependenciesDocument? Dependencies { get; set; }
+
+    [JsonPropertyName("extensionPoints")]
+    public PluginManifestExtensionPointDocument[]? ExtensionPoints { get; set; }
+
+    [JsonPropertyName("commands")]
+    public PluginManifestCommandDocument[]? Commands { get; set; }
 }
 
 [JsonSourceGenerationOptions(
@@ -108,6 +150,20 @@ internal sealed record PluginManifestContractDependency(
     internal string NormalizedVersionRange => VersionRange.ToNormalizedString();
 }
 
+internal sealed record PluginManifestExtensionPoint(
+    string Id,
+    PluginExtensionPointKind Kind,
+    int Priority,
+    string? Replaces,
+    ImmutableArray<string> Conflicts,
+    string? DefaultFor);
+
+internal sealed record PluginManifestCommand(
+    string Id,
+    string? Title,
+    string? Description,
+    string Target);
+
 internal sealed record PluginManifest(
     PluginIdentity Identity,
     string EntryAssembly,
@@ -117,6 +173,8 @@ internal sealed record PluginManifest(
     FrozenSet<PluginFeature> Features,
     ImmutableArray<PluginManifestPluginDependency> PluginDependencies,
     ImmutableArray<PluginManifestContractDependency> ContractDependencies,
+    ImmutableArray<PluginManifestExtensionPoint> ExtensionPoints,
+    ImmutableArray<PluginManifestCommand> Commands,
     string BundleDirectory,
     string EntryAssemblyPath,
     string ManifestDigest)
@@ -236,6 +294,8 @@ internal static class PluginManifestReader
 
         var features = ParseFeatures(document.Requires.Features);
         var (pluginDependencies, contractDependencies) = ParseDependencies(document.Dependencies, identity.Id);
+        var extensionPoints = ParseExtensionPoints(document.ExtensionPoints);
+        var commands = ParseCommands(document.Commands, features, extensionPoints);
 
         var normalizedFeatures = features
             .Select(static feature => feature.Value)
@@ -249,7 +309,9 @@ internal static class PluginManifestReader
             apiVersionRange.ToNormalizedString(),
             normalizedFeatures,
             pluginDependencies,
-            contractDependencies);
+            contractDependencies,
+            extensionPoints,
+            commands);
 
         return new PluginManifest(
             identity,
@@ -260,6 +322,8 @@ internal static class PluginManifestReader
             features,
             pluginDependencies,
             contractDependencies,
+            extensionPoints,
+            commands,
             fullBundleDirectory,
             entryAssemblyPath,
             manifestDigest);
@@ -416,6 +480,159 @@ internal static class PluginManifestReader
         }
 
         return true;
+    }
+
+    private static ImmutableArray<PluginManifestExtensionPoint> ParseExtensionPoints(PluginManifestExtensionPointDocument[]? extensionPoints)
+    {
+        if (extensionPoints is null)
+            return ImmutableArray<PluginManifestExtensionPoint>.Empty;
+
+        var parsed = ImmutableArray.CreateBuilder<PluginManifestExtensionPoint>(extensionPoints.Length);
+        foreach (var document in extensionPoints)
+        {
+            if (document is null)
+                throw new PluginManifestException("extension_point_invalid", "Extension point entries must be objects.");
+
+            var id = Require(document.Id, "extensionPoints[].id");
+            var kindText = Require(document.Kind, "extensionPoints[].kind");
+            var kind = ParseExtensionPointKind(kindText);
+            var priority = document.Priority ?? 0;
+            var conflicts = ParseExtensionPointConflicts(document.Conflicts);
+            parsed.Add(new PluginManifestExtensionPoint(
+                id,
+                kind,
+                priority,
+                NormalizeOptionalCanonicalString(document.Replaces, "extensionPoints[].replaces"),
+                conflicts,
+                NormalizeOptionalCanonicalString(document.DefaultFor, "extensionPoints[].defaultFor")));
+        }
+
+        var declarations = parsed.Select(static extensionPoint => new PluginExtensionPointDeclaration(
+            extensionPoint.Id,
+            extensionPoint.Kind,
+            extensionPoint.Priority,
+            extensionPoint.Replaces,
+            extensionPoint.Conflicts,
+            extensionPoint.DefaultFor));
+        var admission = ExtensionPointCatalog.ValidateDeclarations(declarations);
+        if (!admission.IsAdmitted)
+            throw ToExtensionPointException(admission.Diagnostics[0]);
+
+        return parsed
+            .OrderBy(static extensionPoint => extensionPoint.Id, StringComparer.Ordinal)
+            .ToImmutableArray();
+    }
+
+    private static ImmutableArray<string> ParseExtensionPointConflicts(string[]? conflicts)
+    {
+        if (conflicts is null)
+            return ImmutableArray<string>.Empty;
+
+        var parsed = ImmutableArray.CreateBuilder<string>(conflicts.Length);
+        foreach (var conflict in conflicts)
+            parsed.Add(Require(conflict, "extensionPoints[].conflicts[]"));
+        return parsed
+            .Distinct(StringComparer.Ordinal)
+            .Order(StringComparer.Ordinal)
+            .ToImmutableArray();
+    }
+
+    private static string? NormalizeOptionalCanonicalString(string? value, string field)
+    {
+        if (value is null)
+            return null;
+        return Require(value, field);
+    }
+
+    private static ImmutableArray<PluginManifestCommand> ParseCommands(
+        PluginManifestCommandDocument[]? commands,
+        FrozenSet<PluginFeature> features,
+        ImmutableArray<PluginManifestExtensionPoint> extensionPoints)
+    {
+        if (commands is null)
+            return ImmutableArray<PluginManifestCommand>.Empty;
+
+        var parsed = ImmutableArray.CreateBuilder<PluginManifestCommand>(commands.Length);
+        HashSet<string> seen = new(StringComparer.Ordinal);
+        foreach (var document in commands)
+        {
+            if (document is null)
+                throw new PluginManifestException("command_invalid", "Command entries must be objects.");
+
+            var id = Require(document.Id, "commands[].id");
+            ValidateCommandId(id, "commands[].id");
+            if (!seen.Add(id))
+                throw new PluginManifestException("command_duplicate", $"Command '{id}' is declared more than once.");
+
+            var target = NormalizeOptionalCanonicalString(document.Target, "commands[].target") ?? "daemon";
+            if (!StringComparer.Ordinal.Equals(target, "daemon"))
+                throw new PluginManifestException("command_target_invalid", "Daemon plugin commands must use target 'daemon'.");
+
+            parsed.Add(new PluginManifestCommand(
+                id,
+                NormalizeOptionalCanonicalString(document.Title, "commands[].title"),
+                NormalizeOptionalCanonicalString(document.Description, "commands[].description"),
+                target));
+        }
+
+        if (parsed.Count > 0)
+        {
+            if (!features.Contains(new PluginFeature("rpc.register")))
+                throw new PluginManifestException("command_feature_missing", "Daemon plugin commands require feature 'rpc.register'.");
+            if (!extensionPoints.Any(static extensionPoint =>
+                    extensionPoint.Kind == PluginExtensionPointKind.Command &&
+                    StringComparer.Ordinal.Equals(extensionPoint.Id, "command.daemon")))
+            {
+                throw new PluginManifestException("command_extension_point_missing", "Daemon plugin commands require extension point 'command.daemon'.");
+            }
+        }
+
+        return parsed
+            .OrderBy(static command => command.Id, StringComparer.Ordinal)
+            .ToImmutableArray();
+    }
+
+    private static void ValidateCommandId(string value, string field)
+    {
+        var segmentStart = true;
+        for (var index = 0; index < value.Length; index++)
+        {
+            var character = value[index];
+            var isAsciiLetter = character is >= 'A' and <= 'Z' or >= 'a' and <= 'z' or '_';
+            var isDigit = character is >= '0' and <= '9';
+            if (character == '.')
+            {
+                if (segmentStart || index == value.Length - 1)
+                    throw new PluginManifestException("command_id_invalid", $"The plugin manifest field '{field}' is not a canonical command id.");
+                segmentStart = true;
+                continue;
+            }
+
+            if (segmentStart && !isAsciiLetter)
+                throw new PluginManifestException("command_id_invalid", $"The plugin manifest field '{field}' is not a canonical command id.");
+            if (!isAsciiLetter && !isDigit)
+                throw new PluginManifestException("command_id_invalid", $"The plugin manifest field '{field}' is not a canonical command id.");
+            segmentStart = false;
+        }
+    }
+
+    private static PluginExtensionPointKind ParseExtensionPointKind(string value) => value switch
+    {
+        "provider" => PluginExtensionPointKind.Provider,
+        "registry" => PluginExtensionPointKind.Registry,
+        "pipeline" => PluginExtensionPointKind.Pipeline,
+        "hook" => PluginExtensionPointKind.Hook,
+        "override" => PluginExtensionPointKind.Override,
+        "ui" => PluginExtensionPointKind.Ui,
+        "event" => PluginExtensionPointKind.Event,
+        "command" => PluginExtensionPointKind.Command,
+        _ => throw new PluginManifestException("extension_point_kind_unknown", $"Extension point kind '{value}' is not supported.")
+    };
+
+    private static PluginManifestException ToExtensionPointException(string diagnostic)
+    {
+        var code = diagnostic.Split(':', 2)[0];
+        return new PluginManifestException(code, $"Plugin extension point declaration is invalid: {diagnostic}.");
     }
 
     private static FrozenSet<PluginFeature> ParseFeatures(string[]? values)

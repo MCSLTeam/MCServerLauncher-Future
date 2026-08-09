@@ -63,6 +63,56 @@ internal sealed class ParsedContractDependency
     public string Sha256 { get; }
 }
 
+internal sealed class ParsedExtensionPoint
+{
+    public ParsedExtensionPoint(
+        string id,
+        string kind,
+        int priority,
+        string? replaces,
+        IReadOnlyList<string> conflicts,
+        string? defaultFor)
+    {
+        Id = id;
+        Kind = kind;
+        Priority = priority;
+        Replaces = replaces;
+        Conflicts = conflicts;
+        DefaultFor = defaultFor;
+    }
+
+    public string Id { get; }
+
+    public string Kind { get; }
+
+    public int Priority { get; }
+
+    public string? Replaces { get; }
+
+    public IReadOnlyList<string> Conflicts { get; }
+
+    public string? DefaultFor { get; }
+}
+
+internal sealed class ParsedCommand
+{
+    public ParsedCommand(string id, string? title, string? description, string target)
+    {
+        Id = id;
+        Title = title;
+        Description = description;
+        Target = target;
+    }
+
+    public string Id { get; }
+
+    public string? Title { get; }
+
+    public string? Description { get; }
+
+    public string Target { get; }
+}
+
 internal sealed class ParsedPluginManifest
 {
     public ParsedPluginManifest(
@@ -75,6 +125,7 @@ internal sealed class ParsedPluginManifest
         IReadOnlyList<string> features,
         IReadOnlyList<ParsedPluginDependency> pluginDependencies,
         IReadOnlyList<ParsedContractDependency> contractDependencies,
+        IReadOnlyList<ParsedCommand> commands,
         string digest,
         bool apiRangeSupported,
         IReadOnlyList<PluginManifestIssue> issues,
@@ -89,6 +140,7 @@ internal sealed class ParsedPluginManifest
         Features = features;
         PluginDependencies = pluginDependencies;
         ContractDependencies = contractDependencies;
+        Commands = commands;
         Digest = digest;
         ApiRangeSupported = apiRangeSupported;
         Issues = issues;
@@ -112,6 +164,8 @@ internal sealed class ParsedPluginManifest
     public IReadOnlyList<ParsedPluginDependency> PluginDependencies { get; }
 
     public IReadOnlyList<ParsedContractDependency> ContractDependencies { get; }
+
+    public IReadOnlyList<ParsedCommand> Commands { get; }
 
     public string Digest { get; }
 
@@ -161,6 +215,37 @@ internal static class PluginManifestParser
     // additions cannot silently skip the required diagnostic.
     private static readonly HashSet<string> FeatureConflicts = new(StringComparer.Ordinal);
 
+    private static readonly Dictionary<string, string> KnownExtensionPoints = new(StringComparer.Ordinal)
+    {
+        ["provider.java"] = "provider",
+        ["provider.serverCore"] = "provider",
+        ["provider.backup"] = "provider",
+        ["provider.processLauncher"] = "provider",
+        ["registry.template"] = "registry",
+        ["registry.serverCore"] = "registry",
+        ["registry.icon"] = "registry",
+        ["registry.formatter"] = "registry",
+        ["registry.command"] = "registry",
+        ["pipeline.instance.create"] = "pipeline",
+        ["hook.instance.lifecycle"] = "hook",
+        ["override.process.launcher"] = "override",
+        ["ui.panel"] = "ui",
+        ["event.daemon"] = "event",
+        ["command.daemon"] = "command",
+    };
+
+    private static readonly HashSet<string> KnownExtensionPointKinds = new(StringComparer.Ordinal)
+    {
+        "provider",
+        "registry",
+        "pipeline",
+        "hook",
+        "override",
+        "ui",
+        "event",
+        "command",
+    };
+
     public static ParsedPluginManifest Parse(string json, string pathHint)
     {
         try
@@ -179,7 +264,7 @@ internal static class PluginManifestParser
                 });
 
             var root = RequireObject(document.RootElement, "$");
-            ValidateProperties(root, "$", "$schema", "package", "entry", "requires", "dependencies");
+            ValidateProperties(root, "$", "$schema", "package", "entry", "requires", "dependencies", "extensionPoints", "commands");
 
             var schema = ReadOptionalString(root, "$schema", "$");
             if (schema is not null && !string.Equals(schema, CanonicalSchemaUri, StringComparison.Ordinal))
@@ -259,6 +344,8 @@ internal static class PluginManifestParser
             }
 
             var (pluginDependencies, contractDependencies) = ParseDependencies(root, packageId);
+            var extensionPoints = ParseExtensionPoints(root);
+            var commands = ParseCommands(root, normalizedFeatures, extensionPoints);
             var digest = ComputeNormalizedDigest(
                 packageId,
                 normalizedPackageVersion,
@@ -267,7 +354,9 @@ internal static class PluginManifestParser
                 normalizedApiRange,
                 normalizedFeatures,
                 pluginDependencies,
-                contractDependencies);
+                contractDependencies,
+                extensionPoints,
+                commands);
 
             return new ParsedPluginManifest(
                 packageId,
@@ -279,6 +368,7 @@ internal static class PluginManifestParser
                 normalizedFeatures,
                 pluginDependencies,
                 contractDependencies,
+                commands,
                 digest,
                 apiRangeSupported,
                 issues,
@@ -376,6 +466,95 @@ internal static class PluginManifestParser
         return parsed;
     }
 
+    private static List<ParsedExtensionPoint> ParseExtensionPoints(JsonElement root)
+    {
+        if (!root.TryGetProperty("extensionPoints", out var extensionPointsElement))
+            return new List<ParsedExtensionPoint>();
+        if (extensionPointsElement.ValueKind != JsonValueKind.Array)
+            throw new InvalidOperationException("Field 'extensionPoints' must be an array.");
+
+        var parsed = new List<ParsedExtensionPoint>();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var extensionPointElement in extensionPointsElement.EnumerateArray())
+        {
+            var extensionPoint = RequireObject(extensionPointElement, "$.extensionPoints[]");
+            ValidateProperties(extensionPoint, "$.extensionPoints[]", "id", "kind", "priority", "replaces", "conflicts", "defaultFor");
+            var id = RequireString(extensionPoint, "id", "$.extensionPoints[]");
+            var kind = RequireString(extensionPoint, "kind", "$.extensionPoints[]");
+            if (!KnownExtensionPointKinds.Contains(kind))
+                throw new InvalidOperationException($"Extension point kind '{kind}' is not supported.");
+            if (!KnownExtensionPoints.TryGetValue(id, out var expectedKind))
+                throw new InvalidOperationException($"Extension point id '{id}' is not supported.");
+            if (!string.Equals(kind, expectedKind, StringComparison.Ordinal))
+                throw new InvalidOperationException($"Extension point '{id}' must use kind '{expectedKind}'.");
+            if (!seen.Add(id))
+                throw new InvalidOperationException($"Extension point id '{id}' is declared more than once.");
+
+            var priority = ReadOptionalInt(extensionPoint, "priority", "$.extensionPoints[]") ?? 0;
+            if (priority is < -1000 or > 1000)
+                throw new InvalidOperationException($"Extension point '{id}' priority is outside the supported range.");
+            var replaces = ReadOptionalString(extensionPoint, "replaces", "$.extensionPoints[]");
+            if (!string.IsNullOrWhiteSpace(replaces) && kind != "override")
+                throw new InvalidOperationException($"Extension point '{id}' cannot replace another provider.");
+            var conflicts = ReadOptionalStringArray(extensionPoint, "conflicts", "$.extensionPoints[]");
+            var defaultFor = ReadOptionalString(extensionPoint, "defaultFor", "$.extensionPoints[]");
+            parsed.Add(new ParsedExtensionPoint(id, kind, priority, replaces, conflicts, defaultFor));
+        }
+
+        foreach (var extensionPoint in parsed)
+        {
+            foreach (var conflict in extensionPoint.Conflicts)
+            {
+                if (seen.Contains(conflict))
+                    throw new InvalidOperationException($"Extension point '{extensionPoint.Id}' conflicts with declared extension point '{conflict}'.");
+            }
+        }
+
+        parsed.Sort(static (left, right) => StringComparer.Ordinal.Compare(left.Id, right.Id));
+        return parsed;
+    }
+
+    private static List<ParsedCommand> ParseCommands(
+        JsonElement root,
+        IReadOnlyList<string> features,
+        IReadOnlyList<ParsedExtensionPoint> extensionPoints)
+    {
+        if (!root.TryGetProperty("commands", out var commandsElement))
+            return new List<ParsedCommand>();
+        if (commandsElement.ValueKind != JsonValueKind.Array)
+            throw new InvalidOperationException("Field 'commands' must be an array.");
+
+        var parsed = new List<ParsedCommand>();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var commandElement in commandsElement.EnumerateArray())
+        {
+            var command = RequireObject(commandElement, "$.commands[]");
+            ValidateProperties(command, "$.commands[]", "id", "title", "description", "target");
+            var id = RequireString(command, "id", "$.commands[]");
+            ValidateCommandId(id, "commands[].id");
+            if (!seen.Add(id))
+                throw new InvalidOperationException($"Command id '{id}' is declared more than once.");
+
+            var title = ReadOptionalString(command, "title", "$.commands[]");
+            var description = ReadOptionalString(command, "description", "$.commands[]");
+            var target = ReadOptionalString(command, "target", "$.commands[]") ?? "daemon";
+            if (!string.Equals(target, "daemon", StringComparison.Ordinal))
+                throw new InvalidOperationException("Field 'commands[].target' must be 'daemon'.");
+            parsed.Add(new ParsedCommand(id, title, description, target));
+        }
+
+        if (parsed.Count > 0)
+        {
+            if (!features.Contains("rpc.register", StringComparer.Ordinal))
+                throw new InvalidOperationException("Field 'commands' requires feature 'rpc.register'.");
+            if (!extensionPoints.Any(static extensionPoint => extensionPoint.Kind == "command" && extensionPoint.Id == "command.daemon"))
+                throw new InvalidOperationException("Field 'commands' requires extension point 'command.daemon'.");
+        }
+
+        parsed.Sort(static (left, right) => StringComparer.Ordinal.Compare(left.Id, right.Id));
+        return parsed;
+    }
+
     private static bool IsSha256Hex(string value)
     {
         if (value.Length != 64)
@@ -429,6 +608,36 @@ internal static class PluginManifestParser
         if (string.IsNullOrWhiteSpace(text) || !string.Equals(text, text.Trim(), StringComparison.Ordinal))
             throw new InvalidOperationException($"Field '{DisplayPath(path, name)}' must be a non-empty canonical string.");
         return text;
+    }
+
+    private static int? ReadOptionalInt(JsonElement parent, string name, string path)
+    {
+        if (!parent.TryGetProperty(name, out var value))
+            return null;
+        if (value.ValueKind != JsonValueKind.Number || !value.TryGetInt32(out var integer))
+            throw new InvalidOperationException($"Field '{DisplayPath(path, name)}' must be an integer.");
+        return integer;
+    }
+
+    private static IReadOnlyList<string> ReadOptionalStringArray(JsonElement parent, string name, string path)
+    {
+        if (!parent.TryGetProperty(name, out var value))
+            return Array.Empty<string>();
+        if (value.ValueKind != JsonValueKind.Array)
+            throw new InvalidOperationException($"Field '{DisplayPath(path, name)}' must be an array.");
+
+        var values = new SortedSet<string>(StringComparer.Ordinal);
+        foreach (var item in value.EnumerateArray())
+        {
+            if (item.ValueKind != JsonValueKind.String)
+                throw new InvalidOperationException($"Field '{DisplayPath(path, name)}' items must be strings.");
+            var text = item.GetString() ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(text) || !string.Equals(text, text.Trim(), StringComparison.Ordinal))
+                throw new InvalidOperationException($"Field '{DisplayPath(path, name)}' items must be non-empty canonical strings.");
+            values.Add(text);
+        }
+
+        return values.ToArray();
     }
 
     private static void ValidateProperties(JsonElement value, string path, params string[] allowed)
@@ -528,6 +737,30 @@ internal static class PluginManifestParser
         }
     }
 
+    private static void ValidateCommandId(string value, string field)
+    {
+        var segmentStart = true;
+        for (var index = 0; index < value.Length; index++)
+        {
+            var character = value[index];
+            var isAsciiLetter = character is >= 'A' and <= 'Z' or >= 'a' and <= 'z' or '_';
+            var isDigit = character is >= '0' and <= '9';
+            if (character == '.')
+            {
+                if (segmentStart || index == value.Length - 1)
+                    throw new InvalidOperationException($"Field '{field}' is not a canonical command id.");
+                segmentStart = true;
+                continue;
+            }
+
+            if (segmentStart && !isAsciiLetter)
+                throw new InvalidOperationException($"Field '{field}' is not a canonical command id.");
+            if (!isAsciiLetter && !isDigit)
+                throw new InvalidOperationException($"Field '{field}' is not a canonical command id.");
+            segmentStart = false;
+        }
+    }
+
     private static string ComputeNormalizedDigest(
         string packageId,
         string packageVersion,
@@ -536,7 +769,9 @@ internal static class PluginManifestParser
         string apiRange,
         IReadOnlyList<string> features,
         IReadOnlyList<ParsedPluginDependency> pluginDependencies,
-        IReadOnlyList<ParsedContractDependency> contractDependencies)
+        IReadOnlyList<ParsedContractDependency> contractDependencies,
+        IReadOnlyList<ParsedExtensionPoint> extensionPoints,
+        IReadOnlyList<ParsedCommand> commands)
     {
         var builder = new StringBuilder();
         AppendDigestValue(builder, DigestDomain);
@@ -572,6 +807,35 @@ internal static class PluginManifestParser
             }
         }
 
+        if (extensionPoints.Count > 0)
+        {
+            AppendDigestValue(builder, "extensionPoints");
+            AppendDigestValue(builder, extensionPoints.Count.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            foreach (var extensionPoint in extensionPoints)
+            {
+                AppendDigestValue(builder, extensionPoint.Id);
+                AppendDigestValue(builder, extensionPoint.Kind);
+                AppendDigestValue(builder, extensionPoint.Priority.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                AppendDigestValue(builder, extensionPoint.Replaces ?? string.Empty);
+                AppendDigestValue(builder, extensionPoint.DefaultFor ?? string.Empty);
+                foreach (var conflict in extensionPoint.Conflicts)
+                    AppendDigestValue(builder, conflict);
+            }
+        }
+
+        if (commands.Count > 0)
+        {
+            AppendDigestValue(builder, "commands");
+            AppendDigestValue(builder, commands.Count.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            foreach (var command in commands)
+            {
+                AppendDigestValue(builder, command.Id);
+                AppendDigestValue(builder, command.Title ?? string.Empty);
+                AppendDigestValue(builder, command.Description ?? string.Empty);
+                AppendDigestValue(builder, command.Target);
+            }
+        }
+
         using var sha = SHA256.Create();
         return ToHex(sha.ComputeHash(Encoding.UTF8.GetBytes(builder.ToString())));
     }
@@ -598,6 +862,7 @@ internal static class PluginManifestParser
             features: Array.Empty<string>(),
             pluginDependencies: Array.Empty<ParsedPluginDependency>(),
             contractDependencies: Array.Empty<ParsedContractDependency>(),
+            commands: Array.Empty<ParsedCommand>(),
             digest: string.Empty,
             apiRangeSupported: false,
             issues: Array.Empty<PluginManifestIssue>(),

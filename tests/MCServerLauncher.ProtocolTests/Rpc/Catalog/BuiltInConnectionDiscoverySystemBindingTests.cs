@@ -3,12 +3,14 @@ using System.Reflection;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
+using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Common.Contracts.Serialization;
 using MCServerLauncher.Common.Contracts.System;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.API.Application;
 using MCServerLauncher.Daemon.API.Errors;
+using MCServerLauncher.Daemon.API.Plugins;
 using MCServerLauncher.Daemon.API.Protocol;
 using MCServerLauncher.Daemon.API.State;
 using MCServerLauncher.Daemon.Remote.Rpc.Catalog;
@@ -25,6 +27,7 @@ public sealed class BuiltInConnectionDiscoverySystemBindingTests
         "mcsl.daemon.ping",
         "mcsl.event.subscribe",
         "mcsl.event.unsubscribe",
+        "mcsl.extension.dispatch",
         "mcsl.instance.catalog.get",
         "mcsl.java.list",
         "mcsl.system.info.get",
@@ -242,6 +245,197 @@ public sealed class BuiltInConnectionDiscoverySystemBindingTests
         Assert.True(available.Result.IsOk(out var document));
         Assert.Same(catalog.Document, document);
         Assert.Contains(document.Methods, method => method.Name == pluginDescriptor.Method.Value);
+    }
+
+    [Fact]
+    public async Task ExtensionDispatch_ValidatesRequestEnvelopeAndReturnsFailClosedProtocolError()
+    {
+        var fixture = CreateFrozenFixture();
+        fixture.CatalogAccessor.Publish(fixture.Catalog);
+        var request = JsonSerializer.Deserialize(
+            """
+            {
+              "envelope": {
+                "protocol": "mcsl.extension.v1",
+                "type": "request",
+                "id": "request-1",
+                "plugin": "community.example.status-panel",
+                "command": "refresh",
+                "params": {
+                  "instanceId": "11111111-1111-1111-1111-111111111111"
+                }
+              }
+            }
+            """,
+            BuiltInProtocolJsonContext.Default.ExtensionProtocolDispatchRequest)!;
+
+        var execution = await Invoke<ExtensionProtocolDispatchRequest, ExtensionProtocolDispatchResult>(
+            fixture.Catalog,
+            "mcsl.extension.dispatch",
+            new ProtocolInvocationContext(ProtocolExecutionOwner.BuiltIn),
+            request,
+            CancellationToken.None);
+
+        Assert.True(execution.Result.IsOk(out var result));
+        var envelope = result.Envelope;
+        Assert.Equal("mcsl.extension.v1", envelope.GetProperty("protocol").GetString());
+        Assert.Equal("error", envelope.GetProperty("type").GetString());
+        Assert.Equal("request-1", envelope.GetProperty("id").GetString());
+        Assert.Equal("community.example.status-panel", envelope.GetProperty("plugin").GetString());
+        Assert.Equal("command_undeclared", envelope.GetProperty("code").GetString());
+    }
+
+    [Fact]
+    public async Task ExtensionDispatch_InvokesTypedPluginRpcThroughFrozenCatalog()
+    {
+        var fixture = CreateFixture();
+        BuiltInConnectionDiscoverySystemRpcRegistrar.Register(
+            fixture.Builder,
+            fixture.SystemApplication,
+            fixture.SnapshotSource,
+            fixture.TimeProvider,
+            fixture.CatalogAccessor);
+        var pluginOwner = ProtocolExecutionOwner.ForPlugin(new ProtocolOwnerIdentity("community.example.status-panel", "1.0.0"));
+        var descriptor = PluginProtocol.CreateRpc(
+            "community.example.status-panel",
+            "refresh",
+            ApplicationContractJsonContext.Default.PathRequest,
+            BuiltInProtocolJsonContext.Default.PingResult,
+            new RpcDocumentation("extensions", "Refresh", "Refreshes extension state.", "test.request", "test.result"));
+        fixture.Builder.AddRpcDefinition(pluginOwner, descriptor);
+        fixture.Builder.AddPluginExtensionCommands(pluginOwner, ["refresh"]);
+        fixture.Builder.AddRpcBinding(
+            descriptor.Method,
+            new RpcBinding<PathRequest, PingResult>(
+                pluginOwner,
+                static (context, request, _) =>
+                {
+                    Assert.Equal(ProtocolExecutionOwnerKind.Plugin, context.ExecutionOwner.Kind);
+                    Assert.Equal("community.example.status-panel", context.ExecutionOwner.Plugin!.Id);
+                    Assert.Equal("world", request.Path);
+                    return Task.FromResult(ProtocolRpcExecution<PingResult>.Ok(new PingResult(42)));
+                }));
+        var catalog = fixture.Builder.Freeze();
+        fixture.CatalogAccessor.Publish(catalog);
+        var dispatch = JsonSerializer.Deserialize(
+            """
+            {
+              "envelope": {
+                "protocol": "mcsl.extension.v1",
+                "type": "request",
+                "id": "request-1",
+                "plugin": "community.example.status-panel",
+                "command": "refresh",
+                "params": {
+                  "path": "world"
+                }
+              }
+            }
+            """,
+            BuiltInProtocolJsonContext.Default.ExtensionProtocolDispatchRequest)!;
+
+        var execution = await Invoke<ExtensionProtocolDispatchRequest, ExtensionProtocolDispatchResult>(
+            catalog,
+            "mcsl.extension.dispatch",
+            new ProtocolInvocationContext(
+                ProtocolExecutionOwner.BuiltIn,
+                new TestPermissionView(["plugin.community.example.status-panel.rpc.refresh"])),
+            dispatch,
+            CancellationToken.None);
+
+        Assert.True(execution.Result.IsOk(out var result));
+        Assert.Equal("response", result.Envelope.GetProperty("type").GetString());
+        Assert.Equal("request-1", result.Envelope.GetProperty("id").GetString());
+        Assert.Equal(42, result.Envelope.GetProperty("result").GetProperty("time").GetInt64());
+    }
+
+    [Fact]
+    public async Task ExtensionDispatch_RequiresTargetPluginRpcPermission()
+    {
+        var fixture = CreateFixture();
+        BuiltInConnectionDiscoverySystemRpcRegistrar.Register(
+            fixture.Builder,
+            fixture.SystemApplication,
+            fixture.SnapshotSource,
+            fixture.TimeProvider,
+            fixture.CatalogAccessor);
+        var pluginOwner = ProtocolExecutionOwner.ForPlugin(new ProtocolOwnerIdentity("community.example.status-panel", "1.0.0"));
+        var descriptor = PluginProtocol.CreateRpc(
+            "community.example.status-panel",
+            "refresh",
+            ApplicationContractJsonContext.Default.PathRequest,
+            BuiltInProtocolJsonContext.Default.PingResult,
+            new RpcDocumentation("extensions", "Refresh", "Refreshes extension state.", "test.request", "test.result"));
+        fixture.Builder.AddRpcDefinition(pluginOwner, descriptor);
+        fixture.Builder.AddPluginExtensionCommands(pluginOwner, ["refresh"]);
+        fixture.Builder.AddRpcBinding(
+            descriptor.Method,
+            new RpcBinding<PathRequest, PingResult>(
+                pluginOwner,
+                static (_, _, _) => Task.FromResult(ProtocolRpcExecution<PingResult>.Ok(new PingResult(42)))));
+        var catalog = fixture.Builder.Freeze();
+        fixture.CatalogAccessor.Publish(catalog);
+        var dispatch = JsonSerializer.Deserialize(
+            """
+            {
+              "envelope": {
+                "protocol": "mcsl.extension.v1",
+                "type": "request",
+                "id": "request-1",
+                "plugin": "community.example.status-panel",
+                "command": "refresh",
+                "params": {
+                  "path": "world"
+                }
+              }
+            }
+            """,
+            BuiltInProtocolJsonContext.Default.ExtensionProtocolDispatchRequest)!;
+
+        var execution = await Invoke<ExtensionProtocolDispatchRequest, ExtensionProtocolDispatchResult>(
+            catalog,
+            "mcsl.extension.dispatch",
+            new ProtocolInvocationContext(ProtocolExecutionOwner.BuiltIn, new TestPermissionView(["mcsl.extension.dispatch"])),
+            dispatch,
+            CancellationToken.None);
+
+        Assert.True(execution.Result.IsOk(out var result));
+        Assert.Equal("permission_denied", result.Envelope.GetProperty("code").GetString());
+    }
+
+    [Fact]
+    public async Task ExtensionDispatch_RejectsUnsafeRequestParameterKeysBeforeCommandRouting()
+    {
+        var fixture = CreateFrozenFixture();
+        var request = JsonSerializer.Deserialize(
+            """
+            {
+              "envelope": {
+                "protocol": "mcsl.extension.v1",
+                "type": "request",
+                "id": "request-1",
+                "plugin": "community.example.status-panel",
+                "command": "refresh",
+                "params": {
+                  "nested": {
+                    "__proto__": true
+                  }
+                }
+              }
+            }
+            """,
+            BuiltInProtocolJsonContext.Default.ExtensionProtocolDispatchRequest)!;
+
+        var execution = await Invoke<ExtensionProtocolDispatchRequest, ExtensionProtocolDispatchResult>(
+            fixture.Catalog,
+            "mcsl.extension.dispatch",
+            new ProtocolInvocationContext(ProtocolExecutionOwner.BuiltIn),
+            request,
+            CancellationToken.None);
+
+        Assert.True(execution.Result.IsOk(out var result));
+        Assert.Equal("json_key_unsafe", result.Envelope.GetProperty("code").GetString());
+        Assert.Contains("$.params.nested.__proto__", result.Envelope.GetProperty("message").GetString(), StringComparison.Ordinal);
     }
 
     [Fact]

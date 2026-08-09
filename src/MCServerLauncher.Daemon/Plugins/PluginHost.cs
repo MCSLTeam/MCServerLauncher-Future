@@ -291,7 +291,18 @@ internal sealed class PluginHost
                     failure.BundleDirectory);
             }
 
-            var dependencyAdmission = PluginDependencyPlanner.Plan(contractAdmission.Plugins);
+            var extensionPointAdmission = PluginExtensionPointPlanner.Plan(contractAdmission.Plugins);
+            foreach (var failure in extensionPointAdmission.Failures)
+            {
+                _logger.LogWarning(
+                    "Plugin {PluginId} failed extension point admission ({Code}): {Message} Skipping bundle {Bundle}.",
+                    failure.PluginId,
+                    failure.Code,
+                    failure.Message,
+                    failure.BundleDirectory);
+            }
+
+            var dependencyAdmission = PluginDependencyPlanner.Plan(extensionPointAdmission.Plugins);
             foreach (var failure in dependencyAdmission.Failures)
             {
                 _logger.LogWarning(

@@ -151,13 +151,13 @@ git show HEAD:src/MCServerLauncher.Daemon.Plugin.Sdk/buildTransitive/MCServerLau
 
 | Entry | SHA-256 |
 |---|---|
-| `lib/net10.0/MCServerLauncher.Common.dll` | `0d124217380de3863791d7e2b06f929bd4bb45a2ba7a837f33b7d07c6b3d3f49` |
+| `lib/net10.0/MCServerLauncher.Common.dll` | `37b1ff72ef656dcedff659763c88f7c11c2ad450b6f6cf650ed99ea29729a40a` |
 
 ### `MCServerLauncher.Daemon.API.1.0.0.nupkg`
 
 | Entry | SHA-256 |
 |---|---|
-| `lib/net10.0/MCServerLauncher.Daemon.API.dll` | `6ce48241b8fc6e20686e87aad85a669e2f1a16f80ab8618624f48a2b6e84efeb` |
+| `lib/net10.0/MCServerLauncher.Daemon.API.dll` | `5d76f29172a216d49c772e5b2597ba4894a42f8b0c6616530ae744cc115ff786` |
 | `buildTransitive/MCServerLauncher.Daemon.API.targets` | `81a79275e7ab2a10cf08ac950c27692db1e7455387944377b06047b0a340c17c` |
 
 ### `MCServerLauncher.Daemon.Plugin.Sdk.1.0.0.nupkg`
@@ -165,7 +165,7 @@ git show HEAD:src/MCServerLauncher.Daemon.Plugin.Sdk/buildTransitive/MCServerLau
 | Entry | SHA-256 |
 |---|---|
 | `lib/net10.0/MCServerLauncher.Daemon.Plugin.Sdk.dll` | `c52be37810be8730f28f6577162b30c838c02c3ca5f2790f6eeea36035f3d0da` |
-| `analyzers/dotnet/cs/MCServerLauncher.Daemon.Plugin.Generators.dll` | `f89eb858c2d0dfeb9f0847c5d49d5c5012ff87999ae38993e535f814d8215e5f` |
+| `analyzers/dotnet/cs/MCServerLauncher.Daemon.Plugin.Generators.dll` | `151ac71132c3ec3eafae28756918e457cfde58e36a721ba0b22d5d9338d78505` |
 | `analyzers/dotnet/cs/NuGet.Versioning.dll` | `5ccab32f44a29834becbf640cfac4b119edce8496a02e94ef20e1b1d2e652b26` |
 | `buildTransitive/MCServerLauncher.Daemon.Plugin.Sdk.props` | `c0dd9844c62950e9cf678c9bb067dd030876afa4d263eedd0d146ce52e5eb895` |
 | `buildTransitive/MCServerLauncher.Daemon.Plugin.Sdk.targets` | `e383f4a71ef90a5ad1a25049291c6e877c980d6acac7095ba00778a53f544573` |

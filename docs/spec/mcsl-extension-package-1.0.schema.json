@@ -1,0 +1,234 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mcsl-team.github.io/schemas/mcsl-extension-1.0.schema.json",
+  "title": "MCSL Extension Package Manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "package", "targets", "permissions", "integrity"],
+  "properties": {
+    "schema": {
+      "const": "https://mcsl-team.github.io/schemas/mcsl-extension-1.0.schema.json"
+    },
+    "package": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9.-]{2,127}$"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+(?:[-+][0-9A-Za-z.-]+)?$"
+        },
+        "publisher": { "type": "string", "minLength": 1 },
+        "displayName": { "type": "string", "minLength": 1 }
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "ui": { "type": "string", "minLength": 1 },
+        "daemonApi": { "type": "string", "minLength": 1 },
+        "javascript": { "type": "string", "minLength": 1 }
+      }
+    },
+    "targets": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "client": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "ui": { "$ref": "#/$defs/fileRef" },
+            "theme": { "$ref": "#/$defs/fileRef" }
+          }
+        },
+        "daemon": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "plugin": { "$ref": "#/$defs/fileRef" }
+          }
+        }
+      },
+      "anyOf": [
+        { "required": ["client"] },
+        { "required": ["daemon"] }
+      ]
+    },
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "ui": { "$ref": "#/$defs/fileRef" },
+        "script": { "$ref": "#/$defs/scriptRef" }
+      }
+    },
+    "permissions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["host", "events", "network"],
+      "properties": {
+        "host": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "oneOf": [
+              {
+                "enum": [
+                  "daemon.instance.catalog.changed",
+                  "daemon.instance.log",
+                  "daemon.report",
+                  "daemon.notification"
+                ]
+              },
+              {
+                "pattern": "^plugin\\.[a-z0-9][a-z0-9.-]{2,127}\\.event\\.extension$"
+              }
+            ]
+          },
+          "uniqueItems": true
+        },
+        "network": {
+          "type": "array",
+          "items": { "type": "string" },
+          "maxItems": 0
+        },
+        "storage": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "privateBytes": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2097152
+            }
+          }
+        }
+      }
+    },
+    "resources": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/resourceRef" }
+    },
+    "extensionPoints": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/extensionPoint" },
+      "uniqueItems": true
+    },
+    "commands": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/command" },
+      "uniqueItems": true
+    },
+    "integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm"],
+      "properties": {
+        "algorithm": { "const": "sha256" },
+        "signed": { "type": "boolean" }
+      }
+    }
+  },
+  "$defs": {
+    "fileRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 180,
+          "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.?(?:/|$))(?!.*\\\\)[^\\u0000]+$"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
+    "scriptRef": {
+      "allOf": [
+        { "$ref": "#/$defs/fileRef" },
+        {
+          "type": "object",
+          "properties": {
+            "module": { "type": "string", "minLength": 1 }
+          }
+        }
+      ]
+    },
+    "resourceRef": {
+      "allOf": [
+        { "$ref": "#/$defs/fileRef" },
+        {
+          "type": "object",
+          "required": ["mime", "bytes"],
+          "properties": {
+            "mime": { "enum": ["image/png", "image/jpeg", "image/webp"] },
+            "bytes": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2097152
+            }
+          }
+        }
+      ]
+    },
+    "extensionPoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id"],
+      "properties": {
+        "kind": {
+          "enum": ["provider", "registry", "pipeline", "hook", "override", "ui", "event", "command"]
+        },
+        "id": {
+          "enum": [
+            "provider.java",
+            "provider.serverCore",
+            "provider.backup",
+            "provider.processLauncher",
+            "registry.template",
+            "registry.serverCore",
+            "registry.icon",
+            "registry.formatter",
+            "registry.command",
+            "pipeline.instance.create",
+            "hook.instance.lifecycle",
+            "override.process.launcher",
+            "ui.panel",
+            "event.daemon",
+            "command.daemon"
+          ]
+        },
+        "target": { "enum": ["client", "daemon"] }
+      }
+    },
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][\\w]*(?:\\.[A-Za-z_][\\w]*)*$"
+        },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "target": { "const": "daemon" }
+      }
+    }
+  }
+}

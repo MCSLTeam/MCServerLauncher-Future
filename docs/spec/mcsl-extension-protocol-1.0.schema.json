@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mcsl-team.github.io/schemas/mcsl-extension-protocol-1.0.schema.json",
+  "title": "MCSL Extension Protocol v1 Envelope",
+  "oneOf": [
+    { "$ref": "#/$defs/statePatch" },
+    { "$ref": "#/$defs/stateSnapshot" },
+    { "$ref": "#/$defs/event" },
+    { "$ref": "#/$defs/request" },
+    { "$ref": "#/$defs/response" },
+    { "$ref": "#/$defs/error" }
+  ],
+  "$defs": {
+    "protocol": {
+      "type": "string",
+      "const": "mcsl.extension.v1"
+    },
+    "pluginId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9.-]{2,127}$"
+    },
+    "jsonObject": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/jsonValue"
+      },
+      "propertyNames": {
+        "not": {
+          "enum": ["__proto__", "prototype", "constructor"]
+        }
+      }
+    },
+    "jsonArray": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/jsonValue" }
+    },
+    "jsonValue": {
+      "oneOf": [
+        { "type": "string" },
+        { "type": "number" },
+        { "type": "boolean" },
+        { "type": "null" },
+        { "$ref": "#/$defs/jsonObject" },
+        { "$ref": "#/$defs/jsonArray" }
+      ]
+    },
+    "statePatch": {
+      "type": "object",
+      "required": ["protocol", "type", "plugin", "revision", "patch"],
+      "additionalProperties": false,
+      "properties": {
+        "protocol": { "$ref": "#/$defs/protocol" },
+        "type": { "const": "state.patch" },
+        "plugin": { "$ref": "#/$defs/pluginId" },
+        "revision": { "type": "integer", "minimum": 0 },
+        "patch": { "$ref": "#/$defs/jsonObject" }
+      }
+    },
+    "stateSnapshot": {
+      "type": "object",
+      "required": ["protocol", "type", "plugin", "revision", "state"],
+      "additionalProperties": false,
+      "properties": {
+        "protocol": { "$ref": "#/$defs/protocol" },
+        "type": { "const": "state.snapshot" },
+        "plugin": { "$ref": "#/$defs/pluginId" },
+        "revision": { "type": "integer", "minimum": 0 },
+        "state": { "$ref": "#/$defs/jsonObject" }
+      }
+    },
+    "event": {
+      "type": "object",
+      "required": ["protocol", "type", "plugin", "name", "version", "data"],
+      "additionalProperties": false,
+      "properties": {
+        "protocol": { "$ref": "#/$defs/protocol" },
+        "type": { "const": "event" },
+        "plugin": { "$ref": "#/$defs/pluginId" },
+        "name": { "type": "string", "minLength": 1 },
+        "version": { "type": "integer", "minimum": 1 },
+        "data": { "$ref": "#/$defs/jsonObject" },
+        "meta": { "$ref": "#/$defs/jsonObject" }
+      }
+    },
+    "request": {
+      "type": "object",
+      "required": ["protocol", "type", "id", "plugin", "command"],
+      "additionalProperties": false,
+      "properties": {
+        "protocol": { "$ref": "#/$defs/protocol" },
+        "type": { "const": "request" },
+        "id": { "type": "string", "minLength": 1 },
+        "plugin": { "$ref": "#/$defs/pluginId" },
+        "command": { "type": "string", "minLength": 1 },
+        "params": { "$ref": "#/$defs/jsonObject" }
+      }
+    },
+    "response": {
+      "type": "object",
+      "required": ["protocol", "type", "id", "plugin"],
+      "additionalProperties": false,
+      "properties": {
+        "protocol": { "$ref": "#/$defs/protocol" },
+        "type": { "const": "response" },
+        "id": { "type": "string", "minLength": 1 },
+        "plugin": { "$ref": "#/$defs/pluginId" },
+        "result": { "$ref": "#/$defs/jsonValue" },
+        "error": { "$ref": "#/$defs/error" }
+      }
+    },
+    "error": {
+      "type": "object",
+      "required": ["protocol", "type", "code", "message"],
+      "additionalProperties": false,
+      "properties": {
+        "protocol": { "$ref": "#/$defs/protocol" },
+        "type": { "const": "error" },
+        "id": { "type": "string", "minLength": 1 },
+        "plugin": { "$ref": "#/$defs/pluginId" },
+        "code": { "type": "string", "minLength": 1 },
+        "message": { "type": "string", "minLength": 1 },
+        "details": { "$ref": "#/$defs/jsonObject" }
+      }
+    }
+  }
+}

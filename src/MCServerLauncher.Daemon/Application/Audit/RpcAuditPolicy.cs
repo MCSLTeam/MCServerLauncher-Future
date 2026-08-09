@@ -40,6 +40,7 @@ internal static class RpcAuditPolicy
         "mcsl.directory.delete",
         "mcsl.directory.move",
         "mcsl.directory.rename",
+        "mcsl.extension.dispatch",
         "mcsl.file.copy",
         "mcsl.file.delete",
         "mcsl.file.move",
@@ -196,6 +197,23 @@ internal static class RpcAuditPolicy
         BackupRestorePlanRequest restorePlan => restorePlan.InstanceId.ToString("D"),
         AutomationEnableRequest enable => enable.PolicyId.ToString("D"),
         ProvisioningResolveRequest resolve => resolve.InstanceName,
+        ExtensionProtocolDispatchRequest extension => DescribeExtensionDispatch(extension),
         _ => null
     };
+
+    private static string? DescribeExtensionDispatch(ExtensionProtocolDispatchRequest request)
+    {
+        var envelope = request.Envelope;
+        if (envelope.ValueKind != System.Text.Json.JsonValueKind.Object)
+            return null;
+        var plugin = envelope.TryGetProperty("plugin", out var pluginElement) &&
+                     pluginElement.ValueKind == System.Text.Json.JsonValueKind.String
+            ? pluginElement.GetString()
+            : null;
+        var command = envelope.TryGetProperty("command", out var commandElement) &&
+                      commandElement.ValueKind == System.Text.Json.JsonValueKind.String
+            ? commandElement.GetString()
+            : null;
+        return string.IsNullOrWhiteSpace(command) ? plugin : $"{plugin}:{command}";
+    }
 }

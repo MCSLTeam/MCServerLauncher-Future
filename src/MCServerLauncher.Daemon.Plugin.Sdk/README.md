@@ -45,6 +45,35 @@ Point the manifest entry type at the generated adapter:
 }
 ```
 
+Formal extension point declarations are optional but validated by both the generator and daemon loader:
+
+```json
+"extensionPoints": [
+  {
+    "id": "provider.java",
+    "kind": "provider",
+    "priority": 10
+  }
+]
+```
+
+Only catalogued extension point ids are legal. Private implementation hooks, reflection patching, Harmony patching, monkey patching, and root service replacement are not extension points.
+
+## Extension Protocol events
+
+Daemon C# plugins that drive client UI state should declare `event.publish` and `event.daemon`, then register the plugin-owned event descriptor with `PluginExtensionProtocol.CreateExtensionEvent(pluginId)`. Publish `PluginExtensionProtocol.StatePatch(...)`, `StateSnapshot(...)`, or `Event(...)` as the event data; the helper validates the plugin id, revision, object-shaped payload, and unsafe JSON keys before the envelope reaches Web/WPF clients.
+
+```csharp
+var descriptor = PluginExtensionProtocol.CreateExtensionEvent("community.example.status-panel");
+var publisher = features.Events.Register(descriptor).Unwrap();
+using var patch = JsonDocument.Parse("""{ "status": "ready" }""");
+await publisher.PublishAsync(
+    DaemonEventField<EmptyRequest>.Missing,
+    DaemonEventField<ExtensionProtocolDispatchResult>.FromValue(
+        PluginExtensionProtocol.StatePatch("community.example.status-panel", 1, patch.RootElement)),
+    cancellationToken);
+```
+
 ## Publish
 
 ```powershell

@@ -40,6 +40,7 @@ internal static class V2ClientProtocol
     internal static RpcDescriptor<FileSessionReference, UnitResult> CloseUpload => BuiltInProtocolDefinitions.CloseUpload;
     internal static RpcDescriptor<UploadOpenRequest, UploadSession> OpenUpload => BuiltInProtocolDefinitions.OpenUpload;
     internal static RpcDescriptor<EmptyRequest, InstanceCatalogResult> GetInstanceCatalog => BuiltInProtocolDefinitions.GetInstanceCatalog;
+    internal static RpcDescriptor<ExtensionProtocolDispatchRequest, ExtensionProtocolDispatchResult> DispatchExtensionProtocol => BuiltInProtocolDefinitions.DispatchExtensionProtocol;
     internal static RpcDescriptor<InstanceCommandRequest, UnitResult> SendInstanceCommand => BuiltInProtocolDefinitions.SendInstanceCommand;
     internal static RpcDescriptor<ConsoleOpenRequest, ConsoleSession> OpenConsole => BuiltInProtocolDefinitions.OpenConsole;
     internal static RpcDescriptor<ConsoleResizeRequest, UnitResult> ResizeConsole => BuiltInProtocolDefinitions.ResizeConsole;
@@ -91,7 +92,7 @@ internal static class V2ClientProtocol
     [
         GetAuthPermissions, IssueToken, PingDaemon, CopyDirectory, CreateDirectory, DeleteDirectory, GetDirectoryInfo, MoveDirectory, RenameDirectory,
         SubscribeEvent, UnsubscribeEvent, CopyFile, DeleteFile, CloseDownload, OpenDownload, ReadDownload, GetFileInfo, MoveFile, RenameFile,
-        CancelUpload, CloseUpload, OpenUpload, GetInstanceCatalog, SendInstanceCommand, OpenConsole, ResizeConsole, CloseConsole, CreateInstance, GetInstanceEventRules,
+        CancelUpload, CloseUpload, OpenUpload, GetInstanceCatalog, DispatchExtensionProtocol, SendInstanceCommand, OpenConsole, ResizeConsole, CloseConsole, CreateInstance, GetInstanceEventRules,
         UpdateInstanceEventRules, HaltInstance, GetInstanceLog, RemoveInstance, GetInstanceReport, ListInstanceReports, GetInstanceSettings,
         UpdateInstanceSettings, StartInstance, StopInstance, ListJavaRuntimes, CancelOperation, GetOperation, ListOperations, ResolveProvisioning, GetProvisioningPlan, ExecuteProvisioning,
         ListBackups, CreateBackup, PruneBackups, PlanBackupRestore, ConfirmBackupRestore, ExecuteBackupRestore, QueryAudit,

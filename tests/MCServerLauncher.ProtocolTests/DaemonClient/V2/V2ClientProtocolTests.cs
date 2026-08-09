@@ -94,6 +94,7 @@ public sealed class V2ClientProtocolTests
             Accessor(V2ClientProtocol.RenameDirectory, "mcsl.directory.rename"),
             Accessor(V2ClientProtocol.SubscribeEvent, "mcsl.event.subscribe"),
             Accessor(V2ClientProtocol.UnsubscribeEvent, "mcsl.event.unsubscribe"),
+            Accessor(V2ClientProtocol.DispatchExtensionProtocol, "mcsl.extension.dispatch"),
             Accessor(V2ClientProtocol.CopyFile, "mcsl.file.copy"),
             Accessor(V2ClientProtocol.DeleteFile, "mcsl.file.delete"),
             Accessor(V2ClientProtocol.CloseDownload, "mcsl.file.download.close"),
@@ -188,7 +189,7 @@ public sealed class V2ClientProtocolTests
             Case(V2ClientProtocol.GetAuthPermissions), Case(V2ClientProtocol.IssueToken), Case(V2ClientProtocol.PingDaemon), Case(V2ClientProtocol.CopyDirectory),
             Case(V2ClientProtocol.CreateDirectory), Case(V2ClientProtocol.DeleteDirectory), Case(V2ClientProtocol.GetDirectoryInfo),
             Case(V2ClientProtocol.MoveDirectory), Case(V2ClientProtocol.RenameDirectory), Case(V2ClientProtocol.SubscribeEvent),
-            Case(V2ClientProtocol.UnsubscribeEvent), Case(V2ClientProtocol.CopyFile), Case(V2ClientProtocol.DeleteFile),
+            Case(V2ClientProtocol.UnsubscribeEvent), Case(V2ClientProtocol.DispatchExtensionProtocol), Case(V2ClientProtocol.CopyFile), Case(V2ClientProtocol.DeleteFile),
             Case(V2ClientProtocol.CloseDownload), Case(V2ClientProtocol.OpenDownload), Case(V2ClientProtocol.ReadDownload),
             Case(V2ClientProtocol.GetFileInfo), Case(V2ClientProtocol.MoveFile), Case(V2ClientProtocol.RenameFile),
             Case(V2ClientProtocol.CancelUpload), Case(V2ClientProtocol.CloseUpload), Case(V2ClientProtocol.OpenUpload),
@@ -364,6 +365,8 @@ public sealed class V2ClientProtocolTests
             if (type == typeof(PathRenameRequest)) return "{\"path\":\"a\",\"new_name\":\"b\"}";
             if (type == typeof(DeleteDirectoryRequest)) return "{\"path\":\"a\",\"recursive\":false}";
             if (type == typeof(EventSubscriptionRequest)) return "{\"event\":\"mcsl.event.daemon.report\"}";
+            if (type == typeof(ExtensionProtocolDispatchRequest)) return "{\"envelope\":{\"protocol\":\"mcsl.extension.v1\",\"type\":\"request\",\"id\":\"req-1\",\"plugin\":\"community.example.status-panel\",\"command\":\"refresh\",\"params\":{\"instanceId\":\"" + Id + "\"}}}";
+            if (type == typeof(ExtensionProtocolDispatchResult)) return "{\"envelope\":{\"protocol\":\"mcsl.extension.v1\",\"type\":\"error\",\"id\":\"req-1\",\"plugin\":\"community.example.status-panel\",\"code\":\"command_unavailable\",\"message\":\"No command is registered.\"}}";
             if (type == typeof(FileSessionReference)) return "{\"session_id\":\"" + Id + "\"}";
             if (type == typeof(DownloadChunkRequest)) return "{\"session_id\":\"" + Id + "\",\"offset\":0,\"maximum_length\":1}";
             if (type == typeof(UploadOpenRequest)) return "{\"path\":\"world\",\"length\":0,\"sha256\":\"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\"}";

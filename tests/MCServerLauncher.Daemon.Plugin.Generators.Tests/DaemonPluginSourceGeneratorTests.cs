@@ -364,6 +364,120 @@ public sealed class DaemonPluginSourceGeneratorTests
     }
 
     [Fact]
+    public void ExtensionPointsContributeToManifestDigestDeterministically()
+    {
+        var withExtensionPoint = WithDependencySection(
+            """
+              "extensionPoints": [
+                {
+                  "kind": "provider",
+                  "id": "provider.java",
+                  "priority": 10,
+                  "conflicts": ["provider.serverCore"]
+                }
+              ]
+            """);
+        var reorderedExtensionPoint = WithDependencySection(
+            """
+              "extensionPoints": [
+                {
+                  "conflicts": ["provider.serverCore"],
+                  "priority": 10,
+                  "id": "provider.java",
+                  "kind": "provider"
+                }
+              ]
+            """);
+
+        var (baseDiagnostics, baseGenerated) = RunGenerator(ModuleSource, ManifestJson);
+        var (extensionDiagnostics, extensionGenerated) = RunGenerator(ModuleSource, withExtensionPoint);
+        var (reorderedDiagnostics, reorderedGenerated) = RunGenerator(ModuleSource, reorderedExtensionPoint);
+
+        Assert.DoesNotContain(baseDiagnostics, diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
+        Assert.DoesNotContain(extensionDiagnostics, diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
+        Assert.DoesNotContain(reorderedDiagnostics, diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
+        Assert.NotEqual(ExtractManifestDigest(baseGenerated), ExtractManifestDigest(extensionGenerated));
+        Assert.Equal(ExtractManifestDigest(extensionGenerated), ExtractManifestDigest(reorderedGenerated));
+    }
+
+    [Fact]
+    public void CommandsContributeToManifestDigestDeterministically()
+    {
+        var withCommand = WithDependencySection(
+            """
+              "extensionPoints": [
+                { "kind": "command", "id": "command.daemon" }
+              ],
+              "commands": [
+                {
+                  "id": "refresh",
+                  "title": "Refresh",
+                  "description": "Refreshes panel state.",
+                  "target": "daemon"
+                }
+              ]
+            """);
+        var reorderedCommand = WithDependencySection(
+            """
+              "commands": [
+                {
+                  "target": "daemon",
+                  "description": "Refreshes panel state.",
+                  "title": "Refresh",
+                  "id": "refresh"
+                }
+              ],
+              "extensionPoints": [
+                { "id": "command.daemon", "kind": "command" }
+              ]
+            """);
+
+        var (baseDiagnostics, baseGenerated) = RunGenerator(ModuleSource, ManifestJson);
+        var (commandDiagnostics, commandGenerated) = RunGenerator(ModuleSource, withCommand);
+        var (reorderedDiagnostics, reorderedGenerated) = RunGenerator(ModuleSource, reorderedCommand);
+
+        Assert.DoesNotContain(baseDiagnostics, diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
+        Assert.DoesNotContain(commandDiagnostics, diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
+        Assert.DoesNotContain(reorderedDiagnostics, diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
+        Assert.NotEqual(ExtractManifestDigest(baseGenerated), ExtractManifestDigest(commandGenerated));
+        Assert.Equal(ExtractManifestDigest(commandGenerated), ExtractManifestDigest(reorderedGenerated));
+    }
+
+    [Fact]
+    public void ReportsInvalidCommandDeclarations()
+    {
+        var manifest = WithDependencySection(
+            """
+              "commands": [
+                { "id": "plugin refresh", "target": "client" }
+              ]
+            """);
+
+        var (diagnostics, _) = RunGenerator(ModuleSource, manifest);
+
+        Assert.Contains(diagnostics, diagnostic =>
+            diagnostic.Id == "MCSLPLG003" &&
+            diagnostic.GetMessage().Contains("canonical command id", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void ReportsInvalidExtensionPointDeclarations()
+    {
+        var manifest = WithDependencySection(
+            """
+              "extensionPoints": [
+                { "kind": "override", "id": "private.instanceBase.patch" }
+              ]
+            """);
+
+        var (diagnostics, _) = RunGenerator(ModuleSource, manifest);
+
+        Assert.Contains(diagnostics, diagnostic =>
+            diagnostic.Id == "MCSLPLG003" &&
+            diagnostic.GetMessage().Contains("Extension point id 'private.instanceBase.patch' is not supported", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void ReportsInvalidDependencyGrammar()
     {
         var manifest = WithDependencySection(
