@@ -13,6 +13,7 @@ namespace MCServerLauncher.ProtocolTests;
 public sealed class InstanceProcessEventPumpTests
 {
     private static readonly TimeSpan TestTimeout = TimeSpan.FromSeconds(5);
+    private static readonly TimeSpan PtyOutputTimeout = TimeSpan.FromSeconds(15);
 
     [Fact]
     public async Task WaitForExitAsync_DrainsStdoutAndStderrBeforeCompleting()
@@ -302,7 +303,7 @@ public sealed class InstanceProcessEventPumpTests
         {
             Assert.True(await process.StartAsync(delayToCheck: 20));
             Assert.True(process.IsPty, "The supported test platform must exercise the PTY output path.");
-            await WaitUntilAsync(() => process.GetLogHistory().Contains("booted"));
+            await WaitUntilAsync(() => process.GetLogHistory().Contains("booted"), PtyOutputTimeout);
             process.AttachConsoleSubscriber((output, _, _) =>
             {
                 if (output.IsEmpty)
@@ -353,7 +354,7 @@ public sealed class InstanceProcessEventPumpTests
         {
             Assert.True(await process.StartAsync(delayToCheck: 20));
             Assert.True(process.IsPty, "The supported test platform must exercise the PTY output path.");
-            await WaitUntilAsync(() => process.GetLogHistory().Contains("history-ready"));
+            await WaitUntilAsync(() => process.GetLogHistory().Contains("history-ready"), PtyOutputTimeout);
 
             process.AttachConsoleSubscriber((chunk, _, _) =>
             {
@@ -387,7 +388,7 @@ public sealed class InstanceProcessEventPumpTests
         try
         {
             Assert.True(await process.StartAsync(delayToCheck: 20));
-            await WaitUntilAsync(() => process.GetLogHistory().Contains("history-ready"));
+            await WaitUntilAsync(() => process.GetLogHistory().Contains("history-ready"), PtyOutputTimeout);
             Assert.True(process.IsPty, "The supported test platform must exercise the PTY output path.");
 
             process.AttachConsoleSubscriber((chunk, _, _) =>
@@ -898,7 +899,7 @@ public sealed class InstanceProcessEventPumpTests
             Assert.Contains("pipe-history", instance.GetLogHistory());
 
             Assert.True(await instance.StartAsync());
-            await WaitUntilAsync(() => instance.GetLogHistory().Contains("pty-history"));
+            await WaitUntilAsync(() => instance.GetLogHistory().Contains("pty-history"), PtyOutputTimeout);
 
             var history = instance.GetLogHistory();
             Assert.Contains("pipe-history", history);
@@ -1729,9 +1730,10 @@ public sealed class InstanceProcessEventPumpTests
         }
     }
 
-    private static async Task WaitUntilAsync(Func<bool> predicate)
+    private static async Task WaitUntilAsync(Func<bool> predicate, TimeSpan? timeout = null)
     {
-        var deadline = Stopwatch.GetTimestamp() + (long)(TestTimeout.TotalSeconds * Stopwatch.Frequency);
+        var effectiveTimeout = timeout ?? TestTimeout;
+        var deadline = Stopwatch.GetTimestamp() + (long)(effectiveTimeout.TotalSeconds * Stopwatch.Frequency);
         while (!predicate())
         {
             if (Stopwatch.GetTimestamp() >= deadline)

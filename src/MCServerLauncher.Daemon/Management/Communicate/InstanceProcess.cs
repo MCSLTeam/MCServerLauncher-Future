@@ -43,6 +43,7 @@ public class InstanceProcess : DisposableObject
     private Task? _processReadyTask;
     private Task _publicationTail = Task.CompletedTask;
     private ITimer? _readyTimeoutTimer;
+    private readonly object _ptyLogPublicationGate = new();
     private Task _ptyLogPublicationTail = Task.CompletedTask;
     private int _processStarted;
     private int _readyTimedOut;
@@ -486,10 +487,10 @@ public class InstanceProcess : DisposableObject
                 if (read <= 0)
                     return;
 
-                var chunk = buffer.AsMemory(0, read);
+                var owned = buffer.AsMemory(0, read).ToArray();
                 var offset = Interlocked.Add(ref _consoleOutputOffset, read) - read;
-                FanOutConsoleOutput(chunk, offset);
-                QueuePtyLogPublication(ExtractCompleteLines(chunk.Span));
+                FanOutConsoleOutput(owned, offset);
+                QueuePtyLogPublication(ExtractCompleteLines(owned));
             }
         }
         catch (OperationCanceledException) when (_pumpCancellation.IsCancellationRequested)
@@ -615,7 +616,10 @@ public class InstanceProcess : DisposableObject
         }
 
         QueuePtyLogPublication(remaining);
-        await _ptyLogPublicationTail.ConfigureAwait(false);
+        Task tail;
+        lock (_ptyLogPublicationGate)
+            tail = _ptyLogPublicationTail;
+        await tail.ConfigureAwait(false);
 
         await PublishStoppedAsync().ConfigureAwait(false);
         if (pumpFailure is not null)
@@ -676,8 +680,12 @@ public class InstanceProcess : DisposableObject
     {
         if (lines.Count == 0)
             return;
-        var previous = _ptyLogPublicationTail;
-        _ptyLogPublicationTail = PublishPtyLogLinesAsync(previous, lines);
+        Task previous;
+        lock (_ptyLogPublicationGate)
+        {
+            previous = _ptyLogPublicationTail;
+            _ptyLogPublicationTail = PublishPtyLogLinesAsync(previous, lines);
+        }
     }
 
     private async Task PublishPtyLogLinesAsync(Task previous, IReadOnlyList<string> lines)
