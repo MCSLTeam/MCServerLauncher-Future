@@ -1,0 +1,20 @@
+{
+  "package": {
+    "id": "community.extension-push",
+    "version": "1.0.0"
+  },
+  "entry": {
+    "assembly": "ExtensionPush.dll",
+    "type": "MCServerLauncher.PluginFixtures.ExtensionPush.Generated.DaemonPluginAdapter"
+  },
+  "requires": {
+    "api": "[1.0.0,2.0.0)",
+    "features": ["event.publish"]
+  },
+  "extensionPoints": [
+    {
+      "kind": "event",
+      "id": "event.daemon"
+    }
+  ]
+}

@@ -7,14 +7,20 @@ using System.Text.Json;
 using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.Contracts.Operations;
 using MCServerLauncher.Common.Contracts.Protocol;
+using MCServerLauncher.Common.Contracts.Serialization;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.API.Application;
 using MCServerLauncher.Daemon.API.Errors;
+using MCServerLauncher.Daemon.API.Plugins;
 using MCServerLauncher.Daemon.API.Protocol;
 using MCServerLauncher.Daemon.API.State;
+using MCServerLauncher.Daemon.ApplicationCore.Events;
 using MCServerLauncher.Daemon.Plugins;
 using MCServerLauncher.Daemon.Plugins.Configuration;
 using MCServerLauncher.Daemon.Remote.Rpc.Catalog;
+using MCServerLauncher.Daemon.Remote.Rpc.Events;
+using MCServerLauncher.Daemon.Remote.Rpc.Transport;
+using MCServerLauncher.PluginFixtures.ExtensionPush;
 using MCServerLauncher.PluginFixtures.InstanceHealth;
 using MCServerLauncher.PluginFixtures.MetadataImposter;
 using MCServerLauncher.PluginFixtures.MetadataMalformed;
@@ -318,6 +324,90 @@ public sealed class PluginHostLifecycleTests
                                      message.EndsWith(".stop", StringComparison.Ordinal))
             .ToArray();
         Assert.Equal(["fixture.external_compile.stop", "fixture.instance_health.stop"], stopMessages);
+    }
+
+    [Fact]
+    public async Task ActivateAsync_PublishesExtensionProtocolStatePatchFromPluginOwnedEvent()
+    {
+        var triggerPath = Path.Combine(Path.GetTempPath(), $"mcsl-extension-push-{Guid.NewGuid():N}.trigger");
+        var previousTrigger = Environment.GetEnvironmentVariable("MCSL_EXTENSION_PUSH_TRIGGER_PATH");
+        Environment.SetEnvironmentVariable("MCSL_EXTENSION_PUSH_TRIGGER_PATH", triggerPath);
+        try
+        {
+            using var fixture = PluginHostFixture.CreateGenerated(
+                ExtensionPushPlugin.PluginId,
+                typeof(ExtensionPushPlugin).Assembly,
+                "ExtensionPush.dll",
+                "MCServerLauncher.PluginFixtures.ExtensionPush.Generated.DaemonPluginAdapter",
+                ["event.publish"],
+                """
+                ,
+                  "extensionPoints": [
+                    { "kind": "event", "id": "event.daemon" }
+                  ]
+                """);
+            var logger = new RecordingLogger<PluginHost>();
+            var services = new ServiceCollection();
+            services.AddMessagePipe(options =>
+            {
+                options.EnableAutoRegistration = false;
+                options.DefaultAsyncPublishStrategy = AsyncPublishStrategy.Sequential;
+                options.InstanceLifetime = InstanceLifetime.Singleton;
+                options.EnableCaptureStackTrace = false;
+            });
+            using var provider = services.BuildServiceProvider();
+            var host = new PluginHost(
+                new SnapshotSource(new InstanceCatalogSnapshot([])),
+                new RecordingLoggerFactory(logger),
+                logger,
+                fixture.PluginsRoot,
+                new PluginEventBus(provider.GetRequiredService<EventFactory>()),
+                TimeSpan.FromSeconds(30),
+                fixture.CreateConfig("Medium"),
+                new PluginHttpEndpointRegistry());
+
+            await host.StartAsync(CancellationToken.None);
+            var builder = new ProtocolCatalogBuilder(new OpenRpcInfo("extension-push-test", "1.0.0"));
+            RegisterBuiltInEventsForBridge(builder);
+            host.AddCatalogContributions(builder);
+            var catalog = builder.Freeze();
+            var eventName = PluginExtensionProtocol.CreateExtensionEventName(ExtensionPushPlugin.PluginId);
+            Assert.True(catalog.Events.ContainsKey(new EventName(eventName)));
+
+            using var domainHost = DomainEventPortTestHost.Create();
+            var registry = new V2EventConnectionRegistry(catalog);
+            var sender = new RecordingOutboundSender();
+            await using var owner = new V2ConnectionOwner(sender, ["*"]);
+            Assert.Equal(V2EventConnectionAttachResult.Attached, registry.TryAttach("extension-push-test", owner, out var entry));
+            Assert.True(entry!.Ledger.Subscribe(new EventSubscriptionRequest(eventName)).IsOk(out _));
+            _ = owner.Start();
+            using var bridge = new V2RemoteEventBridge(domainHost.Port, catalog, registry, TimeProvider.System);
+
+            host.Activate(catalog, bridge);
+            File.WriteAllText(triggerPath, string.Empty);
+
+            var notification = JsonRpcWireParser.ParseRemoteEventNotification(
+                Assert.Single(await sender.TakeAsync(1)).Payload.AsSpan());
+            Assert.Equal(eventName, notification.Method);
+            Assert.Equal(JsonRpcOptionalPayloadKind.Missing, notification.Params.Meta.Kind);
+            var data = notification.Params.Data.Deserialize(
+                BuiltInProtocolJsonContext.Default.ExtensionProtocolDispatchResult)!;
+            var envelope = data.Envelope;
+            Assert.Equal("mcsl.extension.v1", envelope.GetProperty("protocol").GetString());
+            Assert.Equal("state.patch", envelope.GetProperty("type").GetString());
+            Assert.Equal(ExtensionPushPlugin.PluginId, envelope.GetProperty("plugin").GetString());
+            Assert.Equal(1, envelope.GetProperty("revision").GetInt64());
+            Assert.Equal("ready", envelope.GetProperty("patch").GetProperty("status").GetString());
+            Assert.Equal("fixture", envelope.GetProperty("patch").GetProperty("source").GetString());
+
+            await host.StopAsync(CancellationToken.None);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("MCSL_EXTENSION_PUSH_TRIGGER_PATH", previousTrigger);
+            if (File.Exists(triggerPath))
+                File.Delete(triggerPath);
+        }
     }
 
     [Fact]
@@ -1423,6 +1513,30 @@ public sealed class PluginHostLifecycleTests
             Assert.Equal(state, actual[id]);
     }
 
+    private static void RegisterBuiltInEventsForBridge(ProtocolCatalogBuilder builder)
+    {
+        RegisterBuiltInEvent<InstanceCatalogChangedEventData>(builder);
+        RegisterBuiltInEvent<DaemonReportEventData>(builder);
+        RegisterBuiltInEvent<InstanceLogEventData, InstanceLogEventMeta>(builder);
+        RegisterBuiltInEvent<NotificationEventData, NotificationEventMeta>(builder);
+    }
+
+    private static void RegisterBuiltInEvent<TData>(ProtocolCatalogBuilder builder)
+    {
+        var descriptor = BuiltInProtocolEventSourceInventory.All
+            .Single(source => source.Descriptor.DataTypeInfo.Type == typeof(TData))
+            .Descriptor;
+        builder.RegisterBuiltInEvent(descriptor, new EventBinding<TData>(ProtocolExecutionOwner.BuiltIn));
+    }
+
+    private static void RegisterBuiltInEvent<TData, TMeta>(ProtocolCatalogBuilder builder)
+    {
+        var descriptor = BuiltInProtocolEventSourceInventory.All
+            .Single(source => source.Descriptor.DataTypeInfo.Type == typeof(TData))
+            .Descriptor;
+        builder.RegisterBuiltInEvent(descriptor, new EventBinding<TData, TMeta>(ProtocolExecutionOwner.BuiltIn));
+    }
+
     private static string GetHandwrittenAdapterProbeAssemblyPath()
     {
         var path = Path.Combine(AppContext.BaseDirectory, "HandwrittenAdapterProbe.dll");
@@ -1532,10 +1646,11 @@ public sealed class PluginHostLifecycleTests
             Assembly assembly,
             string entryAssembly,
             string entryType,
-            string[] features)
+            string[] features,
+            string? manifestAddendum = null)
         {
             var fixture = new PluginHostFixture(Directory.CreateTempSubdirectory("mcsl-plugin-host-").FullName);
-            fixture.Add(id, assembly, entryType, features, entryAssembly, copyGeneratedDependencies: true);
+            fixture.Add(id, assembly, entryType, features, entryAssembly, copyGeneratedDependencies: true, manifestAddendum: manifestAddendum);
             return fixture;
         }
 
@@ -1571,7 +1686,8 @@ public sealed class PluginHostLifecycleTests
             string entryType,
             string[]? features = null,
             string entryAssembly = "PluginEntry.dll",
-            bool copyGeneratedDependencies = false)
+            bool copyGeneratedDependencies = false,
+            string? manifestAddendum = null)
         {
             Ids.Add(id);
             var bundle = Path.Combine(PluginsRoot, id);
@@ -1582,7 +1698,7 @@ public sealed class PluginHostLifecycleTests
                 CopyDependency(assembly, bundle, "MCServerLauncher.Daemon.Plugin.Sdk.dll");
                 CopyDependency(assembly, bundle, "Microsoft.Extensions.DependencyInjection.dll");
             }
-            WriteManifest(bundle, id, entryAssembly, entryType, features);
+            WriteManifest(bundle, id, entryAssembly, entryType, features, manifestAddendum);
         }
 
         private void AddFromPath(
@@ -1612,7 +1728,8 @@ public sealed class PluginHostLifecycleTests
             string id,
             string entryAssembly,
             string entryType,
-            string[]? features)
+            string[]? features,
+            string? manifestAddendum = null)
         {
             var serializedFeatures = JsonSerializer.Serialize(
                 features ?? ["event.publish", "instance.query", "rpc.register"]);
@@ -1631,7 +1748,7 @@ public sealed class PluginHostLifecycleTests
                   "requires": {
                     "api": "[1.0.0,2.0.0)",
                     "features": {{serializedFeatures}}
-                  }
+                  }{{manifestAddendum}}
                 }
                 """);
         }
@@ -1641,6 +1758,34 @@ public sealed class PluginHostLifecycleTests
             var source = Path.Combine(Path.GetDirectoryName(assembly.Location)!, fileName);
             if (File.Exists(source))
                 File.Copy(source, Path.Combine(bundle, fileName));
+        }
+    }
+
+    private sealed class RecordingOutboundSender : IV2OutboundSender
+    {
+        private readonly SemaphoreSlim _available = new(0);
+        private readonly ConcurrentQueue<V2OutboundFrame> _frames = new();
+
+        public ValueTask SendAsync(V2OutboundFrame frame, CancellationToken cancellationToken)
+        {
+            _ = cancellationToken;
+            _frames.Enqueue(frame);
+            _available.Release();
+            return ValueTask.CompletedTask;
+        }
+
+        public ValueTask CloseAsync(V2ConnectionCloseReason reason, CancellationToken cancellationToken)
+        {
+            _ = reason;
+            _ = cancellationToken;
+            return ValueTask.CompletedTask;
+        }
+
+        internal async Task<V2OutboundFrame[]> TakeAsync(int count)
+        {
+            for (var index = 0; index < count; index++)
+                Assert.True(await _available.WaitAsync(TimeSpan.FromSeconds(10)));
+            return _frames.ToArray();
         }
     }
 
