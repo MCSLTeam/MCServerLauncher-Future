@@ -23,6 +23,7 @@ namespace MCServerLauncher.WPF
         private Page? _daemonManager;
         private Page? _instanceManager;
         private Page? _resDownload;
+        private Page? _pluginExtensionCenter;
         private Page? _help;
         private Page? _settings;
         private readonly NotificationContainer _notificationContainer = NotificationContainer.Instance;
@@ -50,6 +51,7 @@ namespace MCServerLauncher.WPF
             _daemonManager = new DaemonManagerPage();
             _instanceManager = new InstanceManagerPage();
             _resDownload = new ResDownloadPage();
+            _pluginExtensionCenter = new PluginExtensionCenterPage();
             _help = new HelpPage();
             _settings = new SettingsPage();
 
@@ -124,6 +126,9 @@ namespace MCServerLauncher.WPF
                     break;
                 case not null when navPageType == typeof(ResDownloadPage):
                     CurrentPage.Navigate(_resDownload);
+                    break;
+                case not null when navPageType == typeof(PluginExtensionCenterPage):
+                    CurrentPage.Navigate(_pluginExtensionCenter);
                     break;
                 case not null when navPageType == typeof(HelpPage):
                     CurrentPage.Navigate(_help);

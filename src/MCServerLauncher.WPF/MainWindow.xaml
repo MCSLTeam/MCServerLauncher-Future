@@ -117,6 +117,12 @@
                         <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Download}" FontSize="16" />
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
+                <ui:NavigationViewItem Content="{Binding [Main_PluginExtensionCenterNavMenu], Source={x:Static i18n:Lang.Tr}}"
+                                       Tag="MCServerLauncher.WPF.View.Pages.PluginExtensionCenterPage">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Puzzle}" FontSize="16" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
                 <ui:NavigationViewItem Content="{Binding [Main_HelpCenterNavMenu], Source={x:Static i18n:Lang.Tr}}"
                                        Tag="MCServerLauncher.WPF.View.Pages.HelpPage" IsEnabled="False">
                     <ui:NavigationViewItem.Icon>
