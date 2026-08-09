@@ -418,7 +418,10 @@ public static partial class PluginMpxPackageValidator
             {
                 ValidateKnownTargetKeys(manifest.Targets.Daemon, "$.targets.daemon", ["plugin"], diagnostics);
                 if (manifest.Targets.Daemon.Plugin is not null)
+                {
                     ValidateManifestFileRef(manifest.Targets.Daemon.Plugin, "$.targets.daemon.plugin", diagnostics);
+                    ValidateDaemonBundleRef(manifest.Targets.Daemon.Plugin, "$.targets.daemon.plugin", diagnostics);
+                }
             }
         }
 
@@ -733,6 +736,21 @@ public static partial class PluginMpxPackageValidator
             commandValue is string commandText)
         {
             onCommand($"{path}.Command", commandText);
+        }
+    }
+
+    private static void ValidateDaemonBundleRef(MpxManifestFileRefDocument? fileRef, string path, List<PluginMpxDiagnostic> diagnostics)
+    {
+        if (fileRef?.Path is null)
+            return;
+        if (!TryNormalizePath(fileRef.Path, DefaultLimits, out var normalizedPath, out _))
+            return;
+        if (!normalizedPath.EndsWith(".zip", StringComparison.Ordinal))
+        {
+            diagnostics.Add(Diagnostic(
+                "daemon_bundle_path_invalid",
+                $"{path}.path",
+                "Daemon plugin payload must be a zip bundle containing mcsl-plugin.json and plugin assemblies."));
         }
     }
 

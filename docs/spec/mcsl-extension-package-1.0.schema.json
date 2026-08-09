@@ -51,7 +51,7 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "plugin": { "$ref": "#/$defs/fileRef" }
+            "plugin": { "$ref": "#/$defs/daemonBundleRef" }
           }
         }
       },
@@ -157,6 +157,21 @@
           "pattern": "^[a-f0-9]{64}$"
         }
       }
+    },
+    "daemonBundleRef": {
+      "allOf": [
+        { "$ref": "#/$defs/fileRef" },
+        {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^daemon/.+\\.zip$"
+            }
+          }
+        }
+      ],
+      "description": "Zip archive containing a complete daemon plugin bundle: mcsl-plugin.json, entry assembly, and private dependencies."
     },
     "scriptRef": {
       "allOf": [

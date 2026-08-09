@@ -402,12 +402,17 @@ public partial class PluginExtensionCenterPage
     private static string FormatMetadata(PluginExtensionCenterEntrySummary summary)
     {
         static string Join(IReadOnlyList<string> values) => values.Count == 0 ? "-" : string.Join(", ", values.Take(8));
-        return string.Format(
+        var metadata = string.Format(
             Lang.Tr["Plugin_ExtensionCenter_Metadata"],
             Join(summary.Commands),
             Join(summary.HostCapabilities),
             Join(summary.EventPermissions),
             Join(summary.Resources));
+        return string.IsNullOrWhiteSpace(summary.DaemonPluginPath)
+            ? metadata
+            : metadata + Environment.NewLine + string.Format(
+                Lang.Tr["Plugin_ExtensionCenter_DaemonDeploymentPending"],
+                summary.DaemonPluginPath);
     }
 
     private static bool ConfirmInstall(PluginExtensionCenterPackageReview review, string fileName)

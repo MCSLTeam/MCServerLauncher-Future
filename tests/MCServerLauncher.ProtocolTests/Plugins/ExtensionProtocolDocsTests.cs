@@ -66,6 +66,8 @@ public sealed class ExtensionProtocolDocsTests
         Assert.True(properties.TryGetProperty("permissions", out _));
         Assert.True(properties.TryGetProperty("integrity", out _));
         Assert.True(definitions.TryGetProperty("extensionPoint", out var extensionPoint));
+        Assert.True(definitions.TryGetProperty("daemonBundleRef", out var daemonBundleRef));
+        Assert.Contains(".zip", daemonBundleRef.ToString(), StringComparison.Ordinal);
         var extensionPointIds = extensionPoint
             .GetProperty("properties")
             .GetProperty("id")

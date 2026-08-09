@@ -385,7 +385,7 @@ public sealed class PluginMpxPackageValidatorTests
     {
         var daemonPlugin = Encoding.UTF8.GetBytes("not-a-real-assembly-yet");
         var packageBytes = BuildMpxPackage(
-            extraEntries: new Dictionary<string, byte[]> { ["daemon/plugin.dll"] = daemonPlugin },
+            extraEntries: new Dictionary<string, byte[]> { ["daemon/plugin-bundle.zip"] = daemonPlugin },
             mutateManifest: manifest =>
             {
                 var targets = (JsonObject)manifest["targets"]!;
@@ -393,7 +393,7 @@ public sealed class PluginMpxPackageValidatorTests
                 {
                     ["plugin"] = new JsonObject
                     {
-                        ["path"] = "daemon/plugin.dll",
+                        ["path"] = "daemon/plugin-bundle.zip",
                         ["sha256"] = Sha256(daemonPlugin)
                     }
                 };
@@ -446,7 +446,7 @@ public sealed class PluginMpxPackageValidatorTests
         var validation = PluginMpxPackageValidator.Validate(BuildMpxPackage(
             ui: null,
             script: null,
-            extraEntries: new Dictionary<string, byte[]> { ["daemon/plugin.dll"] = daemonPlugin },
+            extraEntries: new Dictionary<string, byte[]> { ["daemon/plugin-bundle.zip"] = daemonPlugin },
             mutateManifest: manifest =>
             {
                 manifest["runtime"] = new JsonObject { ["daemonApi"] = "[1.0.0,2.0.0)" };
@@ -456,7 +456,7 @@ public sealed class PluginMpxPackageValidatorTests
                     {
                         ["plugin"] = new JsonObject
                         {
-                            ["path"] = "daemon/plugin.dll",
+                            ["path"] = "daemon/plugin-bundle.zip",
                             ["sha256"] = Sha256(daemonPlugin)
                         }
                     }
@@ -524,7 +524,7 @@ public sealed class PluginMpxPackageValidatorTests
         var validation = PluginMpxPackageValidator.Validate(BuildMpxPackage(
             ui: null,
             script: null,
-            extraEntries: new Dictionary<string, byte[]> { ["daemon/plugin.dll"] = daemonPlugin },
+            extraEntries: new Dictionary<string, byte[]> { ["daemon/plugin-bundle.zip"] = daemonPlugin },
             mutateManifest: manifest =>
             {
                 manifest["runtime"] = new JsonObject { ["daemonApi"] = "[1.0.0,2.0.0)" };
@@ -534,7 +534,7 @@ public sealed class PluginMpxPackageValidatorTests
                     {
                         ["plugin"] = new JsonObject
                         {
-                            ["path"] = "daemon/plugin.dll",
+                            ["path"] = "daemon/plugin-bundle.zip",
                             ["sha256"] = Sha256(daemonPlugin)
                         }
                     }
@@ -694,6 +694,33 @@ public sealed class PluginMpxPackageValidatorTests
     {
         var daemonPlugin = Encoding.UTF8.GetBytes("not-a-real-assembly-yet");
         var packageBytes = BuildMpxPackage(
+            extraEntries: new Dictionary<string, byte[]> { ["daemon/plugin-bundle.zip"] = daemonPlugin },
+            mutateManifest: manifest =>
+            {
+                var targets = (JsonObject)manifest["targets"]!;
+                targets["daemon"] = new JsonObject
+                {
+                    ["plugin"] = new JsonObject
+                    {
+                        ["path"] = "daemon/plugin-bundle.zip",
+                        ["sha256"] = Sha256(daemonPlugin)
+                    }
+                };
+            });
+
+        var result = PluginMpxPackageValidator.Validate(packageBytes);
+
+        Assert.True(result.Ok, FormatDiagnostics(result.Diagnostics));
+        Assert.Matches("^[a-f0-9]{64}$", result.Package!.FileDigests["daemon/plugin-bundle.zip"]);
+        Assert.Equal(["client", "daemon"], result.Package.DeploymentPlan.Scopes);
+        Assert.Equal("daemon/plugin-bundle.zip", result.Package.DeploymentPlan.Daemon?.Plugin?.Path);
+    }
+
+    [Fact]
+    public void ValidatorRejectsSingleDllDaemonPayloadBecauseInstallRequiresBundle()
+    {
+        var daemonPlugin = Encoding.UTF8.GetBytes("not-a-real-assembly-yet");
+        var packageBytes = BuildMpxPackage(
             extraEntries: new Dictionary<string, byte[]> { ["daemon/plugin.dll"] = daemonPlugin },
             mutateManifest: manifest =>
             {
@@ -710,10 +737,8 @@ public sealed class PluginMpxPackageValidatorTests
 
         var result = PluginMpxPackageValidator.Validate(packageBytes);
 
-        Assert.True(result.Ok, FormatDiagnostics(result.Diagnostics));
-        Assert.Matches("^[a-f0-9]{64}$", result.Package!.FileDigests["daemon/plugin.dll"]);
-        Assert.Equal(["client", "daemon"], result.Package.DeploymentPlan.Scopes);
-        Assert.Equal("daemon/plugin.dll", result.Package.DeploymentPlan.Daemon?.Plugin?.Path);
+        Assert.False(result.Ok);
+        Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Code == "daemon_bundle_path_invalid");
     }
 
     [Fact]
@@ -761,7 +786,7 @@ public sealed class PluginMpxPackageValidatorTests
         var packageBytes = BuildMpxPackage(
             ui: null,
             script: null,
-            extraEntries: new Dictionary<string, byte[]> { ["daemon/plugin.dll"] = daemonPlugin },
+            extraEntries: new Dictionary<string, byte[]> { ["daemon/plugin-bundle.zip"] = daemonPlugin },
             mutateManifest: manifest =>
             {
                 manifest["runtime"] = new JsonObject { ["daemonApi"] = "[1.0.0,2.0.0)" };
@@ -771,7 +796,7 @@ public sealed class PluginMpxPackageValidatorTests
                     {
                         ["plugin"] = new JsonObject
                         {
-                            ["path"] = "daemon/plugin.dll",
+                            ["path"] = "daemon/plugin-bundle.zip",
                             ["sha256"] = Sha256(daemonPlugin)
                         }
                     }
@@ -818,7 +843,7 @@ public sealed class PluginMpxPackageValidatorTests
         """;
         var packageBytes = BuildMpxPackage(
             ui: commandUi,
-            extraEntries: new Dictionary<string, byte[]> { ["daemon/plugin.dll"] = daemonPlugin },
+            extraEntries: new Dictionary<string, byte[]> { ["daemon/plugin-bundle.zip"] = daemonPlugin },
             mutateManifest: manifest =>
             {
                 var targets = (JsonObject)manifest["targets"]!;
@@ -826,7 +851,7 @@ public sealed class PluginMpxPackageValidatorTests
                 {
                     ["plugin"] = new JsonObject
                     {
-                        ["path"] = "daemon/plugin.dll",
+                        ["path"] = "daemon/plugin-bundle.zip",
                         ["sha256"] = Sha256(daemonPlugin)
                     }
                 };
@@ -882,7 +907,7 @@ public sealed class PluginMpxPackageValidatorTests
     {
         var daemonPlugin = Encoding.UTF8.GetBytes("not-a-real-assembly-yet");
         var packageBytes = BuildMpxPackage(
-            extraEntries: new Dictionary<string, byte[]> { ["daemon/plugin.dll"] = daemonPlugin },
+            extraEntries: new Dictionary<string, byte[]> { ["daemon/plugin-bundle.zip"] = daemonPlugin },
             mutateManifest: manifest =>
             {
                 var targets = (JsonObject)manifest["targets"]!;
@@ -890,7 +915,7 @@ public sealed class PluginMpxPackageValidatorTests
                 {
                     ["plugin"] = new JsonObject
                     {
-                        ["path"] = "daemon/plugin.dll",
+                        ["path"] = "daemon/plugin-bundle.zip",
                         ["sha256"] = Sha256(daemonPlugin)
                     }
                 };
@@ -987,7 +1012,7 @@ public sealed class PluginMpxPackageValidatorTests
     {
         var pluginBytes = Encoding.UTF8.GetBytes("not-a-real-assembly-yet");
         var packageBytes = BuildMpxPackage(
-            extraEntries: new Dictionary<string, byte[]> { ["daemon/plugin.dll"] = pluginBytes },
+            extraEntries: new Dictionary<string, byte[]> { ["daemon/plugin-bundle.zip"] = pluginBytes },
             mutateManifest: manifest =>
             {
                 var targets = (JsonObject)manifest["targets"]!;
@@ -995,7 +1020,7 @@ public sealed class PluginMpxPackageValidatorTests
                 {
                     ["plugin"] = new JsonObject
                     {
-                        ["path"] = "daemon/plugin.dll",
+                        ["path"] = "daemon/plugin-bundle.zip",
                         ["sha256"] = Sha256(pluginBytes)
                     }
                 };

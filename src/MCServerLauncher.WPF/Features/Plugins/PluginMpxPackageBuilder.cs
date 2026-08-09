@@ -70,10 +70,10 @@ public static class PluginMpxPackageBuilder
 
         if (input.DaemonPlugin is not null)
         {
-            entries["daemon/plugin.dll"] = input.DaemonPlugin;
+            entries["daemon/plugin-bundle.zip"] = input.DaemonPlugin;
             targets["daemon"] = new JsonObject
             {
-                ["plugin"] = FileRef("daemon/plugin.dll", input.DaemonPlugin)
+                ["plugin"] = FileRef("daemon/plugin-bundle.zip", input.DaemonPlugin)
             };
         }
 

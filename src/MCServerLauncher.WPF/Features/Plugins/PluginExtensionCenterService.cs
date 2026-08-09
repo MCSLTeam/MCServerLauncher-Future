@@ -127,7 +127,8 @@ public sealed class PluginExtensionCenterService
             new ReadOnlyCollection<string>(entry.Commands.Select(command => command.Id).ToArray()),
             new ReadOnlyCollection<string>(entry.HostCapabilities.ToArray()),
             new ReadOnlyCollection<string>(entry.EventPermissions.ToArray()),
-            new ReadOnlyCollection<string>(resources.Order(StringComparer.Ordinal).ToArray()));
+            new ReadOnlyCollection<string>(resources.Order(StringComparer.Ordinal).ToArray()),
+            entry.DeploymentPlan.Daemon?.Plugin?.Path);
     }
 }
 
@@ -138,4 +139,5 @@ public sealed record PluginExtensionCenterEntrySummary(
     IReadOnlyList<string> Commands,
     IReadOnlyList<string> HostCapabilities,
     IReadOnlyList<string> EventPermissions,
-    IReadOnlyList<string> Resources);
+    IReadOnlyList<string> Resources,
+    string? DaemonPluginPath);
