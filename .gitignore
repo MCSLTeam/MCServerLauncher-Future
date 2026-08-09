@@ -6,6 +6,9 @@
 # MacOS files
 .DS_Store
 
+# Local agent state
+.pi/
+
 # User-specific files
 *.rsuser
 *.suo
