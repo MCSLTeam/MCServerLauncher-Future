@@ -238,7 +238,12 @@ public sealed class PluginMpxPackageValidatorTests
         try
         {
             var service = new PluginExtensionCenterService(Path.Combine(root, "cache"));
-            var install = service.InstallPackage(packagePath);
+            var review = service.ReviewPackage(packagePath);
+            Assert.True(review.Ok, review.Message);
+            Assert.Equal("community.example.status-panel", review.Review!.Package.PluginId);
+            Assert.Empty(service.Restore());
+
+            var install = service.InstallReviewedPackage(review.Review);
             Assert.True(install.Ok, install.Message);
             Assert.Equal("community.example.status-panel", install.Entry!.Id);
 

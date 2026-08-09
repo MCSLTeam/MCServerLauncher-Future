@@ -51,7 +51,22 @@ public partial class PluginExtensionCenterPage
         if (dialog.ShowDialog() != true)
             return;
 
-        var result = _service.InstallPackage(dialog.FileName);
+        var reviewResult = _service.ReviewPackage(dialog.FileName);
+        if (!reviewResult.Ok || reviewResult.Review is null)
+        {
+            StatusText.Text = reviewResult.Diagnostics.Count > 0
+                ? string.Join(Environment.NewLine, reviewResult.Diagnostics.Take(6).Select(diagnostic => $"{diagnostic.Path}: {diagnostic.Message}"))
+                : $"{reviewResult.Code}: {reviewResult.Message}";
+            return;
+        }
+
+        if (!ConfirmInstall(reviewResult.Review, dialog.SafeFileName))
+        {
+            StatusText.Text = Lang.Tr["Plugin_ExtensionCenter_InstallCancelled"];
+            return;
+        }
+
+        var result = _service.InstallReviewedPackage(reviewResult.Review);
         if (!result.Ok)
         {
             StatusText.Text = result.Diagnostics.Count > 0
@@ -393,6 +408,67 @@ public partial class PluginExtensionCenterPage
             Join(summary.HostCapabilities),
             Join(summary.EventPermissions),
             Join(summary.Resources));
+    }
+
+    private static bool ConfirmInstall(PluginExtensionCenterPackageReview review, string fileName)
+    {
+        var package = review.Package;
+        var daemonPlan = package.DeploymentPlan.Daemon;
+        var extensionPoints = daemonPlan?.ExtensionPoints ?? [];
+        var resources = ListPackageResources(package);
+        var audit = daemonPlan?.Plugin is not null
+            ? Lang.Tr["Plugin_ExtensionCenter_ReviewDaemonAudit"]
+            : Lang.Tr["Plugin_ExtensionCenter_ReviewClientAudit"];
+        var message = string.Format(
+            Lang.Tr["Plugin_ExtensionCenter_ReviewConfirm"],
+            package.PluginId,
+            package.Version,
+            fileName,
+            JoinForReview(package.HostCapabilities),
+            JoinForReview(package.EventPermissions),
+            JoinForReview(package.Commands.Select(command => command.Id)),
+            JoinForReview(extensionPoints.Select(point => $"{point.Kind}:{point.Id}")),
+            JoinForReview(resources),
+            audit,
+            FormatBytes(package.TotalUncompressedBytes));
+        return MessageBox.Show(
+            message,
+            Lang.Tr["Plugin_ExtensionCenter_ReviewTitle"],
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning) == MessageBoxResult.Yes;
+    }
+
+    private static IReadOnlyList<string> ListPackageResources(ValidatedPluginMpxPackage package)
+    {
+        List<string> resources = [];
+        var client = package.DeploymentPlan.Client;
+        if (client?.Ui is not null)
+            resources.Add(client.Ui.Path);
+        if (client?.Theme is not null)
+            resources.Add(client.Theme.Path);
+        if (client?.Script is not null)
+            resources.Add(client.Script.Path);
+        if (client is not null)
+            resources.AddRange(client.Resources.Select(resource => resource.Path));
+        return resources.Order(StringComparer.Ordinal).ToArray();
+    }
+
+    private static string JoinForReview(IEnumerable<string> values)
+    {
+        var materialized = values.Where(value => !string.IsNullOrWhiteSpace(value)).Take(8).ToArray();
+        return materialized.Length == 0 ? "-" : string.Join(", ", materialized);
+    }
+
+    private static string FormatBytes(long bytes)
+    {
+        if (bytes < 0)
+            return "-";
+        if (bytes < 1024)
+            return $"{bytes} B";
+        var kib = bytes / 1024d;
+        if (kib < 1024)
+            return $"{kib:0.0} KiB";
+        return $"{kib / 1024d:0.0} MiB";
     }
 }
 

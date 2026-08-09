@@ -6,6 +6,28 @@ using System.Linq;
 
 namespace MCServerLauncher.WPF.Features.Plugins;
 
+public sealed record PluginExtensionCenterPackageReview(
+    string PackagePath,
+    byte[] Bytes,
+    ValidatedPluginMpxPackage Package);
+
+public sealed record PluginExtensionCenterPackageReviewResult(
+    bool Ok,
+    PluginExtensionCenterPackageReview? Review,
+    IReadOnlyList<PluginMpxDiagnostic> Diagnostics,
+    string? Code,
+    string? Message)
+{
+    public static PluginExtensionCenterPackageReviewResult Success(PluginExtensionCenterPackageReview review) =>
+        new(true, review, [], null, null);
+
+    public static PluginExtensionCenterPackageReviewResult ValidationFailed(IReadOnlyList<PluginMpxDiagnostic> diagnostics) =>
+        new(false, null, diagnostics, "package_invalid", "Extension package validation failed.");
+
+    public static PluginExtensionCenterPackageReviewResult Failure(string code, string message) =>
+        new(false, null, [], code, message);
+}
+
 public sealed record PluginExtensionCenterInstallResult(
     bool Ok,
     PluginClientExtensionCacheEntry? Entry,
@@ -44,7 +66,7 @@ public sealed class PluginExtensionCenterService
 
     public IReadOnlyList<PluginClientExtensionCacheEntry> List() => _manager.List();
 
-    public PluginExtensionCenterInstallResult InstallPackage(string packagePath)
+    public PluginExtensionCenterPackageReviewResult ReviewPackage(string packagePath)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(packagePath);
         byte[] bytes;
@@ -54,14 +76,29 @@ public sealed class PluginExtensionCenterService
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
         {
-            return PluginExtensionCenterInstallResult.Failure("package_read_failed", exception.Message);
+            return PluginExtensionCenterPackageReviewResult.Failure("package_read_failed", exception.Message);
         }
 
         var validation = PluginMpxPackageValidator.Validate(bytes);
         if (!validation.Ok || validation.Package is null)
-            return PluginExtensionCenterInstallResult.ValidationFailed(validation.Diagnostics);
+            return PluginExtensionCenterPackageReviewResult.ValidationFailed(validation.Diagnostics);
 
-        var installed = _manager.InstallPersisted(validation.Package, bytes);
+        return PluginExtensionCenterPackageReviewResult.Success(
+            new PluginExtensionCenterPackageReview(packagePath, bytes, validation.Package));
+    }
+
+    public PluginExtensionCenterInstallResult InstallPackage(string packagePath)
+    {
+        var review = ReviewPackage(packagePath);
+        return review.Ok && review.Review is not null
+            ? InstallReviewedPackage(review.Review)
+            : new PluginExtensionCenterInstallResult(false, null, review.Diagnostics, review.Code, review.Message);
+    }
+
+    public PluginExtensionCenterInstallResult InstallReviewedPackage(PluginExtensionCenterPackageReview review)
+    {
+        ArgumentNullException.ThrowIfNull(review);
+        var installed = _manager.InstallPersisted(review.Package, review.Bytes);
         return installed.Ok && installed.Entry is not null
             ? PluginExtensionCenterInstallResult.Success(installed.Entry)
             : PluginExtensionCenterInstallResult.Failure(installed.Code ?? "install_failed", installed.Message ?? "Extension package could not be installed.");
