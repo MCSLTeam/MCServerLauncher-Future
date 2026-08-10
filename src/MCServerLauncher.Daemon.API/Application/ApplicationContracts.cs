@@ -189,6 +189,10 @@ public interface IExtensionDeploymentApplication
         ExtensionDaemonBundleInstallRequest request,
         CancellationToken cancellationToken);
 
+    Task<Result<ExtensionDaemonBundleDeploymentResult, DaemonError>> GetDaemonBundleStatusAsync(
+        ExtensionDaemonBundleStatusRequest request,
+        CancellationToken cancellationToken);
+
     Task<Result<ExtensionDaemonBundleDeploymentResult, DaemonError>> RemoveDaemonBundleAsync(
         ExtensionDaemonBundleRemoveRequest request,
         CancellationToken cancellationToken);

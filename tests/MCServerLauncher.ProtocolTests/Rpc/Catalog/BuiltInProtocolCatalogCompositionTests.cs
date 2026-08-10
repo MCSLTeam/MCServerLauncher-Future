@@ -176,6 +176,7 @@ public sealed class BuiltInProtocolCatalogCompositionTests
     private sealed class ThrowingExtensionDeploymentApplication : IExtensionDeploymentApplication
     {
         public Task<Result<ExtensionDaemonBundleDeploymentResult, DaemonError>> InstallDaemonBundleAsync(ExtensionDaemonBundleInstallRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<ExtensionDaemonBundleDeploymentResult, DaemonError>> GetDaemonBundleStatusAsync(ExtensionDaemonBundleStatusRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<Result<ExtensionDaemonBundleDeploymentResult, DaemonError>> RemoveDaemonBundleAsync(ExtensionDaemonBundleRemoveRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
     }
 

@@ -67,6 +67,53 @@ internal sealed partial class LocalExtensionDeploymentApplication : IExtensionDe
         return InstallDaemonBundleCoreAsync(pluginId!, sourcePath, request.Sha256, cancellationToken);
     }
 
+    public Task<Result<ExtensionDaemonBundleDeploymentResult, DaemonError>> GetDaemonBundleStatusAsync(
+        ExtensionDaemonBundleStatusRequest request,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (!TryValidatePluginId(request.PluginId, out var pluginId, out var pluginIdError))
+            return Task.FromResult(Err(pluginIdError!));
+
+        var target = GetPluginDirectory(pluginId!);
+        var installed = Directory.Exists(target);
+        bool configured;
+        bool enabled;
+        lock (_configGate)
+        {
+            configured = _config.Plugins.Entries.TryGetValue(pluginId!, out var entry);
+            enabled = entry?.Enabled ?? false;
+        }
+
+        var status = (installed, configured, enabled) switch
+        {
+            (true, true, true) => "installed_enabled",
+            (true, true, false) => "installed_disabled",
+            (true, false, _) => "installed_unconfigured",
+            (false, true, true) => "configured_missing",
+            (false, true, false) => "disabled_missing",
+            _ => "not_installed"
+        };
+
+        var message = status switch
+        {
+            "installed_enabled" => "Daemon extension bundle is installed and enabled in configuration.",
+            "installed_disabled" => "Daemon extension bundle is installed but disabled in configuration.",
+            "installed_unconfigured" => "Daemon extension bundle is installed but has no configuration entry.",
+            "configured_missing" => "Daemon extension bundle is enabled in configuration but missing from plugins directory.",
+            "disabled_missing" => "Daemon extension bundle is disabled and missing from plugins directory.",
+            _ => "Daemon extension bundle is not installed."
+        };
+
+        return Task.FromResult(Ok(new ExtensionDaemonBundleDeploymentResult(
+            pluginId!,
+            status,
+            RestartRequired: false,
+            $"plugins/{pluginId}",
+            message)));
+    }
+
     public Task<Result<ExtensionDaemonBundleDeploymentResult, DaemonError>> RemoveDaemonBundleAsync(
         ExtensionDaemonBundleRemoveRequest request,
         CancellationToken cancellationToken)

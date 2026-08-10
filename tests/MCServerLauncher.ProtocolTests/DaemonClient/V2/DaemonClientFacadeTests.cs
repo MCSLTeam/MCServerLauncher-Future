@@ -98,7 +98,7 @@ public sealed class DaemonClientFacadeTests
                 .Select(static property => property.Name)
                 .Order());
         Assert.Equal(
-            ["ConnectAsync", "DiscoverAsync", "DispatchExtensionProtocolAsync", "DisposeAsync", "InstallExtensionDaemonBundleAsync", "InvokeAsync", "OpenConsoleAsync", "PingAsync", "RemoveExtensionDaemonBundleAsync", "RestartInstanceAsync", "SubscribeAsync"],
+            ["ConnectAsync", "DiscoverAsync", "DispatchExtensionProtocolAsync", "DisposeAsync", "GetExtensionDaemonBundleStatusAsync", "InstallExtensionDaemonBundleAsync", "InvokeAsync", "OpenConsoleAsync", "PingAsync", "RemoveExtensionDaemonBundleAsync", "RestartInstanceAsync", "SubscribeAsync"],
             type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly)
                 .Where(static method => !method.IsSpecialName)
                 .Select(static method => method.Name)
@@ -123,6 +123,13 @@ public sealed class DaemonClientFacadeTests
             [typeof(ExtensionDaemonBundleInstallRequest), typeof(CancellationToken)],
             install.GetParameters().Select(static parameter => parameter.ParameterType));
         Assert.True(install.GetParameters()[1].IsOptional);
+        var status = type.GetMethod(nameof(MCServerLauncher.DaemonClient.DaemonClient.GetExtensionDaemonBundleStatusAsync));
+        Assert.NotNull(status);
+        Assert.Equal(typeof(Task<Result<ExtensionDaemonBundleDeploymentResult, DaemonError>>), status.ReturnType);
+        Assert.Equal(
+            [typeof(ExtensionDaemonBundleStatusRequest), typeof(CancellationToken)],
+            status.GetParameters().Select(static parameter => parameter.ParameterType));
+        Assert.True(status.GetParameters()[1].IsOptional);
         var remove = type.GetMethod(nameof(MCServerLauncher.DaemonClient.DaemonClient.RemoveExtensionDaemonBundleAsync));
         Assert.NotNull(remove);
         Assert.Equal(typeof(Task<Result<ExtensionDaemonBundleDeploymentResult, DaemonError>>), remove.ReturnType);

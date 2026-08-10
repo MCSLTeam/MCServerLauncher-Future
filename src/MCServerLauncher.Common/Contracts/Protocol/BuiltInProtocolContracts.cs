@@ -31,6 +31,8 @@ public sealed record ExtensionDaemonBundleInstallRequest(
     string SourcePath,
     string Sha256);
 
+public sealed record ExtensionDaemonBundleStatusRequest(string PluginId);
+
 public sealed record ExtensionDaemonBundleRemoveRequest(string PluginId);
 
 public sealed record ExtensionDaemonBundleDeploymentResult(

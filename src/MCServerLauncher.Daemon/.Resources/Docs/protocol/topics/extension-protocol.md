@@ -113,7 +113,11 @@ the daemon bundle to the daemon upload staging area. The daemon-only RPC
 `mcsl.extension.daemon.bundle.install` validates the staged zip hash, rejects zip-slip
 entries, verifies the manifest plugin id, validates the plugin bundle, installs it under
 `plugins/<plugin-id>/`, enables the plugin entry in `config.json`, and returns
-`restart_required: true`. `mcsl.extension.daemon.bundle.remove` disables and removes an
+`restart_required: true`. `mcsl.extension.daemon.bundle.status` reports the persisted
+bundle state for one plugin id (`not_installed`, `installed_enabled`,
+`installed_disabled`, `installed_unconfigured`, `configured_missing`, or
+`disabled_missing`) from the plugin directory plus `config.json`, without claiming runtime
+hot-load state. `mcsl.extension.daemon.bundle.remove` disables and removes an
 installed bundle and also returns `restart_required: true`; active plugin code is unloaded
 only by daemon restart.
 

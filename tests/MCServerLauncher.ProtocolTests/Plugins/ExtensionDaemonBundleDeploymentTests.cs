@@ -35,6 +35,13 @@ public sealed class ExtensionDaemonBundleDeploymentTests
                 Path.GetRelativePath(FileManager.Root, stagedBundle),
                 await Sha256Async(stagedBundle));
 
+            var beforeInstall = await app.GetDaemonBundleStatusAsync(
+                new ExtensionDaemonBundleStatusRequest("external-compile"),
+                CancellationToken.None);
+            Assert.True(beforeInstall.IsOk(out var beforeInstallResult), ErrorMessage(beforeInstall));
+            Assert.Equal("not_installed", beforeInstallResult!.Status);
+            Assert.False(beforeInstallResult.RestartRequired);
+
             var installed = await app.InstallDaemonBundleAsync(request, CancellationToken.None);
 
             Assert.True(installed.IsOk(out var installResult), ErrorMessage(installed));
@@ -43,6 +50,13 @@ public sealed class ExtensionDaemonBundleDeploymentTests
             Assert.True(File.Exists(Path.Combine(root, "plugins", "external-compile", "mcsl-plugin.json")));
             Assert.True(config.Plugins.Entries.TryGetValue("external-compile", out var enabled));
             Assert.True(enabled!.Enabled);
+
+            var afterInstall = await app.GetDaemonBundleStatusAsync(
+                new ExtensionDaemonBundleStatusRequest("external-compile"),
+                CancellationToken.None);
+            Assert.True(afterInstall.IsOk(out var afterInstallResult), ErrorMessage(afterInstall));
+            Assert.Equal("installed_enabled", afterInstallResult!.Status);
+            Assert.False(afterInstallResult.RestartRequired);
 
             var removed = await app.RemoveDaemonBundleAsync(
                 new ExtensionDaemonBundleRemoveRequest("external-compile"),
@@ -54,6 +68,13 @@ public sealed class ExtensionDaemonBundleDeploymentTests
             Assert.False(Directory.Exists(Path.Combine(root, "plugins", "external-compile")));
             Assert.True(config.Plugins.Entries.TryGetValue("external-compile", out var disabled));
             Assert.False(disabled!.Enabled);
+
+            var afterRemove = await app.GetDaemonBundleStatusAsync(
+                new ExtensionDaemonBundleStatusRequest("external-compile"),
+                CancellationToken.None);
+            Assert.True(afterRemove.IsOk(out var afterRemoveResult), ErrorMessage(afterRemove));
+            Assert.Equal("disabled_missing", afterRemoveResult!.Status);
+            Assert.False(afterRemoveResult.RestartRequired);
         }
         finally
         {

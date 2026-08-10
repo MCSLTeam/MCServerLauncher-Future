@@ -111,6 +111,14 @@ public sealed class DaemonClient : IDaemonApplication, IAsyncDisposable
         return _invoker.InvokeAsync(BuiltInProtocolDefinitions.InstallExtensionDaemonBundle, request, cancellationToken);
     }
 
+    public Task<Result<ExtensionDaemonBundleDeploymentResult, DaemonError>> GetExtensionDaemonBundleStatusAsync(
+        ExtensionDaemonBundleStatusRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        return _invoker.InvokeAsync(BuiltInProtocolDefinitions.GetExtensionDaemonBundleStatus, request, cancellationToken);
+    }
+
     public Task<Result<ExtensionDaemonBundleDeploymentResult, DaemonError>> RemoveExtensionDaemonBundleAsync(
         ExtensionDaemonBundleRemoveRequest request,
         CancellationToken cancellationToken = default)

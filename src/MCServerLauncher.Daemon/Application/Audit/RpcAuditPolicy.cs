@@ -84,6 +84,7 @@ internal static class RpcAuditPolicy
         "mcsl.file.download.read",
         "mcsl.file.info.get",
         "mcsl.file.upload.cancel",
+        "mcsl.extension.daemon.bundle.status",
         "mcsl.instance.catalog.get",
         "mcsl.instance.console.close",
         "mcsl.instance.console.resize",
@@ -201,6 +202,7 @@ internal static class RpcAuditPolicy
         ProvisioningResolveRequest resolve => resolve.InstanceName,
         ExtensionProtocolDispatchRequest extension => DescribeExtensionDispatch(extension),
         ExtensionDaemonBundleInstallRequest install => install.PluginId,
+        ExtensionDaemonBundleStatusRequest status => status.PluginId,
         ExtensionDaemonBundleRemoveRequest remove => remove.PluginId,
         _ => null
     };

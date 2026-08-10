@@ -163,7 +163,7 @@ public partial class PluginExtensionCenterPage
                 TextWrapping = TextWrapping.Wrap,
                 Opacity = 0.75
             };
-            StatusText.Text = FormatMetadata(summary);
+            StatusText.Text = await FormatMetadataAsync(entry, summary);
             return;
         }
 
@@ -181,7 +181,7 @@ public partial class PluginExtensionCenterPage
                 RenderHost.Content = result.Root;
                 StatusText.Text = result.ScriptResult is { Success: false }
                     ? result.ScriptResult.Message
-                    : FormatMetadata(summary);
+                    : await FormatMetadataAsync(entry, summary);
             }
             else
             {
@@ -598,6 +598,26 @@ public partial class PluginExtensionCenterPage
         return result.RestartRequired
             ? message + Environment.NewLine + Lang.Tr["Plugin_ExtensionCenter_DaemonRestartRequired"]
             : message;
+    }
+
+    private static async Task<string> FormatMetadataAsync(
+        PluginClientExtensionCacheEntry entry,
+        PluginExtensionCenterEntrySummary summary)
+    {
+        var metadata = FormatMetadata(summary);
+        if (summary.DaemonPluginPath is null)
+            return metadata;
+
+        var daemon = GetReadyDaemon();
+        if (daemon is null)
+            return metadata + Environment.NewLine + Lang.Tr["Plugin_ExtensionCenter_DaemonUnavailable"];
+
+        var status = await daemon.GetExtensionDaemonBundleStatusAsync(
+            new ExtensionDaemonBundleStatusRequest(entry.Id),
+            CancellationToken.None).ConfigureAwait(false);
+        return status.IsOk(out var result)
+            ? metadata + Environment.NewLine + FormatDeploymentResult(result!)
+            : metadata + Environment.NewLine + DaemonErrorLocalization.GetMessage(status.UnwrapErr());
     }
 
     private static string FormatMetadata(PluginExtensionCenterEntrySummary summary)
