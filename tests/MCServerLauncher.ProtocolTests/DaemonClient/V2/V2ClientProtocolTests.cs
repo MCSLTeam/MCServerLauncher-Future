@@ -86,6 +86,7 @@ public sealed class V2ClientProtocolTests
             Accessor(V2ClientProtocol.GetAuthPermissions, "mcsl.auth.permissions.get"),
             Accessor(V2ClientProtocol.IssueToken, "mcsl.auth.token.issue"),
             Accessor(V2ClientProtocol.PingDaemon, "mcsl.daemon.ping"),
+            Accessor(V2ClientProtocol.RequestDaemonShutdown, "mcsl.daemon.shutdown.request"),
             Accessor(V2ClientProtocol.CopyDirectory, "mcsl.directory.copy"),
             Accessor(V2ClientProtocol.CreateDirectory, "mcsl.directory.create"),
             Accessor(V2ClientProtocol.DeleteDirectory, "mcsl.directory.delete"),
@@ -191,7 +192,7 @@ public sealed class V2ClientProtocolTests
     {
         IRpcGoldenCase[] cases =
         [
-            Case(V2ClientProtocol.GetAuthPermissions), Case(V2ClientProtocol.IssueToken), Case(V2ClientProtocol.PingDaemon), Case(V2ClientProtocol.CopyDirectory),
+            Case(V2ClientProtocol.GetAuthPermissions), Case(V2ClientProtocol.IssueToken), Case(V2ClientProtocol.PingDaemon), Case(V2ClientProtocol.RequestDaemonShutdown), Case(V2ClientProtocol.CopyDirectory),
             Case(V2ClientProtocol.CreateDirectory), Case(V2ClientProtocol.DeleteDirectory), Case(V2ClientProtocol.GetDirectoryInfo),
             Case(V2ClientProtocol.MoveDirectory), Case(V2ClientProtocol.RenameDirectory), Case(V2ClientProtocol.SubscribeEvent),
             Case(V2ClientProtocol.UnsubscribeEvent), Case(V2ClientProtocol.DispatchExtensionProtocol), Case(V2ClientProtocol.InstallExtensionDaemonBundle),
@@ -397,6 +398,8 @@ public sealed class V2ClientProtocolTests
             if (type == typeof(TokenIssueResult)) return "{\"token\":\"jwt\",\"subject\":\"ci-bot\",\"audience\":\"mcsl://daemon/api/v2\",\"permissions\":[\"mcsl.instance.start\"],\"expires_at\":\"2026-01-01T01:00:00+00:00\",\"token_id\":\"abc\"}";
             if (type == typeof(PermissionsResult)) return "{\"permissions\":[\"mcsl.daemon.read\"]}";
             if (type == typeof(PingResult)) return "{\"time\":42}";
+            if (type == typeof(DaemonShutdownRequest)) return "{\"reason\":\"extension:community.example.status-panel\"}";
+            if (type == typeof(DaemonShutdownResult)) return "{\"status\":\"shutdown_requested\",\"message\":\"Daemon shutdown has been requested. Restart it through its service manager or launcher.\"}";
             if (type == typeof(DirectoryDetails)) return "{\"parent\":\"instances\",\"files\":[{\"name\":\"server.jar\",\"meta\":" + FileMeta + "}],\"directories\":[{\"name\":\"plugins\",\"meta\":" + DirectoryMeta + "}]}";
             if (type == typeof(FileDetails)) return "{\"meta\":" + FileMeta + "}";
             if (type == typeof(DownloadSession)) return "{\"session_id\":\"" + Id + "\",\"length\":7,\"sha256\":\"hash\",\"max_chunk_size\":4,\"expires_at\":\"2026-01-01T00:00:00+00:00\"}";

@@ -20,6 +20,7 @@ internal static class V2ClientProtocol
     internal static RpcDescriptor<EmptyRequest, PermissionsResult> GetAuthPermissions => BuiltInProtocolDefinitions.GetAuthPermissions;
     internal static RpcDescriptor<TokenIssueRequest, TokenIssueResult> IssueToken => BuiltInProtocolDefinitions.IssueToken;
     internal static RpcDescriptor<EmptyRequest, PingResult> PingDaemon => BuiltInProtocolDefinitions.PingDaemon;
+    internal static RpcDescriptor<DaemonShutdownRequest, DaemonShutdownResult> RequestDaemonShutdown => BuiltInProtocolDefinitions.RequestDaemonShutdown;
     internal static RpcDescriptor<PathTransferRequest, UnitResult> CopyDirectory => BuiltInProtocolDefinitions.CopyDirectory;
     internal static RpcDescriptor<PathRequest, UnitResult> CreateDirectory => BuiltInProtocolDefinitions.CreateDirectory;
     internal static RpcDescriptor<DeleteDirectoryRequest, UnitResult> DeleteDirectory => BuiltInProtocolDefinitions.DeleteDirectory;
@@ -95,7 +96,7 @@ internal static class V2ClientProtocol
 
     internal static ImmutableArray<RpcDescriptor> Rpcs { get; } =
     [
-        GetAuthPermissions, IssueToken, PingDaemon, CopyDirectory, CreateDirectory, DeleteDirectory, GetDirectoryInfo, MoveDirectory, RenameDirectory,
+        GetAuthPermissions, IssueToken, PingDaemon, RequestDaemonShutdown, CopyDirectory, CreateDirectory, DeleteDirectory, GetDirectoryInfo, MoveDirectory, RenameDirectory,
         SubscribeEvent, UnsubscribeEvent, CopyFile, DeleteFile, CloseDownload, OpenDownload, ReadDownload, GetFileInfo, MoveFile, RenameFile,
         CancelUpload, CloseUpload, OpenUpload, GetInstanceCatalog, DispatchExtensionProtocol, InstallExtensionDaemonBundle, GetExtensionDaemonBundleStatus, EnableExtensionDaemonBundle, DisableExtensionDaemonBundle, RemoveExtensionDaemonBundle, SendInstanceCommand, OpenConsole, ResizeConsole, CloseConsole, CreateInstance, GetInstanceEventRules,
         UpdateInstanceEventRules, HaltInstance, GetInstanceLog, RemoveInstance, GetInstanceReport, ListInstanceReports, GetInstanceSettings,

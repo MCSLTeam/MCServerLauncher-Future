@@ -183,6 +183,13 @@ public interface ISystemApplication
     Task<Result<JavaRuntimeList, DaemonError>> ListJavaRuntimesAsync(CancellationToken cancellationToken);
 }
 
+public interface IDaemonLifecycleApplication
+{
+    Task<Result<DaemonShutdownResult, DaemonError>> RequestShutdownAsync(
+        DaemonShutdownRequest request,
+        CancellationToken cancellationToken);
+}
+
 public interface IExtensionDeploymentApplication
 {
     Task<Result<ExtensionDaemonBundleDeploymentResult, DaemonError>> InstallDaemonBundleAsync(

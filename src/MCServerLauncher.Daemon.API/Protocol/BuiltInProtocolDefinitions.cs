@@ -32,6 +32,7 @@ public static class BuiltInProtocolDefinitions
     public static RpcDescriptor<EmptyRequest, PermissionsResult> GetAuthPermissions { get; } = Rpc("mcsl.auth.permissions.get", new("mcsl.auth.permissions.get"), Protocol.EmptyRequest, Protocol.PermissionsResult, "auth", "Get permissions", "Gets the authenticated connection permissions.");
     public static RpcDescriptor<TokenIssueRequest, TokenIssueResult> IssueToken { get; } = Rpc("mcsl.auth.token.issue", new("mcsl.auth.token.issue"), Application.TokenIssueRequest, Application.TokenIssueResult, "auth", "Issue token", "Issues an audience-bound JWT from the main token.");
     public static RpcDescriptor<EmptyRequest, PingResult> PingDaemon { get; } = Rpc("mcsl.daemon.ping", new("mcsl.daemon.ping"), Protocol.EmptyRequest, Protocol.PingResult, "daemon", "Ping daemon", "Gets the daemon time for connection-latency measurement.");
+    public static RpcDescriptor<DaemonShutdownRequest, DaemonShutdownResult> RequestDaemonShutdown { get; } = Rpc("mcsl.daemon.shutdown.request", new("mcsl.daemon.shutdown.request"), Protocol.DaemonShutdownRequest, Protocol.DaemonShutdownResult, "daemon", "Request daemon shutdown", "Requests graceful daemon shutdown so an external service manager or launcher can restart it.");
     public static RpcDescriptor<PathTransferRequest, UnitResult> CopyDirectory { get; } = Rpc("mcsl.directory.copy", new("mcsl.directory.copy"), Application.PathTransferRequest, Protocol.UnitResult, "files", "Copy directory", "Copies a contained directory.");
     public static RpcDescriptor<PathRequest, UnitResult> CreateDirectory { get; } = Rpc("mcsl.directory.create", new("mcsl.directory.create"), Application.PathRequest, Protocol.UnitResult, "files", "Create directory", "Creates a contained directory.");
     public static RpcDescriptor<DeleteDirectoryRequest, UnitResult> DeleteDirectory { get; } = Rpc("mcsl.directory.delete", new("mcsl.directory.delete"), Application.DeleteDirectoryRequest, Protocol.UnitResult, "files", "Delete directory", "Deletes a contained directory.");
@@ -121,7 +122,7 @@ public static class BuiltInProtocolDefinitions
 
     private static ImmutableArray<RpcDescriptor> CreateRpcs() =>
         ImmutableArray.Create<RpcDescriptor>(
-            GetAuthPermissions, IssueToken, PingDaemon, CopyDirectory, CreateDirectory, DeleteDirectory, GetDirectoryInfo, MoveDirectory, RenameDirectory,
+            GetAuthPermissions, IssueToken, PingDaemon, RequestDaemonShutdown, CopyDirectory, CreateDirectory, DeleteDirectory, GetDirectoryInfo, MoveDirectory, RenameDirectory,
             SubscribeEvent, UnsubscribeEvent, CopyFile, DeleteFile, CloseDownload, OpenDownload, ReadDownload, GetFileInfo, MoveFile, RenameFile,
             CancelUpload, CloseUpload, OpenUpload, GetInstanceCatalog, DispatchExtensionProtocol, InstallExtensionDaemonBundle, GetExtensionDaemonBundleStatus, EnableExtensionDaemonBundle, DisableExtensionDaemonBundle, RemoveExtensionDaemonBundle, SendInstanceCommand, OpenConsole, ResizeConsole, CloseConsole, CreateInstance, GetInstanceEventRules,
             UpdateInstanceEventRules, HaltInstance, GetInstanceLog, RemoveInstance, GetInstanceReport, ListInstanceReports, GetInstanceSettings,

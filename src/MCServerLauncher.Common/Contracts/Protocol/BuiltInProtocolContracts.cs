@@ -22,6 +22,10 @@ public sealed record PingResult(long Time);
 
 public sealed record PermissionsResult(ImmutableArray<string> Permissions);
 
+public sealed record DaemonShutdownRequest(string Reason);
+
+public sealed record DaemonShutdownResult(string Status, string Message);
+
 public sealed record ExtensionProtocolDispatchRequest(JsonElement Envelope);
 
 public sealed record ExtensionProtocolDispatchResult(JsonElement Envelope);

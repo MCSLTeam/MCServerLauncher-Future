@@ -25,6 +25,8 @@ namespace MCServerLauncher.Common.Contracts.Serialization;
 [JsonSerializable(typeof(UnitResult))]
 [JsonSerializable(typeof(PingResult))]
 [JsonSerializable(typeof(PermissionsResult))]
+[JsonSerializable(typeof(DaemonShutdownRequest))]
+[JsonSerializable(typeof(DaemonShutdownResult))]
 [JsonSerializable(typeof(ExtensionProtocolDispatchRequest))]
 [JsonSerializable(typeof(ExtensionProtocolDispatchResult))]
 [JsonSerializable(typeof(ExtensionDaemonBundleInstallRequest))]

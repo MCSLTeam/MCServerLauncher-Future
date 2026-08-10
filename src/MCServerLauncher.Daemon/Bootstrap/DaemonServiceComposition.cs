@@ -83,6 +83,8 @@ internal static class DaemonServiceComposition
         collection.AddSingleton<IExtensionDeploymentApplication>(_ => new LocalExtensionDeploymentApplication(
             appConfig,
             System.IO.Path.Combine(AppContext.BaseDirectory, "plugins")));
+        collection.AddSingleton<IDaemonLifecycleApplication>(_ => new LocalDaemonLifecycleApplication(
+            httpService.Resolver.GetRequiredService<GracefulShutdown>()));
         a.RegisterSingleton<ISystemApplication, LocalSystemApplication>();
         a.RegisterSingleton<IOperationApplication, OperationCoordinator>();
         a.RegisterSingleton<PlanKernel>();

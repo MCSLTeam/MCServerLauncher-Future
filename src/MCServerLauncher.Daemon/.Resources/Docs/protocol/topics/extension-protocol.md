@@ -122,7 +122,10 @@ hot-load state. `mcsl.extension.daemon.bundle.enable` and
 bundle files; installed bundles still need daemon restart before active code changes.
 `mcsl.extension.daemon.bundle.remove` disables and removes an
 installed bundle and also returns `restart_required: true`; active plugin code is unloaded
-only by daemon restart.
+only by daemon restart. Clients may call `mcsl.daemon.shutdown.request` after a reviewed
+bundle change to start graceful shutdown, but that RPC is a shutdown request, not hot
+reload or a guaranteed self-restart. A service manager, launcher, or operator must bring
+the daemon back online.
 
 ## Installed Client Runtime
 

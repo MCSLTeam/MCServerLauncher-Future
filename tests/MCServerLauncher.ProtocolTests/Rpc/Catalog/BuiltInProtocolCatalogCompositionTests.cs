@@ -127,6 +127,7 @@ public sealed class BuiltInProtocolCatalogCompositionTests
             new ThrowingFileApplication(),
             new ThrowingExtensionDeploymentApplication(),
             new ThrowingSystemApplication(),
+            new ThrowingDaemonLifecycleApplication(),
             new ThrowingEventRuleApplication(),
             new ThrowingOperationApplication(),
             new ThrowingProvisioningApplication(),
@@ -171,6 +172,11 @@ public sealed class BuiltInProtocolCatalogCompositionTests
     {
         public Task<Result<SystemInfo, DaemonError>> GetSystemInfoAsync(CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<Result<JavaRuntimeList, DaemonError>> ListJavaRuntimesAsync(CancellationToken cancellationToken) => throw new NotSupportedException();
+    }
+
+    private sealed class ThrowingDaemonLifecycleApplication : IDaemonLifecycleApplication
+    {
+        public Task<Result<DaemonShutdownResult, DaemonError>> RequestShutdownAsync(DaemonShutdownRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
     }
 
     private sealed class ThrowingExtensionDeploymentApplication : IExtensionDeploymentApplication

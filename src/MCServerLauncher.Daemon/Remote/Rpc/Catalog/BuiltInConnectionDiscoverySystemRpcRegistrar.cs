@@ -18,6 +18,7 @@ internal static class BuiltInConnectionDiscoverySystemRpcRegistrar
 {
     private const string PermissionsMethod = "mcsl.auth.permissions.get";
     private const string PingMethod = "mcsl.daemon.ping";
+    private const string ShutdownMethod = "mcsl.daemon.shutdown.request";
     private const string ExtensionDispatchMethod = "mcsl.extension.dispatch";
     private const string SubscribeMethod = "mcsl.event.subscribe";
     private const string UnsubscribeMethod = "mcsl.event.unsubscribe";
@@ -29,12 +30,14 @@ internal static class BuiltInConnectionDiscoverySystemRpcRegistrar
     public static void Register(
         ProtocolCatalogBuilder builder,
         ISystemApplication systemApplication,
+        IDaemonLifecycleApplication lifecycleApplication,
         IInstanceSnapshotSource snapshotSource,
         TimeProvider timeProvider,
         IFrozenProtocolCatalogAccessor catalogAccessor)
     {
         ArgumentNullException.ThrowIfNull(builder);
         ArgumentNullException.ThrowIfNull(systemApplication);
+        ArgumentNullException.ThrowIfNull(lifecycleApplication);
         ArgumentNullException.ThrowIfNull(snapshotSource);
         ArgumentNullException.ThrowIfNull(timeProvider);
         ArgumentNullException.ThrowIfNull(catalogAccessor);
@@ -50,6 +53,12 @@ internal static class BuiltInConnectionDiscoverySystemRpcRegistrar
                 ProtocolExecutionOwner.BuiltIn,
                 (_, _, _) => Task.FromResult(ProtocolRpcExecution<PingResult>.Ok(
                     new PingResult(timeProvider.GetUtcNow().ToUnixTimeMilliseconds())))));
+        builder.RegisterBuiltInRpc(
+            Descriptor<DaemonShutdownRequest, DaemonShutdownResult>(ShutdownMethod),
+            new RpcBinding<DaemonShutdownRequest, DaemonShutdownResult>(
+                ProtocolExecutionOwner.BuiltIn,
+                async (_, request, cancellationToken) => ToExecution(
+                    await lifecycleApplication.RequestShutdownAsync(request, cancellationToken).ConfigureAwait(false))));
         builder.RegisterBuiltInRpc(
             Descriptor<ExtensionProtocolDispatchRequest, ExtensionProtocolDispatchResult>(ExtensionDispatchMethod),
             new RpcBinding<ExtensionProtocolDispatchRequest, ExtensionProtocolDispatchResult>(

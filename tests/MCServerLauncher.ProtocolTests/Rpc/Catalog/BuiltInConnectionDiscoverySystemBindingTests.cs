@@ -25,6 +25,7 @@ public sealed class BuiltInConnectionDiscoverySystemBindingTests
     [
         "mcsl.auth.permissions.get",
         "mcsl.daemon.ping",
+        "mcsl.daemon.shutdown.request",
         "mcsl.event.subscribe",
         "mcsl.event.unsubscribe",
         "mcsl.extension.dispatch",
@@ -42,6 +43,7 @@ public sealed class BuiltInConnectionDiscoverySystemBindingTests
         BuiltInConnectionDiscoverySystemRpcRegistrar.Register(
             fixture.Builder,
             fixture.SystemApplication,
+            fixture.LifecycleApplication,
             fixture.SnapshotSource,
             fixture.TimeProvider,
             fixture.CatalogAccessor);
@@ -203,12 +205,32 @@ public sealed class BuiltInConnectionDiscoverySystemBindingTests
     }
 
     [Fact]
+    public async Task ShutdownRequest_DelegatesToLifecycleApplication()
+    {
+        var fixture = CreateFrozenFixture();
+        var request = new DaemonShutdownRequest("extension:test.plugin");
+
+        var execution = await Invoke<DaemonShutdownRequest, DaemonShutdownResult>(
+            fixture.Catalog,
+            "mcsl.daemon.shutdown.request",
+            new ProtocolInvocationContext(ProtocolExecutionOwner.BuiltIn),
+            request,
+            CancellationToken.None);
+
+        Assert.True(execution.Result.IsOk(out var result));
+        Assert.Equal("shutdown_requested", result.Status);
+        Assert.Same(request, fixture.LifecycleApplication.ShutdownRequest);
+        Assert.Equal(1, fixture.LifecycleApplication.ShutdownCallCount);
+    }
+
+    [Fact]
     public async Task Discover_ReturnsTypedUnavailableBeforePublishAndFinalDocumentAfterPublish()
     {
         var fixture = CreateFixture();
         BuiltInConnectionDiscoverySystemRpcRegistrar.Register(
             fixture.Builder,
             fixture.SystemApplication,
+            fixture.LifecycleApplication,
             fixture.SnapshotSource,
             fixture.TimeProvider,
             fixture.CatalogAccessor);
@@ -292,6 +314,7 @@ public sealed class BuiltInConnectionDiscoverySystemBindingTests
         BuiltInConnectionDiscoverySystemRpcRegistrar.Register(
             fixture.Builder,
             fixture.SystemApplication,
+            fixture.LifecycleApplication,
             fixture.SnapshotSource,
             fixture.TimeProvider,
             fixture.CatalogAccessor);
@@ -356,6 +379,7 @@ public sealed class BuiltInConnectionDiscoverySystemBindingTests
         BuiltInConnectionDiscoverySystemRpcRegistrar.Register(
             fixture.Builder,
             fixture.SystemApplication,
+            fixture.LifecycleApplication,
             fixture.SnapshotSource,
             fixture.TimeProvider,
             fixture.CatalogAccessor);
@@ -569,7 +593,7 @@ public sealed class BuiltInConnectionDiscoverySystemBindingTests
             BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)!;
 
         Assert.Equal(
-            [typeof(ProtocolCatalogBuilder), typeof(ISystemApplication), typeof(IInstanceSnapshotSource), typeof(TimeProvider), typeof(IFrozenProtocolCatalogAccessor)],
+            [typeof(ProtocolCatalogBuilder), typeof(ISystemApplication), typeof(IDaemonLifecycleApplication), typeof(IInstanceSnapshotSource), typeof(TimeProvider), typeof(IFrozenProtocolCatalogAccessor)],
             register.GetParameters().Select(parameter => parameter.ParameterType));
         Assert.DoesNotContain(
             typeof(BuiltInConnectionDiscoverySystemRpcRegistrar).Assembly.GetTypes()
@@ -604,6 +628,7 @@ public sealed class BuiltInConnectionDiscoverySystemBindingTests
 
     private static TestFixture CreateFixture(
         TestSystemApplication? systemApplication = null,
+        TestDaemonLifecycleApplication? lifecycleApplication = null,
         TestSnapshotSource? snapshotSource = null,
         TimeProvider? timeProvider = null)
     {
@@ -611,6 +636,7 @@ public sealed class BuiltInConnectionDiscoverySystemBindingTests
         return new TestFixture(
             new ProtocolCatalogBuilder(new OpenRpcInfo("Binding tests", "1.0.0")),
             systemApplication ?? new TestSystemApplication(),
+            lifecycleApplication ?? new TestDaemonLifecycleApplication(),
             snapshotSource ?? new TestSnapshotSource(publisher),
             timeProvider ?? new FixedTimeProvider(DateTimeOffset.UnixEpoch),
             new FrozenProtocolCatalogAccessor());
@@ -621,16 +647,18 @@ public sealed class BuiltInConnectionDiscoverySystemBindingTests
         TestSnapshotSource? snapshotSource = null,
         TimeProvider? timeProvider = null)
     {
-        var fixture = CreateFixture(systemApplication, snapshotSource, timeProvider);
+        var fixture = CreateFixture(systemApplication, snapshotSource: snapshotSource, timeProvider: timeProvider);
         BuiltInConnectionDiscoverySystemRpcRegistrar.Register(
             fixture.Builder,
             fixture.SystemApplication,
+            fixture.LifecycleApplication,
             fixture.SnapshotSource,
             fixture.TimeProvider,
             fixture.CatalogAccessor);
         return new FrozenFixture(
             fixture.Builder.Freeze(),
             fixture.SystemApplication,
+            fixture.LifecycleApplication,
             fixture.SnapshotSource,
             fixture.CatalogAccessor);
     }
@@ -709,6 +737,7 @@ public sealed class BuiltInConnectionDiscoverySystemBindingTests
     private sealed record TestFixture(
         ProtocolCatalogBuilder Builder,
         TestSystemApplication SystemApplication,
+        TestDaemonLifecycleApplication LifecycleApplication,
         TestSnapshotSource SnapshotSource,
         TimeProvider TimeProvider,
         FrozenProtocolCatalogAccessor CatalogAccessor);
@@ -716,6 +745,7 @@ public sealed class BuiltInConnectionDiscoverySystemBindingTests
     private sealed record FrozenFixture(
         FrozenProtocolCatalog Catalog,
         TestSystemApplication SystemApplication,
+        TestDaemonLifecycleApplication LifecycleApplication,
         TestSnapshotSource SnapshotSource,
         FrozenProtocolCatalogAccessor CatalogAccessor);
 
@@ -768,6 +798,26 @@ public sealed class BuiltInConnectionDiscoverySystemBindingTests
             JavaCallCount++;
             JavaCancellationToken = cancellationToken;
             return JavaHandler?.Invoke(cancellationToken) ?? Task.FromResult(JavaResult);
+        }
+    }
+
+    private sealed class TestDaemonLifecycleApplication : IDaemonLifecycleApplication
+    {
+        public Result<DaemonShutdownResult, DaemonError> ShutdownResult { get; init; } =
+            Result.Ok<DaemonShutdownResult, DaemonError>(new DaemonShutdownResult("shutdown_requested", "ok"));
+        public Func<DaemonShutdownRequest, CancellationToken, Task<Result<DaemonShutdownResult, DaemonError>>>? ShutdownHandler { get; init; }
+        public DaemonShutdownRequest? ShutdownRequest { get; private set; }
+        public CancellationToken ShutdownCancellationToken { get; private set; }
+        public int ShutdownCallCount { get; private set; }
+
+        public Task<Result<DaemonShutdownResult, DaemonError>> RequestShutdownAsync(
+            DaemonShutdownRequest request,
+            CancellationToken cancellationToken)
+        {
+            ShutdownCallCount++;
+            ShutdownRequest = request;
+            ShutdownCancellationToken = cancellationToken;
+            return ShutdownHandler?.Invoke(request, cancellationToken) ?? Task.FromResult(ShutdownResult);
         }
     }
 

@@ -98,7 +98,7 @@ public sealed class DaemonClientFacadeTests
                 .Select(static property => property.Name)
                 .Order());
         Assert.Equal(
-            ["ConnectAsync", "DisableExtensionDaemonBundleAsync", "DiscoverAsync", "DispatchExtensionProtocolAsync", "DisposeAsync", "EnableExtensionDaemonBundleAsync", "GetExtensionDaemonBundleStatusAsync", "InstallExtensionDaemonBundleAsync", "InvokeAsync", "OpenConsoleAsync", "PingAsync", "RemoveExtensionDaemonBundleAsync", "RestartInstanceAsync", "SubscribeAsync"],
+            ["ConnectAsync", "DisableExtensionDaemonBundleAsync", "DiscoverAsync", "DispatchExtensionProtocolAsync", "DisposeAsync", "EnableExtensionDaemonBundleAsync", "GetExtensionDaemonBundleStatusAsync", "InstallExtensionDaemonBundleAsync", "InvokeAsync", "OpenConsoleAsync", "PingAsync", "RemoveExtensionDaemonBundleAsync", "RequestDaemonShutdownAsync", "RestartInstanceAsync", "SubscribeAsync"],
             type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly)
                 .Where(static method => !method.IsSpecialName)
                 .Select(static method => method.Name)
@@ -109,6 +109,13 @@ public sealed class DaemonClientFacadeTests
         var pingCancellation = Assert.Single(ping.GetParameters());
         Assert.Equal(typeof(CancellationToken), pingCancellation.ParameterType);
         Assert.True(pingCancellation.IsOptional);
+        var shutdown = type.GetMethod(nameof(MCServerLauncher.DaemonClient.DaemonClient.RequestDaemonShutdownAsync));
+        Assert.NotNull(shutdown);
+        Assert.Equal(typeof(Task<Result<DaemonShutdownResult, DaemonError>>), shutdown.ReturnType);
+        Assert.Equal(
+            [typeof(DaemonShutdownRequest), typeof(CancellationToken)],
+            shutdown.GetParameters().Select(static parameter => parameter.ParameterType));
+        Assert.True(shutdown.GetParameters()[1].IsOptional);
         var dispatch = type.GetMethod(nameof(MCServerLauncher.DaemonClient.DaemonClient.DispatchExtensionProtocolAsync));
         Assert.NotNull(dispatch);
         Assert.Equal(typeof(Task<Result<ExtensionProtocolDispatchResult, DaemonError>>), dispatch.ReturnType);

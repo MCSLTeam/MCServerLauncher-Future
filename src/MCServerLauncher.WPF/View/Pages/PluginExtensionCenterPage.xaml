@@ -98,6 +98,10 @@
                             <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Pause}"
                                             Content="{Binding [Plugin_ExtensionCenter_DisableDaemon], Source={x:Static i18n:Lang.Tr}}" />
                         </Button>
+                        <Button x:Name="RequestDaemonRestartButton" Margin="0,0,8,0" Click="RequestDaemonRestart_Click" IsEnabled="False">
+                            <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Sync}"
+                                            Content="{Binding [Plugin_ExtensionCenter_RequestDaemonRestart], Source={x:Static i18n:Lang.Tr}}" />
+                        </Button>
                         <Button x:Name="RemoveDaemonButton" Margin="0,0,8,0" Click="RemoveDaemon_Click" IsEnabled="False">
                             <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Delete}"
                                             Content="{Binding [Plugin_ExtensionCenter_RemoveDaemon], Source={x:Static i18n:Lang.Tr}}" />

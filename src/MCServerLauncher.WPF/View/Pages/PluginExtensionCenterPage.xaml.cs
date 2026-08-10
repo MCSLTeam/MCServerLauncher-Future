@@ -121,6 +121,14 @@ public partial class PluginExtensionCenterPage
         await SetDaemonBundleEnabledAsync(selected.Entry, enabled: false).ConfigureAwait(false);
     }
 
+    private async void RequestDaemonRestart_Click(object sender, RoutedEventArgs e)
+    {
+        if (ExtensionList.SelectedItem is not PluginExtensionCenterEntryViewModel selected)
+            return;
+
+        await RequestDaemonShutdownAsync(selected.Entry).ConfigureAwait(false);
+    }
+
     private async void RemoveDaemon_Click(object sender, RoutedEventArgs e)
     {
         if (ExtensionList.SelectedItem is not PluginExtensionCenterEntryViewModel selected)
@@ -163,6 +171,7 @@ public partial class PluginExtensionCenterPage
         DeployDaemonButton.IsEnabled = entry.DeploymentPlan.Daemon?.Plugin is not null;
         EnableDaemonButton.IsEnabled = entry.DeploymentPlan.Daemon?.Plugin is not null;
         DisableDaemonButton.IsEnabled = entry.DeploymentPlan.Daemon?.Plugin is not null;
+        RequestDaemonRestartButton.IsEnabled = entry.DeploymentPlan.Daemon?.Plugin is not null;
         RemoveDaemonButton.IsEnabled = entry.DeploymentPlan.Daemon?.Plugin is not null;
         var summary = PluginExtensionCenterService.Summarize(entry);
         SelectedTitle.Text = entry.Id;
@@ -220,6 +229,7 @@ public partial class PluginExtensionCenterPage
         DeployDaemonButton.IsEnabled = false;
         EnableDaemonButton.IsEnabled = false;
         DisableDaemonButton.IsEnabled = false;
+        RequestDaemonRestartButton.IsEnabled = false;
         RemoveDaemonButton.IsEnabled = false;
         SelectedTitle.Text = Lang.Tr["Plugin_ExtensionCenter_NoSelection"];
         SelectedSubtitle.Text = string.Empty;
@@ -568,6 +578,47 @@ public partial class PluginExtensionCenterPage
         }
     }
 
+    private async Task RequestDaemonShutdownAsync(PluginClientExtensionCacheEntry entry)
+    {
+        if (entry.DeploymentPlan.Daemon?.Plugin is null)
+            return;
+
+        var daemon = GetReadyDaemon();
+        if (daemon is null)
+        {
+            StatusText.Text = Lang.Tr["Plugin_ExtensionCenter_DaemonUnavailable"];
+            return;
+        }
+
+        var shutdownRequested = false;
+        SetDeploymentButtons(enabled: false);
+        StatusText.Text = Lang.Tr["Plugin_ExtensionCenter_DaemonShutdownRequesting"];
+        try
+        {
+            var requested = await daemon.RequestDaemonShutdownAsync(
+                new DaemonShutdownRequest($"extension:{entry.Id}"),
+                CancellationToken.None).ConfigureAwait(false);
+            if (requested.IsErr(out var error))
+                throw DaemonErrorLocalization.ToException(error!);
+
+            shutdownRequested = true;
+            var result = requested.Unwrap();
+            var message = string.IsNullOrWhiteSpace(result.Message)
+                ? Lang.Tr["Plugin_ExtensionCenter_DaemonShutdownRequested"]
+                : result.Message;
+            await Dispatcher.InvokeAsync(() => StatusText.Text = message);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException or ArgumentException or NotSupportedException)
+        {
+            await Dispatcher.InvokeAsync(() => StatusText.Text = exception.Message);
+        }
+        finally
+        {
+            if (!shutdownRequested)
+                await Dispatcher.InvokeAsync(() => SetDeploymentButtons(enabled: true));
+        }
+    }
+
     private void SetDeploymentButtons(bool enabled)
     {
         if (ExtensionList.SelectedItem is not PluginExtensionCenterEntryViewModel selected || selected.Entry.DeploymentPlan.Daemon?.Plugin is null)
@@ -575,6 +626,7 @@ public partial class PluginExtensionCenterPage
             DeployDaemonButton.IsEnabled = false;
             EnableDaemonButton.IsEnabled = false;
             DisableDaemonButton.IsEnabled = false;
+            RequestDaemonRestartButton.IsEnabled = false;
             RemoveDaemonButton.IsEnabled = false;
             return;
         }
@@ -582,6 +634,7 @@ public partial class PluginExtensionCenterPage
         DeployDaemonButton.IsEnabled = enabled;
         EnableDaemonButton.IsEnabled = enabled;
         DisableDaemonButton.IsEnabled = enabled;
+        RequestDaemonRestartButton.IsEnabled = enabled;
         RemoveDaemonButton.IsEnabled = enabled;
     }
 

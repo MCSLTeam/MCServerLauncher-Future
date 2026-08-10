@@ -28,6 +28,7 @@ public sealed class BuiltInProtocolDefinitionTests
         RpcDescriptor[] namedRpcs =
         [
             BuiltInProtocolDefinitions.GetAuthPermissions, BuiltInProtocolDefinitions.IssueToken, BuiltInProtocolDefinitions.PingDaemon,
+            BuiltInProtocolDefinitions.RequestDaemonShutdown,
             BuiltInProtocolDefinitions.DispatchExtensionProtocol, BuiltInProtocolDefinitions.InstallExtensionDaemonBundle,
             BuiltInProtocolDefinitions.GetExtensionDaemonBundleStatus, BuiltInProtocolDefinitions.EnableExtensionDaemonBundle,
             BuiltInProtocolDefinitions.DisableExtensionDaemonBundle, BuiltInProtocolDefinitions.RemoveExtensionDaemonBundle,
@@ -89,7 +90,7 @@ public sealed class BuiltInProtocolDefinitionTests
             "mcsl.automation.test", "mcsl.automation.validate",
             "mcsl.backup.create", "mcsl.backup.list", "mcsl.backup.prune",
             "mcsl.backup.restore.confirm", "mcsl.backup.restore.execute", "mcsl.backup.restore.plan",
-            "mcsl.daemon.ping", "mcsl.directory.copy", "mcsl.directory.create", "mcsl.directory.delete",
+            "mcsl.daemon.ping", "mcsl.daemon.shutdown.request", "mcsl.directory.copy", "mcsl.directory.create", "mcsl.directory.delete",
             "mcsl.directory.info.get", "mcsl.directory.move", "mcsl.directory.rename", "mcsl.event.subscribe",
             "mcsl.event.unsubscribe", "mcsl.extension.daemon.bundle.disable", "mcsl.extension.daemon.bundle.enable",
             "mcsl.extension.daemon.bundle.install", "mcsl.extension.daemon.bundle.remove",
@@ -140,6 +141,7 @@ public sealed class BuiltInProtocolDefinitionTests
             ["mcsl.backup.restore.execute"] = ("mcsl.backup.restore.execute", typeof(BackupRestoreExecuteRequest), typeof(BackupRestoreExecuteResult)),
             ["mcsl.backup.restore.plan"] = ("mcsl.backup.restore.plan", typeof(BackupRestorePlanRequest), typeof(ProvisioningPlanSnapshot)),
             ["mcsl.daemon.ping"] = ("mcsl.daemon.ping", typeof(EmptyRequest), typeof(PingResult)),
+            ["mcsl.daemon.shutdown.request"] = ("mcsl.daemon.shutdown.request", typeof(DaemonShutdownRequest), typeof(DaemonShutdownResult)),
             ["mcsl.directory.copy"] = ("mcsl.directory.copy", typeof(PathTransferRequest), typeof(UnitResult)),
             ["mcsl.directory.create"] = ("mcsl.directory.create", typeof(PathRequest), typeof(UnitResult)),
             ["mcsl.directory.delete"] = ("mcsl.directory.delete", typeof(DeleteDirectoryRequest), typeof(UnitResult)),

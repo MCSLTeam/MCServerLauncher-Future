@@ -91,6 +91,14 @@ public sealed class DaemonClient : IDaemonApplication, IAsyncDisposable
     public Task<Result<PingResult, DaemonError>> PingAsync(CancellationToken cancellationToken = default) =>
         _invoker.InvokeAsync(BuiltInProtocolDefinitions.PingDaemon, new EmptyRequest(), cancellationToken);
 
+    public Task<Result<DaemonShutdownResult, DaemonError>> RequestDaemonShutdownAsync(
+        DaemonShutdownRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        return _invoker.InvokeAsync(BuiltInProtocolDefinitions.RequestDaemonShutdown, request, cancellationToken);
+    }
+
     public Task<Result<OpenRpcDocument, DaemonError>> DiscoverAsync(
         CancellationToken cancellationToken = default) =>
         _invoker.InvokeAsync(BuiltInProtocolDefinitions.DiscoverRpc, new EmptyRequest(), cancellationToken);
