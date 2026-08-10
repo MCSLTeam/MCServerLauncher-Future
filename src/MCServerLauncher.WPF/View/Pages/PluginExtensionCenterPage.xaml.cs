@@ -944,7 +944,7 @@ public partial class PluginExtensionCenterPage
             string.Format(Lang.Tr["Plugin_ExtensionCenter_ReviewExtensionPointRisk"], extensionPointRisk, JoinForReview(extensionPoints.Select(point => $"{point.Kind}:{point.Id}"))),
             string.Format(Lang.Tr["Plugin_ExtensionCenter_ReviewCommandRisk"], commandRisk, JoinForReview(package.Commands.Select(command => command.Id))),
             string.Format(Lang.Tr["Plugin_ExtensionCenter_ReviewDependencyRisk"], dependencyRisk, JoinForReview(package.Dependencies.Select(dependency => $"{dependency.Id} {dependency.Version}"))),
-            string.Format(Lang.Tr["Plugin_ExtensionCenter_ReviewSignatureRisk"], signatureRisk, package.Signature is null ? Lang.Tr["Plugin_ExtensionCenter_ReviewSignatureUnsigned"] : ShortFingerprint(package.Signature.PublicKeySha256))
+            string.Format(Lang.Tr["Plugin_ExtensionCenter_ReviewSignatureRisk"], signatureRisk, package.Signature is null ? Lang.Tr["Plugin_ExtensionCenter_ReviewSignatureUnsigned"] : string.Format(Lang.Tr["Plugin_ExtensionCenter_ReviewSignatureProvenance"], package.Signature.Publisher, package.Signature.KeyId, ShortFingerprint(package.Signature.PublicKeySha256)))
         ]);
     }
 
