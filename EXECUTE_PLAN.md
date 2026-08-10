@@ -126,6 +126,19 @@ After the first plugin milestone is accepted, create a separate plan for manifes
 
 ## Near-Term Backlog
 
-- Verify the completed Phase 7 working tree across full solution build, full ProtocolTests, Daemon.ApiTests, generator tests, package contract tests, ProtocolDocs `--check`, no-V1 gate, published plugin integration, and `git diff --check`.
-- Localize detailed create-instance validation messages instead of reusing generic missing-data text.
-- Recreate or replace `TASKS.md` only if the team still wants a second lightweight checklist.
+- Unified local extension system preview is now implemented locally: `.mpx` validation,
+  signed-package trust, local dependency/update metadata, daemon bundle
+  install/status/enable/disable/remove, restart request tracking, Extension Protocol
+  dispatch/push, formal Extension Point runtime contracts and current runtime consumers,
+  Web/WPF marketplace shell, install risk review, installed-manifest drift review,
+  daemon audit-history display, `mcsl-plugin.json` schema support, and a copyable daemon
+  plugin template.
+- Remaining non-deferred polish is small and local: keep the extension docs/schema/template
+  aligned with new runtime consumers and run full final gates before any release handoff.
+- Explicitly deferred product work remains out of this slice: full plugin designer, online
+  marketplace/registry search, remote update resolver, transitive dependency download,
+  and daemon service-manager restart orchestration.
+- Localize detailed create-instance validation messages instead of reusing generic
+  missing-data text.
+- Recreate or replace `TASKS.md` only if the team still wants a second lightweight
+  checklist.
