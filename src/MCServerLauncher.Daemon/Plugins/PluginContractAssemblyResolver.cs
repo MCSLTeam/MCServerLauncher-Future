@@ -196,7 +196,14 @@ internal sealed class PluginContractAssemblyResolver
         internal Assembly Load()
         {
             lock (_gate)
-                return _assembly ??= _loadContext.LoadFromAssemblyPath(AssemblyPath);
+            {
+                if (_assembly is not null)
+                    return _assembly;
+
+                using var stream = File.OpenRead(AssemblyPath);
+                _assembly = _loadContext.LoadFromStream(stream);
+                return _assembly;
+            }
         }
     }
 
