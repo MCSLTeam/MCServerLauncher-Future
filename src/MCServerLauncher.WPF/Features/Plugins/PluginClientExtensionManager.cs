@@ -17,6 +17,8 @@ public sealed record PluginClientExtensionCacheEntry(
     PluginUiSchema? UiSchema,
     PluginThemeRuntime? Theme,
     IReadOnlyList<PluginMpxCommand> Commands,
+    IReadOnlyList<PluginMpxExtensionDependency> Dependencies,
+    PluginMpxUpdatePolicy? UpdatePolicy,
     IReadOnlyList<string> HostCapabilities,
     IReadOnlyList<string> EventPermissions,
     IReadOnlyDictionary<string, string> FileDigests,
@@ -161,6 +163,8 @@ public sealed class PluginClientExtensionCacheStore(string rootDirectory)
             package.UiSchema,
             package.Theme,
             new ReadOnlyCollection<PluginMpxCommand>(package.Commands.ToArray()),
+            new ReadOnlyCollection<PluginMpxExtensionDependency>(package.Dependencies.ToArray()),
+            package.UpdatePolicy,
             new ReadOnlyCollection<string>(package.HostCapabilities.ToArray()),
             new ReadOnlyCollection<string>(package.EventPermissions.ToArray()),
             new ReadOnlyDictionary<string, string>(new Dictionary<string, string>(package.FileDigests, StringComparer.Ordinal)),
@@ -246,6 +250,8 @@ public sealed class PluginClientExtensionCacheStore(string rootDirectory)
         string? UiRuntimeJson,
         string? ThemeRuntimeJson,
         IReadOnlyList<PluginMpxCommand>? Commands,
+        IReadOnlyList<PluginMpxExtensionDependency>? Dependencies,
+        PluginMpxUpdatePolicy? UpdatePolicy,
         IReadOnlyList<string>? HostCapabilities,
         IReadOnlyList<string>? EventPermissions,
         Dictionary<string, string> FileDigests,
@@ -260,6 +266,8 @@ public sealed class PluginClientExtensionCacheStore(string rootDirectory)
             entry.UiSchema is null ? null : PluginUiSchemaCompiler.SerializeRuntimeJson(entry.UiSchema),
             entry.Theme is null ? null : PluginThemeRuntimeParser.SerializeRuntimeJson(entry.Theme),
             new ReadOnlyCollection<PluginMpxCommand>(entry.Commands.ToArray()),
+            new ReadOnlyCollection<PluginMpxExtensionDependency>(entry.Dependencies.ToArray()),
+            entry.UpdatePolicy,
             new ReadOnlyCollection<string>(entry.HostCapabilities.ToArray()),
             new ReadOnlyCollection<string>(entry.EventPermissions.ToArray()),
             new Dictionary<string, string>(entry.FileDigests, StringComparer.Ordinal),
@@ -304,6 +312,8 @@ public sealed class PluginClientExtensionCacheStore(string rootDirectory)
                 uiSchema,
                 theme,
                 new ReadOnlyCollection<PluginMpxCommand>((Commands ?? []).ToArray()),
+                new ReadOnlyCollection<PluginMpxExtensionDependency>((Dependencies ?? []).ToArray()),
+                UpdatePolicy,
                 new ReadOnlyCollection<string>((HostCapabilities ?? []).ToArray()),
                 new ReadOnlyCollection<string>((EventPermissions ?? []).ToArray()),
                 new ReadOnlyDictionary<string, string>(new Dictionary<string, string>(FileDigests, StringComparer.Ordinal)),
@@ -322,6 +332,8 @@ public sealed class PluginClientExtensionManager(PluginClientExtensionCacheStore
         ArgumentNullException.ThrowIfNull(package);
         if (!PluginClientExtensionCacheStore.HasInstallableTarget(package.DeploymentPlan))
             return PluginClientExtensionInstallResult.Failure("deployment_target_missing", "Package has no installable client or daemon deployment target.");
+        if (ValidatePackageDependencies(package) is { } dependencyFailure)
+            return dependencyFailure;
 
         var entry = new PluginClientExtensionCacheEntry(
             package.PluginId,
@@ -330,6 +342,8 @@ public sealed class PluginClientExtensionManager(PluginClientExtensionCacheStore
             package.UiSchema,
             package.Theme,
             new ReadOnlyCollection<PluginMpxCommand>(package.Commands.ToArray()),
+            new ReadOnlyCollection<PluginMpxExtensionDependency>(package.Dependencies.ToArray()),
+            package.UpdatePolicy,
             new ReadOnlyCollection<string>(package.HostCapabilities.ToArray()),
             new ReadOnlyCollection<string>(package.EventPermissions.ToArray()),
             new ReadOnlyDictionary<string, string>(new Dictionary<string, string>(package.FileDigests, StringComparer.Ordinal)),
@@ -352,6 +366,8 @@ public sealed class PluginClientExtensionManager(PluginClientExtensionCacheStore
         ArgumentNullException.ThrowIfNull(packageBytes);
         if (!PluginClientExtensionCacheStore.HasInstallableTarget(package.DeploymentPlan))
             return PluginClientExtensionInstallResult.Failure("deployment_target_missing", "Package has no installable client or daemon deployment target.");
+        if (ValidatePackageDependencies(package) is { } dependencyFailure)
+            return dependencyFailure;
 
         if (_store is null)
             return Install(package);
@@ -366,6 +382,28 @@ public sealed class PluginClientExtensionManager(PluginClientExtensionCacheStore
         {
             return PluginClientExtensionInstallResult.Failure("cache_write_failed", exception.Message);
         }
+    }
+
+    private PluginClientExtensionInstallResult? ValidatePackageDependencies(ValidatedPluginMpxPackage package)
+    {
+        foreach (var dependency in package.Dependencies)
+        {
+            if (!_entries.TryGetValue(dependency.Id, out var installed))
+            {
+                return PluginClientExtensionInstallResult.Failure(
+                    "dependency_missing",
+                    $"Extension '{package.PluginId}' requires '{dependency.Id}' {dependency.Version}.");
+            }
+
+            if (!PluginMpxPackageValidator.IsDependencyVersionSatisfied(dependency.Version, installed.Version))
+            {
+                return PluginClientExtensionInstallResult.Failure(
+                    "dependency_version_unsupported",
+                    $"Extension '{package.PluginId}' requires '{dependency.Id}' {dependency.Version}, but installed version is {installed.Version}.");
+            }
+        }
+
+        return null;
     }
 
     public void Restore()

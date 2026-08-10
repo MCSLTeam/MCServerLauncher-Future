@@ -21,6 +21,8 @@ public sealed record PluginMpxPackageBuildInput(
     IReadOnlyList<PluginMpxPackageResourceInput>? Resources = null,
     IReadOnlyList<PluginMpxExtensionPoint>? ExtensionPoints = null,
     IReadOnlyList<PluginMpxCommand>? Commands = null,
+    IReadOnlyList<PluginMpxExtensionDependency>? Dependencies = null,
+    PluginMpxUpdatePolicy? UpdatePolicy = null,
     IReadOnlyList<string>? HostCapabilities = null);
 
 public sealed record PluginMpxPackageBuildResult(
@@ -147,6 +149,30 @@ public static class PluginMpxPackageBuilder
             }
 
             manifest["commands"] = commands;
+        }
+
+        if (input.Dependencies is { Count: > 0 })
+        {
+            var dependencies = new JsonArray();
+            foreach (var dependency in input.Dependencies)
+            {
+                dependencies.Add(new JsonObject
+                {
+                    ["id"] = dependency.Id,
+                    ["version"] = dependency.Version
+                });
+            }
+
+            manifest["dependencies"] = new JsonObject { ["extensions"] = dependencies };
+        }
+
+        if (input.UpdatePolicy is not null)
+        {
+            manifest["updates"] = new JsonObject
+            {
+                ["channel"] = input.UpdatePolicy.Channel,
+                ["strategy"] = input.UpdatePolicy.Strategy
+            };
         }
 
         entries["manifest.json"] = Encoding.UTF8.GetBytes(manifest.ToJsonString(new JsonSerializerOptions { WriteIndented = false }));

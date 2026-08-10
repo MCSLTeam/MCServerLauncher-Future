@@ -1156,6 +1156,100 @@ public sealed class PluginMpxPackageValidatorTests
     }
 
     [Fact]
+    public void ValidatorAcceptsExtensionDependenciesAndManualUpdatePolicy()
+    {
+        var packageBytes = BuildMpxPackage(mutateManifest: manifest =>
+        {
+            manifest["dependencies"] = new JsonObject
+            {
+                ["extensions"] = new JsonArray
+                {
+                    new JsonObject
+                    {
+                        ["id"] = "community.example.base",
+                        ["version"] = "[1.0.0,2.0.0)"
+                    }
+                }
+            };
+            manifest["updates"] = new JsonObject
+            {
+                ["channel"] = "stable",
+                ["strategy"] = "manual"
+            };
+        });
+
+        var result = PluginMpxPackageValidator.Validate(packageBytes);
+
+        Assert.True(result.Ok, FormatDiagnostics(result.Diagnostics));
+        Assert.Equal("community.example.base", result.Package!.Dependencies[0].Id);
+        Assert.Equal("[1.0.0,2.0.0)", result.Package.Dependencies[0].Version);
+        Assert.Equal("stable", result.Package.UpdatePolicy!.Channel);
+        Assert.Equal("manual", result.Package.UpdatePolicy.Strategy);
+    }
+
+    [Fact]
+    public void ClientExtensionManagerRejectsMissingExtensionDependencies()
+    {
+        var packageBytes = BuildMpxPackage(mutateManifest: manifest =>
+        {
+            manifest["dependencies"] = new JsonObject
+            {
+                ["extensions"] = new JsonArray
+                {
+                    new JsonObject
+                    {
+                        ["id"] = "community.example.base",
+                        ["version"] = "1.0.0"
+                    }
+                }
+            };
+        });
+        var validation = PluginMpxPackageValidator.Validate(packageBytes);
+        Assert.True(validation.Ok, FormatDiagnostics(validation.Diagnostics));
+
+        var install = new PluginClientExtensionManager().Install(validation.Package!);
+
+        Assert.False(install.Ok);
+        Assert.Equal("dependency_missing", install.Code);
+    }
+
+    [Fact]
+    public void ClientExtensionManagerInstallsWhenExtensionDependenciesAreSatisfied()
+    {
+        var basePackageBytes = BuildMpxPackage(mutateManifest: manifest =>
+        {
+            var package = (JsonObject)manifest["package"]!;
+            package["id"] = "community.example.base";
+            package["version"] = "1.2.0";
+        });
+        var dependentPackageBytes = BuildMpxPackage(mutateManifest: manifest =>
+        {
+            manifest["dependencies"] = new JsonObject
+            {
+                ["extensions"] = new JsonArray
+                {
+                    new JsonObject
+                    {
+                        ["id"] = "community.example.base",
+                        ["version"] = "[1.0.0,2.0.0)"
+                    }
+                }
+            };
+        });
+        var baseValidation = PluginMpxPackageValidator.Validate(basePackageBytes);
+        var dependentValidation = PluginMpxPackageValidator.Validate(dependentPackageBytes);
+        Assert.True(baseValidation.Ok, FormatDiagnostics(baseValidation.Diagnostics));
+        Assert.True(dependentValidation.Ok, FormatDiagnostics(dependentValidation.Diagnostics));
+
+        var manager = new PluginClientExtensionManager();
+        var baseInstall = manager.Install(baseValidation.Package!);
+        var dependentInstall = manager.Install(dependentValidation.Package!);
+
+        Assert.True(baseInstall.Ok, baseInstall.Message);
+        Assert.True(dependentInstall.Ok, dependentInstall.Message);
+    }
+
+    [Fact]
     public void ValidatorRejectsAuthoringJson5RuntimeSchema()
     {
         var packageBytes = BuildMpxPackage(ui: """

@@ -50,6 +50,10 @@ public sealed record PluginMpxExtensionPoint(string Kind, string Id, string? Tar
 
 public sealed record PluginMpxCommand(string Id, string? Title, string? Description, string? Target);
 
+public sealed record PluginMpxExtensionDependency(string Id, string Version);
+
+public sealed record PluginMpxUpdatePolicy(string Channel, string Strategy);
+
 public sealed record PluginMpxClientDeployment(
     PluginMpxDeploymentFile? Ui,
     PluginMpxDeploymentFile? Theme,
@@ -77,6 +81,8 @@ public sealed record ValidatedPluginMpxPackage(
     IReadOnlyList<string> EventPermissions,
     PluginMpxDeploymentPlan DeploymentPlan,
     IReadOnlyList<PluginMpxCommand> Commands,
+    IReadOnlyList<PluginMpxExtensionDependency> Dependencies,
+    PluginMpxUpdatePolicy? UpdatePolicy,
     IReadOnlyDictionary<string, string> FileDigests,
     long TotalUncompressedBytes,
     PluginMpxSignatureTrust? Signature);
@@ -149,6 +155,13 @@ public static partial class PluginMpxPackageValidator
         "image/png",
         "image/jpeg",
         "image/webp");
+
+    private static readonly IReadOnlySet<string> AllowedUpdateChannels = Set(
+        "stable",
+        "preview");
+
+    private static readonly IReadOnlySet<string> AllowedUpdateStrategies = Set(
+        "manual");
 
     private static readonly JsonSerializerOptions ManifestJsonOptions = new()
     {
@@ -297,6 +310,8 @@ public static partial class PluginMpxPackageValidator
 
         var deploymentPlan = BuildDeploymentPlan(manifest, uiRef, themeRef, scriptRef, daemonPluginRef);
         var commands = new ReadOnlyCollection<PluginMpxCommand>((manifest.Commands ?? []).Select(ToCommand).ToArray());
+        var dependencies = new ReadOnlyCollection<PluginMpxExtensionDependency>((manifest.Dependencies?.Extensions ?? []).Select(ToDependency).ToArray());
+        var updatePolicy = ToUpdatePolicy(manifest.Updates);
 
         var package = new ValidatedPluginMpxPackage(
             packageIdentity.Id!,
@@ -309,6 +324,8 @@ public static partial class PluginMpxPackageValidator
             new ReadOnlyCollection<string>((manifest.Permissions?.Events ?? []).ToArray()),
             deploymentPlan,
             commands,
+            dependencies,
+            updatePolicy,
             new ReadOnlyDictionary<string, string>(fileDigests),
             totalUncompressedBytes,
             signature);
@@ -460,6 +477,8 @@ public static partial class PluginMpxPackageValidator
             diagnostics.Add(Diagnostic("target_missing", "$.targets", "Extension package must declare at least one supported client or daemon target."));
 
         ValidateExtensionPoints(manifest.ExtensionPoints, diagnostics);
+        ValidateDependencies(manifest, diagnostics);
+        ValidateUpdatePolicy(manifest.Updates, diagnostics);
         ValidateCommands(manifest, daemonPluginRef, diagnostics);
         ValidatePluginExtensionEvents(manifest, daemonPluginRef, diagnostics);
 
@@ -608,6 +627,12 @@ public static partial class PluginMpxPackageValidator
 
     private static PluginMpxCommand ToCommand(MpxManifestCommandDocument document) =>
         new(document.Id!, document.Title, document.Description, document.Target);
+
+    private static PluginMpxExtensionDependency ToDependency(MpxManifestExtensionDependencyDocument document) =>
+        new(document.Id!, document.Version!);
+
+    private static PluginMpxUpdatePolicy? ToUpdatePolicy(MpxManifestUpdatePolicyDocument? document) =>
+        document is null ? null : new PluginMpxUpdatePolicy(document.Channel ?? "stable", document.Strategy ?? "manual");
 
     private static PluginMpxSignatureTrust? ValidatePackageSignature(
         IReadOnlyDictionary<string, byte[]> entries,
@@ -834,6 +859,104 @@ public static partial class PluginMpxPackageValidator
             if (!string.IsNullOrWhiteSpace(extensionPoint.Target) && extensionPoint.Target is not "client" and not "daemon")
                 diagnostics.Add(Diagnostic("extension_point_target_unknown", $"{path}.target", "Extension point target must be client or daemon."));
         }
+    }
+
+    private static void ValidateDependencies(MpxManifestDocument manifest, List<PluginMpxDiagnostic> diagnostics)
+    {
+        var dependencies = manifest.Dependencies?.Extensions;
+        if (dependencies is null)
+            return;
+
+        HashSet<string> seen = [];
+        for (var i = 0; i < dependencies.Count; i++)
+        {
+            var dependency = dependencies[i];
+            var path = $"$.dependencies.extensions[{i}]";
+            if (string.IsNullOrWhiteSpace(dependency.Id) || !PackageIdRegex().IsMatch(dependency.Id))
+            {
+                diagnostics.Add(Diagnostic("dependency_id_invalid", $"{path}.id", "Extension dependency id is invalid."));
+            }
+            else
+            {
+                if (StringComparer.Ordinal.Equals(dependency.Id, manifest.Package?.Id))
+                    diagnostics.Add(Diagnostic("dependency_self", $"{path}.id", "Extension packages must not depend on themselves."));
+                if (!seen.Add(dependency.Id))
+                    diagnostics.Add(Diagnostic("dependency_duplicate", $"{path}.id", "Extension dependency is duplicated."));
+            }
+
+            if (string.IsNullOrWhiteSpace(dependency.Version) || !IsSupportedVersionRange(dependency.Version))
+                diagnostics.Add(Diagnostic("dependency_version_invalid", $"{path}.version", "Extension dependency version must be exact semver or a bracketed semver range."));
+        }
+    }
+
+    private static void ValidateUpdatePolicy(MpxManifestUpdatePolicyDocument? updates, List<PluginMpxDiagnostic> diagnostics)
+    {
+        if (updates is null)
+            return;
+
+        if (!string.IsNullOrWhiteSpace(updates.Channel) && !AllowedUpdateChannels.Contains(updates.Channel))
+            diagnostics.Add(Diagnostic("update_channel_invalid", "$.updates.channel", "Update channel must be stable or preview."));
+        if (!string.IsNullOrWhiteSpace(updates.Strategy) && !AllowedUpdateStrategies.Contains(updates.Strategy))
+            diagnostics.Add(Diagnostic("update_strategy_invalid", "$.updates.strategy", "Only manual update strategy is implemented."));
+    }
+
+    internal static bool IsDependencyVersionSatisfied(string requiredRange, string installedVersion)
+    {
+        if (string.IsNullOrWhiteSpace(requiredRange) || string.IsNullOrWhiteSpace(installedVersion))
+            return false;
+        if (SemVerLikeRegex().IsMatch(requiredRange))
+            return StringComparer.Ordinal.Equals(requiredRange, installedVersion);
+        var match = VersionRangeRegex().Match(requiredRange);
+        if (!match.Success || !TryParseSemVerCore(installedVersion, out var installed))
+            return false;
+
+        var minText = match.Groups[1].Value;
+        var maxText = match.Groups[2].Value;
+        var minInclusive = requiredRange[0] == '[';
+        var maxInclusive = requiredRange[^1] == ']';
+        if (!string.IsNullOrEmpty(minText) && TryParseSemVerCore(minText, out var min))
+        {
+            var compare = CompareSemVerCore(installed, min);
+            if (compare < 0 || (compare == 0 && !minInclusive))
+                return false;
+        }
+        if (!string.IsNullOrEmpty(maxText) && TryParseSemVerCore(maxText, out var max))
+        {
+            var compare = CompareSemVerCore(installed, max);
+            if (compare > 0 || (compare == 0 && !maxInclusive))
+                return false;
+        }
+
+        return true;
+    }
+
+    private static bool IsSupportedVersionRange(string value) =>
+        SemVerLikeRegex().IsMatch(value) || VersionRangeRegex().IsMatch(value);
+
+    private static bool TryParseSemVerCore(string value, out (int Major, int Minor, int Patch) version)
+    {
+        version = default;
+        var core = value.Split(['-', '+'], 2)[0];
+        var parts = core.Split('.');
+        if (parts.Length != 3 ||
+            !int.TryParse(parts[0], out var major) ||
+            !int.TryParse(parts[1], out var minor) ||
+            !int.TryParse(parts[2], out var patch))
+        {
+            return false;
+        }
+
+        version = (major, minor, patch);
+        return true;
+    }
+
+    private static int CompareSemVerCore((int Major, int Minor, int Patch) left, (int Major, int Minor, int Patch) right)
+    {
+        var major = left.Major.CompareTo(right.Major);
+        if (major != 0)
+            return major;
+        var minor = left.Minor.CompareTo(right.Minor);
+        return minor != 0 ? minor : left.Patch.CompareTo(right.Patch);
     }
 
     private static void ValidatePluginExtensionEvents(MpxManifestDocument manifest, ManifestFileSelection? daemonPluginRef, List<PluginMpxDiagnostic> diagnostics)
@@ -1076,6 +1199,9 @@ public static partial class PluginMpxPackageValidator
     [GeneratedRegex(@"^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$", RegexOptions.CultureInvariant)]
     private static partial Regex SemVerLikeRegex();
 
+    [GeneratedRegex(@"^[\[(](\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?)?,(\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?)?[\])]$", RegexOptions.CultureInvariant)]
+    private static partial Regex VersionRangeRegex();
+
     [GeneratedRegex(@"^[a-f0-9]{64}$", RegexOptions.CultureInvariant)]
     private static partial Regex Sha256Regex();
 
@@ -1169,6 +1295,12 @@ public static partial class PluginMpxPackageValidator
 
         [JsonPropertyName("commands")]
         public List<MpxManifestCommandDocument>? Commands { get; init; }
+
+        [JsonPropertyName("dependencies")]
+        public MpxManifestDependenciesDocument? Dependencies { get; init; }
+
+        [JsonPropertyName("updates")]
+        public MpxManifestUpdatePolicyDocument? Updates { get; init; }
 
         [JsonPropertyName("integrity")]
         public MpxManifestIntegrityDocument? Integrity { get; init; }
@@ -1286,6 +1418,30 @@ public static partial class PluginMpxPackageValidator
 
         [JsonPropertyName("target")]
         public string? Target { get; init; }
+    }
+
+    private sealed class MpxManifestDependenciesDocument
+    {
+        [JsonPropertyName("extensions")]
+        public List<MpxManifestExtensionDependencyDocument>? Extensions { get; init; }
+    }
+
+    private sealed class MpxManifestExtensionDependencyDocument
+    {
+        [JsonPropertyName("id")]
+        public string? Id { get; init; }
+
+        [JsonPropertyName("version")]
+        public string? Version { get; init; }
+    }
+
+    private sealed class MpxManifestUpdatePolicyDocument
+    {
+        [JsonPropertyName("channel")]
+        public string? Channel { get; init; }
+
+        [JsonPropertyName("strategy")]
+        public string? Strategy { get; init; }
     }
 
     private sealed class MpxManifestPermissionsDocument

@@ -871,6 +871,8 @@ public sealed class PluginUiRuntimeTests
                 null,
                 [new PluginMpxCommand("refresh", null, null, "daemon")],
                 [],
+                null,
+                [],
                 [],
                 new Dictionary<string, string>(),
                 new Dictionary<string, string>());
@@ -963,6 +965,8 @@ public sealed class PluginUiRuntimeTests
             null,
             null,
             [],
+            [],
+            null,
             [],
             eventPermissions ?? [],
             new Dictionary<string, string>(),

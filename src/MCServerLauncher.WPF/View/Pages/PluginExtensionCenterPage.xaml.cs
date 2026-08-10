@@ -762,7 +762,13 @@ public partial class PluginExtensionCenterPage
                 Lang.Tr["Plugin_ExtensionCenter_ReviewSignatureTrusted"],
                 package.Signature.Publisher,
                 package.Signature.KeyId);
-        var audit = signatureAudit + Environment.NewLine + (daemonPlan?.Plugin is not null
+        var dependencyAudit = string.Format(
+            Lang.Tr["Plugin_ExtensionCenter_ReviewDependencies"],
+            JoinForReview(package.Dependencies.Select(dependency => $"{dependency.Id} {dependency.Version}")));
+        var updateAudit = string.Format(
+            Lang.Tr["Plugin_ExtensionCenter_ReviewUpdates"],
+            package.UpdatePolicy is null ? "-" : $"{package.UpdatePolicy.Channel}/{package.UpdatePolicy.Strategy}");
+        var audit = signatureAudit + Environment.NewLine + dependencyAudit + Environment.NewLine + updateAudit + Environment.NewLine + (daemonPlan?.Plugin is not null
             ? Lang.Tr["Plugin_ExtensionCenter_ReviewDaemonAudit"]
             : Lang.Tr["Plugin_ExtensionCenter_ReviewClientAudit"]);
         var message = string.Format(

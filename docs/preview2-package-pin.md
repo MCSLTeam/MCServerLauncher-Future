@@ -315,3 +315,8 @@ does not reopen public distribution. `integrity.signed: true` requires
 it only when the caller provides a trusted publisher key matching the signature
 fingerprint. Unsigned packages remain valid, while unsigned packages carrying
 `signatures/` sidecars are rejected.
+
+The package manifest also supports local extension dependencies and manual update
+metadata. `dependencies.extensions` is checked only against the client-side installed
+extension cache, and `updates.strategy` is limited to `manual`; no online registry,
+transitive dependency download, or marketplace update resolver is active in this slice.

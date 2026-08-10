@@ -130,6 +130,27 @@
       "items": { "$ref": "#/$defs/command" },
       "uniqueItems": true
     },
+    "dependencies": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "extensions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/extensionDependency" },
+          "uniqueItems": true
+        }
+      },
+      "description": "Local extension dependencies. Validators only check against locally installed extensions; they do not download dependencies from a registry."
+    },
+    "updates": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "channel": { "enum": ["stable", "preview"] },
+        "strategy": { "const": "manual" }
+      },
+      "description": "Update metadata for local/manual update flow. Remote registry update resolution is intentionally not part of this schema slice."
+    },
     "integrity": {
       "type": "object",
       "additionalProperties": false,
@@ -247,6 +268,24 @@
         "title": { "type": "string" },
         "description": { "type": "string" },
         "target": { "const": "daemon" }
+      }
+    },
+    "extensionDependency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9.-]{2,127}$"
+        },
+        "version": {
+          "type": "string",
+          "oneOf": [
+            { "pattern": "^\\d+\\.\\d+\\.\\d+(?:[-+][0-9A-Za-z.-]+)?$" },
+            { "pattern": "^[\\[(](\\d+\\.\\d+\\.\\d+(?:[-+][0-9A-Za-z.-]+)?)?,(\\d+\\.\\d+\\.\\d+(?:[-+][0-9A-Za-z.-]+)?)?[\\])]$" }
+          ]
+        }
       }
     }
   }

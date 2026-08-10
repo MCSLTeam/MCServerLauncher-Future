@@ -222,6 +222,27 @@ SHA-256 fingerprint matches `publicKeySha256`. Unsigned packages with any
 `signatures/` sidecar are rejected so signature files cannot be smuggled into a local
 install.
 
+## Extension package dependencies and updates
+
+Runtime `.mpx` manifests may declare local extension dependencies:
+
+```json
+{
+  "dependencies": {
+    "extensions": [
+      { "id": "community.example.base", "version": "[1.0.0,2.0.0)" }
+    ]
+  },
+  "updates": { "channel": "stable", "strategy": "manual" }
+}
+```
+
+Dependency versions accept exact semver (`1.2.3`) or bracketed semver ranges such as
+`[1.0.0,2.0.0)`. The Web and WPF installers check these declarations only against
+extensions already installed in the local client cache. They do not download dependencies,
+query an online registry, or resolve transitive updates. `updates.strategy` is currently
+`manual`; installing a newer local `.mpx` for the same package id is the update path.
+
 ## Publish
 
     dotnet build Example.Plugin/Example.Plugin.csproj -c Release
