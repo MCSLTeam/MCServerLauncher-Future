@@ -105,6 +105,22 @@ public partial class PluginExtensionCenterPage
         await DeployDaemonBundleAsync(selected.Entry).ConfigureAwait(false);
     }
 
+    private async void EnableDaemon_Click(object sender, RoutedEventArgs e)
+    {
+        if (ExtensionList.SelectedItem is not PluginExtensionCenterEntryViewModel selected)
+            return;
+
+        await SetDaemonBundleEnabledAsync(selected.Entry, enabled: true).ConfigureAwait(false);
+    }
+
+    private async void DisableDaemon_Click(object sender, RoutedEventArgs e)
+    {
+        if (ExtensionList.SelectedItem is not PluginExtensionCenterEntryViewModel selected)
+            return;
+
+        await SetDaemonBundleEnabledAsync(selected.Entry, enabled: false).ConfigureAwait(false);
+    }
+
     private async void RemoveDaemon_Click(object sender, RoutedEventArgs e)
     {
         if (ExtensionList.SelectedItem is not PluginExtensionCenterEntryViewModel selected)
@@ -145,6 +161,8 @@ public partial class PluginExtensionCenterPage
     {
         RemoveButton.IsEnabled = true;
         DeployDaemonButton.IsEnabled = entry.DeploymentPlan.Daemon?.Plugin is not null;
+        EnableDaemonButton.IsEnabled = entry.DeploymentPlan.Daemon?.Plugin is not null;
+        DisableDaemonButton.IsEnabled = entry.DeploymentPlan.Daemon?.Plugin is not null;
         RemoveDaemonButton.IsEnabled = entry.DeploymentPlan.Daemon?.Plugin is not null;
         var summary = PluginExtensionCenterService.Summarize(entry);
         SelectedTitle.Text = entry.Id;
@@ -200,6 +218,8 @@ public partial class PluginExtensionCenterPage
     {
         RemoveButton.IsEnabled = false;
         DeployDaemonButton.IsEnabled = false;
+        EnableDaemonButton.IsEnabled = false;
+        DisableDaemonButton.IsEnabled = false;
         RemoveDaemonButton.IsEnabled = false;
         SelectedTitle.Text = Lang.Tr["Plugin_ExtensionCenter_NoSelection"];
         SelectedSubtitle.Text = string.Empty;
@@ -476,6 +496,43 @@ public partial class PluginExtensionCenterPage
         }
     }
 
+    private async Task SetDaemonBundleEnabledAsync(PluginClientExtensionCacheEntry entry, bool enabled)
+    {
+        if (entry.DeploymentPlan.Daemon?.Plugin is null)
+            return;
+
+        var daemon = GetReadyDaemon();
+        if (daemon is null)
+        {
+            StatusText.Text = Lang.Tr["Plugin_ExtensionCenter_DaemonUnavailable"];
+            return;
+        }
+
+        SetDeploymentButtons(enabled: false);
+        StatusText.Text = Lang.Tr[enabled
+            ? "Plugin_ExtensionCenter_DaemonEnabling"
+            : "Plugin_ExtensionCenter_DaemonDisabling"];
+        try
+        {
+            var changed = enabled
+                ? await daemon.EnableExtensionDaemonBundleAsync(new ExtensionDaemonBundleEnableRequest(entry.Id), CancellationToken.None).ConfigureAwait(false)
+                : await daemon.DisableExtensionDaemonBundleAsync(new ExtensionDaemonBundleDisableRequest(entry.Id), CancellationToken.None).ConfigureAwait(false);
+            if (changed.IsErr(out var error))
+                throw DaemonErrorLocalization.ToException(error!);
+
+            var result = changed.Unwrap();
+            await Dispatcher.InvokeAsync(() => StatusText.Text = FormatDeploymentResult(result));
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException or ArgumentException or NotSupportedException)
+        {
+            await Dispatcher.InvokeAsync(() => StatusText.Text = exception.Message);
+        }
+        finally
+        {
+            await Dispatcher.InvokeAsync(() => SetDeploymentButtons(enabled: true));
+        }
+    }
+
     private async Task RemoveDaemonBundleAsync(PluginClientExtensionCacheEntry entry)
     {
         if (entry.DeploymentPlan.Daemon?.Plugin is null)
@@ -516,11 +573,15 @@ public partial class PluginExtensionCenterPage
         if (ExtensionList.SelectedItem is not PluginExtensionCenterEntryViewModel selected || selected.Entry.DeploymentPlan.Daemon?.Plugin is null)
         {
             DeployDaemonButton.IsEnabled = false;
+            EnableDaemonButton.IsEnabled = false;
+            DisableDaemonButton.IsEnabled = false;
             RemoveDaemonButton.IsEnabled = false;
             return;
         }
 
         DeployDaemonButton.IsEnabled = enabled;
+        EnableDaemonButton.IsEnabled = enabled;
+        DisableDaemonButton.IsEnabled = enabled;
         RemoveDaemonButton.IsEnabled = enabled;
     }
 

@@ -51,6 +51,8 @@ public sealed class ExtensionProtocolDocsTests
         Assert.Contains("plugin.<plugin>.event.extension", topic, StringComparison.Ordinal);
         Assert.Contains("mcsl.extension.daemon.bundle.install", topic, StringComparison.Ordinal);
         Assert.Contains("mcsl.extension.daemon.bundle.status", topic, StringComparison.Ordinal);
+        Assert.Contains("mcsl.extension.daemon.bundle.enable", topic, StringComparison.Ordinal);
+        Assert.Contains("mcsl.extension.daemon.bundle.disable", topic, StringComparison.Ordinal);
         Assert.Contains("restart_required", topic, StringComparison.Ordinal);
         Assert.Contains("__proto__", topic, StringComparison.Ordinal);
     }

@@ -43,6 +43,8 @@ internal static class V2ClientProtocol
     internal static RpcDescriptor<ExtensionProtocolDispatchRequest, ExtensionProtocolDispatchResult> DispatchExtensionProtocol => BuiltInProtocolDefinitions.DispatchExtensionProtocol;
     internal static RpcDescriptor<ExtensionDaemonBundleInstallRequest, ExtensionDaemonBundleDeploymentResult> InstallExtensionDaemonBundle => BuiltInProtocolDefinitions.InstallExtensionDaemonBundle;
     internal static RpcDescriptor<ExtensionDaemonBundleStatusRequest, ExtensionDaemonBundleDeploymentResult> GetExtensionDaemonBundleStatus => BuiltInProtocolDefinitions.GetExtensionDaemonBundleStatus;
+    internal static RpcDescriptor<ExtensionDaemonBundleEnableRequest, ExtensionDaemonBundleDeploymentResult> EnableExtensionDaemonBundle => BuiltInProtocolDefinitions.EnableExtensionDaemonBundle;
+    internal static RpcDescriptor<ExtensionDaemonBundleDisableRequest, ExtensionDaemonBundleDeploymentResult> DisableExtensionDaemonBundle => BuiltInProtocolDefinitions.DisableExtensionDaemonBundle;
     internal static RpcDescriptor<ExtensionDaemonBundleRemoveRequest, ExtensionDaemonBundleDeploymentResult> RemoveExtensionDaemonBundle => BuiltInProtocolDefinitions.RemoveExtensionDaemonBundle;
     internal static RpcDescriptor<InstanceCommandRequest, UnitResult> SendInstanceCommand => BuiltInProtocolDefinitions.SendInstanceCommand;
     internal static RpcDescriptor<ConsoleOpenRequest, ConsoleSession> OpenConsole => BuiltInProtocolDefinitions.OpenConsole;
@@ -95,7 +97,7 @@ internal static class V2ClientProtocol
     [
         GetAuthPermissions, IssueToken, PingDaemon, CopyDirectory, CreateDirectory, DeleteDirectory, GetDirectoryInfo, MoveDirectory, RenameDirectory,
         SubscribeEvent, UnsubscribeEvent, CopyFile, DeleteFile, CloseDownload, OpenDownload, ReadDownload, GetFileInfo, MoveFile, RenameFile,
-        CancelUpload, CloseUpload, OpenUpload, GetInstanceCatalog, DispatchExtensionProtocol, InstallExtensionDaemonBundle, GetExtensionDaemonBundleStatus, RemoveExtensionDaemonBundle, SendInstanceCommand, OpenConsole, ResizeConsole, CloseConsole, CreateInstance, GetInstanceEventRules,
+        CancelUpload, CloseUpload, OpenUpload, GetInstanceCatalog, DispatchExtensionProtocol, InstallExtensionDaemonBundle, GetExtensionDaemonBundleStatus, EnableExtensionDaemonBundle, DisableExtensionDaemonBundle, RemoveExtensionDaemonBundle, SendInstanceCommand, OpenConsole, ResizeConsole, CloseConsole, CreateInstance, GetInstanceEventRules,
         UpdateInstanceEventRules, HaltInstance, GetInstanceLog, RemoveInstance, GetInstanceReport, ListInstanceReports, GetInstanceSettings,
         UpdateInstanceSettings, StartInstance, StopInstance, ListJavaRuntimes, CancelOperation, GetOperation, ListOperations, ResolveProvisioning, GetProvisioningPlan, ExecuteProvisioning,
         ListBackups, CreateBackup, PruneBackups, PlanBackupRestore, ConfirmBackupRestore, ExecuteBackupRestore, QueryAudit,

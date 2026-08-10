@@ -193,6 +193,14 @@ public interface IExtensionDeploymentApplication
         ExtensionDaemonBundleStatusRequest request,
         CancellationToken cancellationToken);
 
+    Task<Result<ExtensionDaemonBundleDeploymentResult, DaemonError>> EnableDaemonBundleAsync(
+        ExtensionDaemonBundleEnableRequest request,
+        CancellationToken cancellationToken);
+
+    Task<Result<ExtensionDaemonBundleDeploymentResult, DaemonError>> DisableDaemonBundleAsync(
+        ExtensionDaemonBundleDisableRequest request,
+        CancellationToken cancellationToken);
+
     Task<Result<ExtensionDaemonBundleDeploymentResult, DaemonError>> RemoveDaemonBundleAsync(
         ExtensionDaemonBundleRemoveRequest request,
         CancellationToken cancellationToken);

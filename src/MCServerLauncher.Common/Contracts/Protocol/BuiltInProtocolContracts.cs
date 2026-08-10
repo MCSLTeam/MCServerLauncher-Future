@@ -33,6 +33,10 @@ public sealed record ExtensionDaemonBundleInstallRequest(
 
 public sealed record ExtensionDaemonBundleStatusRequest(string PluginId);
 
+public sealed record ExtensionDaemonBundleEnableRequest(string PluginId);
+
+public sealed record ExtensionDaemonBundleDisableRequest(string PluginId);
+
 public sealed record ExtensionDaemonBundleRemoveRequest(string PluginId);
 
 public sealed record ExtensionDaemonBundleDeploymentResult(

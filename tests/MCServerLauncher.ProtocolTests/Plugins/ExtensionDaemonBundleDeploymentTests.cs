@@ -58,6 +58,28 @@ public sealed class ExtensionDaemonBundleDeploymentTests
             Assert.Equal("installed_enabled", afterInstallResult!.Status);
             Assert.False(afterInstallResult.RestartRequired);
 
+            var disabledResult = await app.DisableDaemonBundleAsync(
+                new ExtensionDaemonBundleDisableRequest("external-compile"),
+                CancellationToken.None);
+            Assert.True(disabledResult.IsOk(out var disabledDeployment), ErrorMessage(disabledResult));
+            Assert.Equal("disabled_pending_restart", disabledDeployment!.Status);
+            Assert.True(disabledDeployment.RestartRequired);
+            Assert.False(config.Plugins.Entries["external-compile"].Enabled);
+
+            var afterDisable = await app.GetDaemonBundleStatusAsync(
+                new ExtensionDaemonBundleStatusRequest("external-compile"),
+                CancellationToken.None);
+            Assert.True(afterDisable.IsOk(out var afterDisableResult), ErrorMessage(afterDisable));
+            Assert.Equal("installed_disabled", afterDisableResult!.Status);
+
+            var enabledResult = await app.EnableDaemonBundleAsync(
+                new ExtensionDaemonBundleEnableRequest("external-compile"),
+                CancellationToken.None);
+            Assert.True(enabledResult.IsOk(out var enabledDeployment), ErrorMessage(enabledResult));
+            Assert.Equal("enabled_pending_restart", enabledDeployment!.Status);
+            Assert.True(enabledDeployment.RestartRequired);
+            Assert.True(config.Plugins.Entries["external-compile"].Enabled);
+
             var removed = await app.RemoveDaemonBundleAsync(
                 new ExtensionDaemonBundleRemoveRequest("external-compile"),
                 CancellationToken.None);

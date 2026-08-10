@@ -117,7 +117,10 @@ entries, verifies the manifest plugin id, validates the plugin bundle, installs 
 bundle state for one plugin id (`not_installed`, `installed_enabled`,
 `installed_disabled`, `installed_unconfigured`, `configured_missing`, or
 `disabled_missing`) from the plugin directory plus `config.json`, without claiming runtime
-hot-load state. `mcsl.extension.daemon.bundle.remove` disables and removes an
+hot-load state. `mcsl.extension.daemon.bundle.enable` and
+`mcsl.extension.daemon.bundle.disable` toggle the persisted config entry without deleting
+bundle files; installed bundles still need daemon restart before active code changes.
+`mcsl.extension.daemon.bundle.remove` disables and removes an
 installed bundle and also returns `restart_required: true`; active plugin code is unloaded
 only by daemon restart.
 

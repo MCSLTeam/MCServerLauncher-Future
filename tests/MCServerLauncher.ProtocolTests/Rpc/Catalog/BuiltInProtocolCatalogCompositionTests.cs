@@ -177,6 +177,8 @@ public sealed class BuiltInProtocolCatalogCompositionTests
     {
         public Task<Result<ExtensionDaemonBundleDeploymentResult, DaemonError>> InstallDaemonBundleAsync(ExtensionDaemonBundleInstallRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<Result<ExtensionDaemonBundleDeploymentResult, DaemonError>> GetDaemonBundleStatusAsync(ExtensionDaemonBundleStatusRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<ExtensionDaemonBundleDeploymentResult, DaemonError>> EnableDaemonBundleAsync(ExtensionDaemonBundleEnableRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<ExtensionDaemonBundleDeploymentResult, DaemonError>> DisableDaemonBundleAsync(ExtensionDaemonBundleDisableRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<Result<ExtensionDaemonBundleDeploymentResult, DaemonError>> RemoveDaemonBundleAsync(ExtensionDaemonBundleRemoveRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
     }
 

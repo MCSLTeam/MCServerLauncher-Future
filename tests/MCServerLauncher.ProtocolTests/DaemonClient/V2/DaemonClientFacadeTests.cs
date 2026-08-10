@@ -98,7 +98,7 @@ public sealed class DaemonClientFacadeTests
                 .Select(static property => property.Name)
                 .Order());
         Assert.Equal(
-            ["ConnectAsync", "DiscoverAsync", "DispatchExtensionProtocolAsync", "DisposeAsync", "GetExtensionDaemonBundleStatusAsync", "InstallExtensionDaemonBundleAsync", "InvokeAsync", "OpenConsoleAsync", "PingAsync", "RemoveExtensionDaemonBundleAsync", "RestartInstanceAsync", "SubscribeAsync"],
+            ["ConnectAsync", "DisableExtensionDaemonBundleAsync", "DiscoverAsync", "DispatchExtensionProtocolAsync", "DisposeAsync", "EnableExtensionDaemonBundleAsync", "GetExtensionDaemonBundleStatusAsync", "InstallExtensionDaemonBundleAsync", "InvokeAsync", "OpenConsoleAsync", "PingAsync", "RemoveExtensionDaemonBundleAsync", "RestartInstanceAsync", "SubscribeAsync"],
             type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly)
                 .Where(static method => !method.IsSpecialName)
                 .Select(static method => method.Name)
@@ -130,6 +130,20 @@ public sealed class DaemonClientFacadeTests
             [typeof(ExtensionDaemonBundleStatusRequest), typeof(CancellationToken)],
             status.GetParameters().Select(static parameter => parameter.ParameterType));
         Assert.True(status.GetParameters()[1].IsOptional);
+        var enable = type.GetMethod(nameof(MCServerLauncher.DaemonClient.DaemonClient.EnableExtensionDaemonBundleAsync));
+        Assert.NotNull(enable);
+        Assert.Equal(typeof(Task<Result<ExtensionDaemonBundleDeploymentResult, DaemonError>>), enable.ReturnType);
+        Assert.Equal(
+            [typeof(ExtensionDaemonBundleEnableRequest), typeof(CancellationToken)],
+            enable.GetParameters().Select(static parameter => parameter.ParameterType));
+        Assert.True(enable.GetParameters()[1].IsOptional);
+        var disable = type.GetMethod(nameof(MCServerLauncher.DaemonClient.DaemonClient.DisableExtensionDaemonBundleAsync));
+        Assert.NotNull(disable);
+        Assert.Equal(typeof(Task<Result<ExtensionDaemonBundleDeploymentResult, DaemonError>>), disable.ReturnType);
+        Assert.Equal(
+            [typeof(ExtensionDaemonBundleDisableRequest), typeof(CancellationToken)],
+            disable.GetParameters().Select(static parameter => parameter.ParameterType));
+        Assert.True(disable.GetParameters()[1].IsOptional);
         var remove = type.GetMethod(nameof(MCServerLauncher.DaemonClient.DaemonClient.RemoveExtensionDaemonBundleAsync));
         Assert.NotNull(remove);
         Assert.Equal(typeof(Task<Result<ExtensionDaemonBundleDeploymentResult, DaemonError>>), remove.ReturnType);

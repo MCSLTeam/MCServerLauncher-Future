@@ -114,6 +114,56 @@ internal sealed partial class LocalExtensionDeploymentApplication : IExtensionDe
             message)));
     }
 
+    public Task<Result<ExtensionDaemonBundleDeploymentResult, DaemonError>> EnableDaemonBundleAsync(
+        ExtensionDaemonBundleEnableRequest request,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (!TryValidatePluginId(request.PluginId, out var pluginId, out var pluginIdError))
+            return Task.FromResult(Err(pluginIdError!));
+
+        var target = GetPluginDirectory(pluginId!);
+        if (!Directory.Exists(target))
+            return Task.FromResult(Err(new NotFoundDaemonError("extension.bundle.not_installed", $"Daemon extension '{pluginId}' is not installed.")));
+
+        var persisted = PersistEntry(pluginId!, enabled: true);
+        if (persisted.IsErr(out var persistError))
+            return Task.FromResult(Err(persistError!));
+
+        return Task.FromResult(Ok(new ExtensionDaemonBundleDeploymentResult(
+            pluginId!,
+            "enabled_pending_restart",
+            RestartRequired: true,
+            $"plugins/{pluginId}",
+            "Daemon extension bundle enabled. Restart the daemon to load it.")));
+    }
+
+    public Task<Result<ExtensionDaemonBundleDeploymentResult, DaemonError>> DisableDaemonBundleAsync(
+        ExtensionDaemonBundleDisableRequest request,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (!TryValidatePluginId(request.PluginId, out var pluginId, out var pluginIdError))
+            return Task.FromResult(Err(pluginIdError!));
+
+        var target = GetPluginDirectory(pluginId!);
+        var persisted = PersistEntry(pluginId!, enabled: false);
+        if (persisted.IsErr(out var persistError))
+            return Task.FromResult(Err(persistError!));
+
+        var installed = Directory.Exists(target);
+        return Task.FromResult(Ok(new ExtensionDaemonBundleDeploymentResult(
+            pluginId!,
+            installed ? "disabled_pending_restart" : "disabled_missing",
+            RestartRequired: installed,
+            $"plugins/{pluginId}",
+            installed
+                ? "Daemon extension bundle disabled. Restart the daemon to unload active code."
+                : "Daemon extension bundle disabled in configuration; no installed bundle was found.")));
+    }
+
     public Task<Result<ExtensionDaemonBundleDeploymentResult, DaemonError>> RemoveDaemonBundleAsync(
         ExtensionDaemonBundleRemoveRequest request,
         CancellationToken cancellationToken)

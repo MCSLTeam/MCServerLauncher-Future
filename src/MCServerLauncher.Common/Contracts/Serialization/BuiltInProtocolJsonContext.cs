@@ -29,6 +29,8 @@ namespace MCServerLauncher.Common.Contracts.Serialization;
 [JsonSerializable(typeof(ExtensionProtocolDispatchResult))]
 [JsonSerializable(typeof(ExtensionDaemonBundleInstallRequest))]
 [JsonSerializable(typeof(ExtensionDaemonBundleStatusRequest))]
+[JsonSerializable(typeof(ExtensionDaemonBundleEnableRequest))]
+[JsonSerializable(typeof(ExtensionDaemonBundleDisableRequest))]
 [JsonSerializable(typeof(ExtensionDaemonBundleRemoveRequest))]
 [JsonSerializable(typeof(ExtensionDaemonBundleDeploymentResult))]
 [JsonSerializable(typeof(EventSubscriptionRequest))]

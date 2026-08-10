@@ -40,6 +40,8 @@ internal static class RpcAuditPolicy
         "mcsl.directory.delete",
         "mcsl.directory.move",
         "mcsl.directory.rename",
+        "mcsl.extension.daemon.bundle.disable",
+        "mcsl.extension.daemon.bundle.enable",
         "mcsl.extension.daemon.bundle.install",
         "mcsl.extension.daemon.bundle.remove",
         "mcsl.extension.dispatch",
@@ -203,6 +205,8 @@ internal static class RpcAuditPolicy
         ExtensionProtocolDispatchRequest extension => DescribeExtensionDispatch(extension),
         ExtensionDaemonBundleInstallRequest install => install.PluginId,
         ExtensionDaemonBundleStatusRequest status => status.PluginId,
+        ExtensionDaemonBundleEnableRequest enable => enable.PluginId,
+        ExtensionDaemonBundleDisableRequest disable => disable.PluginId,
         ExtensionDaemonBundleRemoveRequest remove => remove.PluginId,
         _ => null
     };

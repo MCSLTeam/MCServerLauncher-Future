@@ -22,6 +22,16 @@ internal static class BuiltInExtensionDeploymentRpcRegistrar
             "mcsl.extension.daemon.bundle.status",
             async (request, token) => BuiltInApplicationRpcExecution.FromResult(
                 await application.GetDaemonBundleStatusAsync(request, token).ConfigureAwait(false)));
+        Register<ExtensionDaemonBundleEnableRequest, ExtensionDaemonBundleDeploymentResult>(
+            builder,
+            "mcsl.extension.daemon.bundle.enable",
+            async (request, token) => BuiltInApplicationRpcExecution.FromResult(
+                await application.EnableDaemonBundleAsync(request, token).ConfigureAwait(false)));
+        Register<ExtensionDaemonBundleDisableRequest, ExtensionDaemonBundleDeploymentResult>(
+            builder,
+            "mcsl.extension.daemon.bundle.disable",
+            async (request, token) => BuiltInApplicationRpcExecution.FromResult(
+                await application.DisableDaemonBundleAsync(request, token).ConfigureAwait(false)));
         Register<ExtensionDaemonBundleRemoveRequest, ExtensionDaemonBundleDeploymentResult>(
             builder,
             "mcsl.extension.daemon.bundle.remove",
