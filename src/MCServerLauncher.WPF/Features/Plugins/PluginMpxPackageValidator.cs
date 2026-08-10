@@ -22,9 +22,21 @@ public sealed record PluginMpxPackageLimits(
     int MaxResourceBytes = 2 * 1024 * 1024,
     int MaxPrivateStorageBytes = 2 * 1024 * 1024);
 
+public sealed record PluginMpxTrustedPublisher(
+    string Publisher,
+    string KeyId,
+    byte[] PublicKeySubjectPublicKeyInfo);
+
+public sealed record PluginMpxSignatureTrust(
+    string Publisher,
+    string KeyId,
+    string PublicKeySha256,
+    DateTimeOffset? SignedAt);
+
 public sealed record PluginMpxPackageValidatorOptions(
     PluginMpxPackageLimits? Limits = null,
-    IReadOnlySet<string>? AllowedHostCapabilities = null);
+    IReadOnlySet<string>? AllowedHostCapabilities = null,
+    IReadOnlyList<PluginMpxTrustedPublisher>? TrustedPublishers = null);
 
 public sealed record PluginMpxDiagnostic(string Code, string Path, string Message);
 
@@ -66,7 +78,8 @@ public sealed record ValidatedPluginMpxPackage(
     PluginMpxDeploymentPlan DeploymentPlan,
     IReadOnlyList<PluginMpxCommand> Commands,
     IReadOnlyDictionary<string, string> FileDigests,
-    long TotalUncompressedBytes);
+    long TotalUncompressedBytes,
+    PluginMpxSignatureTrust? Signature);
 
 public sealed record PluginMpxPackageValidationResult(
     bool Ok,
@@ -84,6 +97,10 @@ public static partial class PluginMpxPackageValidator
 {
     private const string ManifestPath = "manifest.json";
     private const string SignatureDirectory = "signatures/";
+    private const string SignatureManifestPath = "signatures/manifest.json";
+    private const string SignatureAlgorithm = "ecdsa-p256-sha256";
+    private const string SignaturePayloadAlgorithm = "sha256";
+    private const string SignatureInputHeader = "MCSL-MPX-SIGNATURE-v1";
 
     private static readonly PluginMpxPackageLimits DefaultLimits = new();
 
@@ -191,6 +208,7 @@ public static partial class PluginMpxPackageValidator
 
         ValidateManifest(manifest, allowedHostCapabilities, limits, diagnostics);
         RejectUnexpectedSignatureEntries(entries.Keys, manifest, diagnostics);
+        var signature = ValidatePackageSignature(entries, manifest, options?.TrustedPublishers, diagnostics);
         if (diagnostics.Count > 0)
             return PluginMpxPackageValidationResult.Failure(diagnostics);
 
@@ -292,7 +310,8 @@ public static partial class PluginMpxPackageValidator
             deploymentPlan,
             commands,
             new ReadOnlyDictionary<string, string>(fileDigests),
-            totalUncompressedBytes);
+            totalUncompressedBytes,
+            signature);
 
         return PluginMpxPackageValidationResult.Success(package);
     }
@@ -446,8 +465,6 @@ public static partial class PluginMpxPackageValidator
 
         if (manifest.Integrity?.Algorithm != "sha256")
             diagnostics.Add(Diagnostic("integrity_algorithm_invalid", "$.integrity.algorithm", "Only sha256 package integrity is supported."));
-        if (manifest.Integrity?.Signed is true)
-            diagnostics.Add(Diagnostic("signature_verification_unavailable", "$.integrity.signed", "Signed .mpx packages require a signature verifier before admission."));
 
         var hostCapabilities = manifest.Permissions?.Host ?? [];
         HashSet<string> seenCapabilities = [];
@@ -592,6 +609,192 @@ public static partial class PluginMpxPackageValidator
     private static PluginMpxCommand ToCommand(MpxManifestCommandDocument document) =>
         new(document.Id!, document.Title, document.Description, document.Target);
 
+    private static PluginMpxSignatureTrust? ValidatePackageSignature(
+        IReadOnlyDictionary<string, byte[]> entries,
+        MpxManifestDocument manifest,
+        IReadOnlyList<PluginMpxTrustedPublisher>? trustedPublishers,
+        List<PluginMpxDiagnostic> diagnostics)
+    {
+        if (manifest.Integrity?.Signed is not true)
+            return null;
+
+        if (!entries.TryGetValue(SignatureManifestPath, out var signatureManifestBytes))
+        {
+            diagnostics.Add(Diagnostic("signature_manifest_missing", SignatureManifestPath, "Signed packages must include signatures/manifest.json."));
+            return null;
+        }
+
+        foreach (var path in entries.Keys)
+        {
+            if (path.StartsWith(SignatureDirectory, StringComparison.Ordinal) && path != SignatureManifestPath)
+                diagnostics.Add(Diagnostic("signature_unexpected", path, "Only signatures/manifest.json is supported for signed .mpx packages."));
+        }
+
+        var document = ParseSignatureManifest(signatureManifestBytes, diagnostics);
+        if (document is null)
+            return null;
+
+        if (document.Algorithm != SignatureAlgorithm)
+            diagnostics.Add(Diagnostic("signature_algorithm_unsupported", "$.algorithm", $"Only {SignatureAlgorithm} signatures are supported."));
+        if (document.Payload?.Algorithm != SignaturePayloadAlgorithm)
+            diagnostics.Add(Diagnostic("signature_payload_algorithm_invalid", "$.payload.algorithm", "Only sha256 payload digests are supported."));
+
+        var package = manifest.Package;
+        if (string.IsNullOrWhiteSpace(package?.Publisher))
+            diagnostics.Add(Diagnostic("signature_publisher_missing", "$.package.publisher", "Signed packages must declare package.publisher."));
+        if (!StringComparer.Ordinal.Equals(document.Publisher, package?.Publisher))
+            diagnostics.Add(Diagnostic("signature_publisher_mismatch", "$.publisher", "Signature publisher must match package.publisher."));
+        if (!StringComparer.Ordinal.Equals(document.PackageId, package?.Id))
+            diagnostics.Add(Diagnostic("signature_package_mismatch", "$.packageId", "Signature packageId must match package.id."));
+        if (!StringComparer.Ordinal.Equals(document.PackageVersion, package?.Version))
+            diagnostics.Add(Diagnostic("signature_version_mismatch", "$.packageVersion", "Signature packageVersion must match package.version."));
+        if (string.IsNullOrWhiteSpace(document.KeyId))
+            diagnostics.Add(Diagnostic("signature_key_missing", "$.keyId", "Signed packages must declare keyId."));
+        if (string.IsNullOrWhiteSpace(document.PublicKeySha256) || !Sha256Regex().IsMatch(document.PublicKeySha256))
+            diagnostics.Add(Diagnostic("signature_key_fingerprint_invalid", "$.publicKeySha256", "publicKeySha256 must be a lowercase SHA-256 fingerprint."));
+        if (string.IsNullOrWhiteSpace(document.Signature))
+            diagnostics.Add(Diagnostic("signature_missing", "$.signature", "Signed packages must include a signature value."));
+
+        var actualEntries = BuildSignatureEntries(entries);
+        if (!SignatureEntriesMatch(document.Payload?.Entries, actualEntries))
+            diagnostics.Add(Diagnostic("signature_payload_mismatch", "$.payload.entries", "Signature payload entries must exactly match package contents."));
+
+        if (diagnostics.Count > 0)
+            return null;
+
+        if (trustedPublishers is null || trustedPublishers.Count == 0)
+        {
+            diagnostics.Add(Diagnostic("signature_trust_unavailable", "$.publisher", "Signed .mpx packages require a trusted publisher key before admission."));
+            return null;
+        }
+
+        var trusted = trustedPublishers.FirstOrDefault(candidate =>
+            StringComparer.Ordinal.Equals(candidate.Publisher, document.Publisher) &&
+            StringComparer.Ordinal.Equals(candidate.KeyId, document.KeyId) &&
+            StringComparer.Ordinal.Equals(Sha256Hex(candidate.PublicKeySubjectPublicKeyInfo), document.PublicKeySha256));
+        if (trusted is null)
+        {
+            diagnostics.Add(Diagnostic("signature_key_untrusted", "$.publicKeySha256", "The package signing key is not trusted for this publisher."));
+            return null;
+        }
+
+        byte[] signatureBytes;
+        try
+        {
+            signatureBytes = Convert.FromBase64String(document.Signature!);
+        }
+        catch (FormatException)
+        {
+            diagnostics.Add(Diagnostic("signature_invalid", "$.signature", "Signature must be base64-encoded."));
+            return null;
+        }
+
+        var input = BuildSignatureInput(document, actualEntries);
+        try
+        {
+            using var key = ECDsa.Create();
+            key.ImportSubjectPublicKeyInfo(trusted.PublicKeySubjectPublicKeyInfo, out var bytesRead);
+            if (bytesRead != trusted.PublicKeySubjectPublicKeyInfo.Length)
+            {
+                diagnostics.Add(Diagnostic("signature_key_invalid", "$.publicKeySha256", "Trusted public key contains trailing data."));
+                return null;
+            }
+
+            if (!key.VerifyData(input, signatureBytes, HashAlgorithmName.SHA256, DSASignatureFormat.IeeeP1363FixedFieldConcatenation))
+            {
+                diagnostics.Add(Diagnostic("signature_invalid", "$.signature", "Package signature verification failed."));
+                return null;
+            }
+        }
+        catch (CryptographicException exception)
+        {
+            diagnostics.Add(Diagnostic("signature_invalid", "$.signature", exception.Message));
+            return null;
+        }
+
+        DateTimeOffset? signedAt = null;
+        if (!string.IsNullOrWhiteSpace(document.SignedAt))
+        {
+            if (DateTimeOffset.TryParse(document.SignedAt, out var parsed))
+                signedAt = parsed;
+            else
+                diagnostics.Add(Diagnostic("signature_signed_at_invalid", "$.signedAt", "signedAt must be an ISO 8601 timestamp when present."));
+        }
+
+        return diagnostics.Count == 0
+            ? new PluginMpxSignatureTrust(document.Publisher!, document.KeyId!, document.PublicKeySha256!, signedAt)
+            : null;
+    }
+
+    private static MpxSignatureManifestDocument? ParseSignatureManifest(byte[] bytes, List<PluginMpxDiagnostic> diagnostics)
+    {
+        try
+        {
+            return JsonSerializer.Deserialize<MpxSignatureManifestDocument>(bytes, ManifestJsonOptions);
+        }
+        catch (JsonException ex)
+        {
+            diagnostics.Add(Diagnostic("signature_manifest_parse_failed", SignatureManifestPath, ex.Message));
+            return null;
+        }
+    }
+
+    private static IReadOnlyList<MpxSignatureEntryDocument> BuildSignatureEntries(IReadOnlyDictionary<string, byte[]> entries) =>
+        entries
+            .Where(static entry => !entry.Key.StartsWith(SignatureDirectory, StringComparison.Ordinal))
+            .OrderBy(static entry => entry.Key, StringComparer.Ordinal)
+            .Select(static entry => new MpxSignatureEntryDocument
+            {
+                Path = entry.Key,
+                Sha256 = Sha256Hex(entry.Value)
+            })
+            .ToArray();
+
+    private static bool SignatureEntriesMatch(
+        List<MpxSignatureEntryDocument>? declared,
+        IReadOnlyList<MpxSignatureEntryDocument> actual)
+    {
+        if (declared is null || declared.Count != actual.Count)
+            return false;
+
+        var ordered = declared.OrderBy(static entry => entry.Path, StringComparer.Ordinal).ToArray();
+        for (var i = 0; i < actual.Count; i++)
+        {
+            if (!StringComparer.Ordinal.Equals(ordered[i].Path, actual[i].Path) ||
+                !StringComparer.Ordinal.Equals(ordered[i].Sha256, actual[i].Sha256))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static byte[] BuildSignatureInput(
+        MpxSignatureManifestDocument document,
+        IReadOnlyList<MpxSignatureEntryDocument> entries)
+    {
+        var builder = new StringBuilder();
+        builder.Append(SignatureInputHeader).Append('\n');
+        AppendSignatureField(builder, "algorithm", document.Algorithm);
+        AppendSignatureField(builder, "publisher", document.Publisher);
+        AppendSignatureField(builder, "packageId", document.PackageId);
+        AppendSignatureField(builder, "packageVersion", document.PackageVersion);
+        AppendSignatureField(builder, "keyId", document.KeyId);
+        AppendSignatureField(builder, "publicKeySha256", document.PublicKeySha256);
+        AppendSignatureField(builder, "signedAt", document.SignedAt);
+        AppendSignatureField(builder, "payloadAlgorithm", document.Payload?.Algorithm);
+        foreach (var entry in entries)
+            builder.Append("entry:").Append(entry.Path).Append(':').Append(entry.Sha256).Append('\n');
+        return Encoding.UTF8.GetBytes(builder.ToString());
+    }
+
+    private static void AppendSignatureField(StringBuilder builder, string key, string? value) =>
+        builder.Append(key).Append(':').Append(value ?? string.Empty).Append('\n');
+
+    private static string Sha256Hex(byte[] bytes) =>
+        Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant();
+
     private static void RejectUnexpectedSignatureEntries(
         IEnumerable<string> paths,
         MpxManifestDocument manifest,
@@ -603,7 +806,7 @@ public static partial class PluginMpxPackageValidator
         foreach (var path in paths)
         {
             if (path.StartsWith(SignatureDirectory, StringComparison.Ordinal))
-                diagnostics.Add(Diagnostic("signature_unexpected", path, "Signature payloads are only accepted when signature verification is available."));
+                diagnostics.Add(Diagnostic("signature_unexpected", path, "Signature payloads are only accepted for signed packages."));
         }
     }
 
@@ -887,6 +1090,57 @@ public static partial class PluginMpxPackageValidator
         Dictionary<string, JsonElement>? ExtensionData { get; }
     }
 
+    private sealed class MpxSignatureManifestDocument
+    {
+        [JsonPropertyName("schema")]
+        public string? Schema { get; init; }
+
+        [JsonPropertyName("algorithm")]
+        public string? Algorithm { get; init; }
+
+        [JsonPropertyName("publisher")]
+        public string? Publisher { get; init; }
+
+        [JsonPropertyName("packageId")]
+        public string? PackageId { get; init; }
+
+        [JsonPropertyName("packageVersion")]
+        public string? PackageVersion { get; init; }
+
+        [JsonPropertyName("keyId")]
+        public string? KeyId { get; init; }
+
+        [JsonPropertyName("publicKeySha256")]
+        public string? PublicKeySha256 { get; init; }
+
+        [JsonPropertyName("signedAt")]
+        public string? SignedAt { get; init; }
+
+        [JsonPropertyName("payload")]
+        public MpxSignaturePayloadDocument? Payload { get; init; }
+
+        [JsonPropertyName("signature")]
+        public string? Signature { get; init; }
+    }
+
+    private sealed class MpxSignaturePayloadDocument
+    {
+        [JsonPropertyName("algorithm")]
+        public string? Algorithm { get; init; }
+
+        [JsonPropertyName("entries")]
+        public List<MpxSignatureEntryDocument>? Entries { get; init; }
+    }
+
+    private sealed class MpxSignatureEntryDocument
+    {
+        [JsonPropertyName("path")]
+        public string? Path { get; init; }
+
+        [JsonPropertyName("sha256")]
+        public string? Sha256 { get; init; }
+    }
+
     private sealed class MpxManifestDocument
     {
         [JsonPropertyName("schema")]
@@ -927,6 +1181,12 @@ public static partial class PluginMpxPackageValidator
 
         [JsonPropertyName("version")]
         public string? Version { get; init; }
+
+        [JsonPropertyName("publisher")]
+        public string? Publisher { get; init; }
+
+        [JsonPropertyName("displayName")]
+        public string? DisplayName { get; init; }
     }
 
     private sealed class MpxManifestRuntimeDocument

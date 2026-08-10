@@ -203,6 +203,25 @@ without making /api/v2 unavailable. StopAsync releases plugin-owned resources; t
 cancels the lifetime token first and stops successful plugins in reverse dependency/start
 order.
 
+## Extension package signatures
+
+Runtime `.mpx` packages are unsigned by default (`integrity.signed: false`). A signed
+package sets `integrity.signed: true` and carries exactly one signature sidecar:
+`signatures/manifest.json`, validated by
+`docs/spec/mcsl-extension-signature-1.0.schema.json`.
+
+The signature sidecar uses `ecdsa-p256-sha256`. The signature covers a canonical text
+payload beginning with `MCSL-MPX-SIGNATURE-v1`, followed by package id, version,
+publisher, key id, public-key SHA-256, optional `signedAt`, payload digest algorithm,
+and sorted `entry:<path>:<sha256>` lines for every non-`signatures/` zip entry. The
+ECDSA signature is encoded as IEEE P1363 `r||s` bytes and then base64.
+
+Package-embedded signature metadata is not a trust root. WPF and Web validators reject
+signed packages unless the caller supplies a trusted publisher/key id/SPKI key whose
+SHA-256 fingerprint matches `publicKeySha256`. Unsigned packages with any
+`signatures/` sidecar are rejected so signature files cannot be smuggled into a local
+install.
+
 ## Publish
 
     dotnet build Example.Plugin/Example.Plugin.csproj -c Release

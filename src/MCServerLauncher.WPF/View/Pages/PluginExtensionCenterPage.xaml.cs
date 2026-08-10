@@ -756,9 +756,15 @@ public partial class PluginExtensionCenterPage
         var daemonPlan = package.DeploymentPlan.Daemon;
         var extensionPoints = daemonPlan?.ExtensionPoints ?? [];
         var resources = ListPackageResources(package);
-        var audit = daemonPlan?.Plugin is not null
+        var signatureAudit = package.Signature is null
+            ? Lang.Tr["Plugin_ExtensionCenter_ReviewSignatureUnsigned"]
+            : string.Format(
+                Lang.Tr["Plugin_ExtensionCenter_ReviewSignatureTrusted"],
+                package.Signature.Publisher,
+                package.Signature.KeyId);
+        var audit = signatureAudit + Environment.NewLine + (daemonPlan?.Plugin is not null
             ? Lang.Tr["Plugin_ExtensionCenter_ReviewDaemonAudit"]
-            : Lang.Tr["Plugin_ExtensionCenter_ReviewClientAudit"];
+            : Lang.Tr["Plugin_ExtensionCenter_ReviewClientAudit"]);
         var message = string.Format(
             Lang.Tr["Plugin_ExtensionCenter_ReviewConfirm"],
             package.PluginId,

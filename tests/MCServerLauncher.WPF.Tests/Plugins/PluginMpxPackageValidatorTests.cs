@@ -1104,18 +1104,55 @@ public sealed class PluginMpxPackageValidatorTests
     }
 
     [Fact]
-    public void ValidatorRejectsSignedPackagesUntilVerifierExists()
+    public void ValidatorRejectsSignedPackagesWithoutTrustedPublisherKey()
     {
-        var packageBytes = BuildMpxPackage(mutateManifest: manifest =>
-        {
-            var integrity = (JsonObject)manifest["integrity"]!;
-            integrity["signed"] = true;
-        });
+        using var key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        var publicKey = key.ExportSubjectPublicKeyInfo();
+        var packageBytes = BuildSignedMpxPackage(key, publicKey);
 
         var result = PluginMpxPackageValidator.Validate(packageBytes);
 
         Assert.False(result.Ok);
-        Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Code == "signature_verification_unavailable");
+        Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Code == "signature_trust_unavailable");
+    }
+
+    [Fact]
+    public void ValidatorAcceptsSignedPackagesFromTrustedPublisherKey()
+    {
+        using var key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        var publicKey = key.ExportSubjectPublicKeyInfo();
+        var packageBytes = BuildSignedMpxPackage(key, publicKey);
+
+        var result = PluginMpxPackageValidator.Validate(
+            packageBytes,
+            new PluginMpxPackageValidatorOptions(TrustedPublishers:
+            [
+                new PluginMpxTrustedPublisher("community.example", "test-key", publicKey)
+            ]));
+
+        Assert.True(result.Ok, FormatDiagnostics(result.Diagnostics));
+        Assert.NotNull(result.Package!.Signature);
+        Assert.Equal("community.example", result.Package.Signature.Publisher);
+        Assert.Equal("test-key", result.Package.Signature.KeyId);
+        Assert.Equal(Sha256(publicKey), result.Package.Signature.PublicKeySha256);
+    }
+
+    [Fact]
+    public void ValidatorRejectsSignedPackagesWhenPayloadIsTampered()
+    {
+        using var key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        var publicKey = key.ExportSubjectPublicKeyInfo();
+        var packageBytes = BuildSignedMpxPackage(key, publicKey, tamperPayload: true);
+
+        var result = PluginMpxPackageValidator.Validate(
+            packageBytes,
+            new PluginMpxPackageValidatorOptions(TrustedPublishers:
+            [
+                new PluginMpxTrustedPublisher("community.example", "test-key", publicKey)
+            ]));
+
+        Assert.False(result.Ok);
+        Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Code == "signature_payload_mismatch");
     }
 
     [Fact]
@@ -1207,6 +1244,115 @@ public sealed class PluginMpxPackageValidatorTests
         }
 
         return BuildZip(entries);
+    }
+
+    private static byte[] BuildSignedMpxPackage(
+        ECDsa signingKey,
+        byte[] publicKey,
+        bool tamperPayload = false)
+    {
+        byte[] uiBytes = Encoding.UTF8.GetBytes(ValidUi);
+        byte[] scriptBytes = Encoding.UTF8.GetBytes(ValidScript);
+        var manifest = BuildManifest(Sha256(uiBytes), Sha256(scriptBytes));
+        var integrity = (JsonObject)manifest["integrity"]!;
+        integrity["signed"] = true;
+
+        Dictionary<string, byte[]> entries = new(StringComparer.Ordinal)
+        {
+            ["manifest.json"] = Encoding.UTF8.GetBytes(manifest.ToJsonString(new JsonSerializerOptions { WriteIndented = false })),
+            ["client/ui.json"] = uiBytes,
+            ["bundle.js"] = scriptBytes
+        };
+
+        var signatureEntries = BuildSignatureEntries(entries);
+        var signedAt = "2026-08-10T00:00:00Z";
+        var publicKeySha256 = Sha256(publicKey);
+        var signatureInput = BuildSignatureInput(
+            "ecdsa-p256-sha256",
+            "community.example",
+            "community.example.status-panel",
+            "1.0.0",
+            "test-key",
+            publicKeySha256,
+            signedAt,
+            "sha256",
+            signatureEntries);
+        var signature = Convert.ToBase64String(signingKey.SignData(
+            Encoding.UTF8.GetBytes(signatureInput),
+            HashAlgorithmName.SHA256,
+            DSASignatureFormat.IeeeP1363FixedFieldConcatenation));
+
+        var signatureManifest = new JsonObject
+        {
+            ["schema"] = "https://mcsl-team.github.io/schemas/mcsl-extension-signature-1.0.schema.json",
+            ["algorithm"] = "ecdsa-p256-sha256",
+            ["publisher"] = "community.example",
+            ["packageId"] = "community.example.status-panel",
+            ["packageVersion"] = "1.0.0",
+            ["keyId"] = "test-key",
+            ["publicKeySha256"] = publicKeySha256,
+            ["signedAt"] = signedAt,
+            ["payload"] = new JsonObject
+            {
+                ["algorithm"] = "sha256",
+                ["entries"] = ToSignatureEntryArray(signatureEntries)
+            },
+            ["signature"] = signature
+        };
+        entries["signatures/manifest.json"] = Encoding.UTF8.GetBytes(signatureManifest.ToJsonString(new JsonSerializerOptions { WriteIndented = false }));
+
+        if (tamperPayload)
+            entries["client/ui.json"] = Encoding.UTF8.GetBytes(ValidUi.Replace("Ready", "Tampered", StringComparison.Ordinal));
+
+        return BuildZip(entries);
+    }
+
+    private static IReadOnlyList<(string Path, string Sha256)> BuildSignatureEntries(IReadOnlyDictionary<string, byte[]> entries) =>
+        entries
+            .Where(static entry => !entry.Key.StartsWith("signatures/", StringComparison.Ordinal))
+            .OrderBy(static entry => entry.Key, StringComparer.Ordinal)
+            .Select(static entry => (entry.Key, Sha256(entry.Value)))
+            .ToArray();
+
+    private static JsonArray ToSignatureEntryArray(IReadOnlyList<(string Path, string Sha256)> entries)
+    {
+        var array = new JsonArray();
+        foreach (var entry in entries)
+        {
+            array.Add(new JsonObject
+            {
+                ["path"] = entry.Path,
+                ["sha256"] = entry.Sha256
+            });
+        }
+
+        return array;
+    }
+
+    private static string BuildSignatureInput(
+        string algorithm,
+        string publisher,
+        string packageId,
+        string packageVersion,
+        string keyId,
+        string publicKeySha256,
+        string signedAt,
+        string payloadAlgorithm,
+        IReadOnlyList<(string Path, string Sha256)> entries)
+    {
+        var builder = new StringBuilder();
+        builder.Append("MCSL-MPX-SIGNATURE-v1").Append('\n');
+        builder.Append("algorithm:").Append(algorithm).Append('\n');
+        builder.Append("publisher:").Append(publisher).Append('\n');
+        builder.Append("packageId:").Append(packageId).Append('\n');
+        builder.Append("packageVersion:").Append(packageVersion).Append('\n');
+        builder.Append("keyId:").Append(keyId).Append('\n');
+        builder.Append("publicKeySha256:").Append(publicKeySha256).Append('\n');
+        builder.Append("signedAt:").Append(signedAt).Append('\n');
+        builder.Append("payloadAlgorithm:").Append(payloadAlgorithm).Append('\n');
+        foreach (var entry in entries)
+            builder.Append("entry:").Append(entry.Path).Append(':').Append(entry.Sha256).Append('\n');
+        return builder.ToString();
     }
 
     private static JsonObject BuildManifest(string? uiSha256, string? scriptSha256)

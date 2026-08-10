@@ -306,3 +306,12 @@ cancelled.
 
 Distribution is internal-only. Public distribution requires explicitly
 reopening the package gate.
+
+## Extension package trust
+
+Local `.mpx` extension packages now have a signed-package admission path, but this
+does not reopen public distribution. `integrity.signed: true` requires
+`signatures/manifest.json` using `ecdsa-p256-sha256`, and WPF/Web validators admit
+it only when the caller provides a trusted publisher key matching the signature
+fingerprint. Unsigned packages remain valid, while unsigned packages carrying
+`signatures/` sidecars are rejected.

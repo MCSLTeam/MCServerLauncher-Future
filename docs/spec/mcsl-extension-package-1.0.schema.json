@@ -134,9 +134,13 @@
       "type": "object",
       "additionalProperties": false,
       "required": ["algorithm"],
+      "description": "Package payload digest policy. When signed is true, the zip must include signatures/manifest.json conforming to mcsl-extension-signature-1.0.schema.json; host validators still require a locally trusted publisher key before admission.",
       "properties": {
         "algorithm": { "const": "sha256" },
-        "signed": { "type": "boolean" }
+        "signed": {
+          "type": "boolean",
+          "description": "True only when signatures/manifest.json signs every non-signature zip entry with ecdsa-p256-sha256."
+        }
       }
     }
   },
