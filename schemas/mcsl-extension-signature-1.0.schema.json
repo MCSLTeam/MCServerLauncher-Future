@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mcsl-team.github.io/schemas/mcsl-extension-signature-1.0.schema.json",
+  "title": "MCSL Extension Package Signature Manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "algorithm",
+    "publisher",
+    "packageId",
+    "packageVersion",
+    "keyId",
+    "publicKeySha256",
+    "payload",
+    "signature"
+  ],
+  "properties": {
+    "schema": {
+      "const": "https://mcsl-team.github.io/schemas/mcsl-extension-signature-1.0.schema.json"
+    },
+    "algorithm": { "const": "ecdsa-p256-sha256" },
+    "publisher": { "type": "string", "minLength": 1 },
+    "packageId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9.-]{2,127}$"
+    },
+    "packageVersion": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+(?:[-+][0-9A-Za-z.-]+)?$"
+    },
+    "keyId": { "type": "string", "minLength": 1 },
+    "publicKeySha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "signedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "payload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm", "entries"],
+      "properties": {
+        "algorithm": { "const": "sha256" },
+        "entries": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/payloadEntry" }
+        }
+      }
+    },
+    "signature": {
+      "type": "string",
+      "contentEncoding": "base64",
+      "minLength": 1,
+      "description": "ECDSA P-256 SHA-256 signature encoded as IEEE P1363 r||s bytes and then base64."
+    }
+  },
+  "$defs": {
+    "payloadEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 180,
+          "pattern": "^(?!/)(?![A-Za-z]:)(?!.*(?:^|/)\\.\\.?(?:/|$))(?!.*\\\\)[^\\u0000]+$"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    }
+  }
+}

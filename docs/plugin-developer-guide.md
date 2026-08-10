@@ -20,7 +20,8 @@ limited to explicitly declared provider dependencies and shared Contracts assemb
 ## Manifest
 
 Add one mcsl-plugin.json next to the project file. Use the checked-in schema for editor
-completion and validation:
+completion and validation. `docs/spec/` is the authored specification location, while
+`schemas/` mirrors the static payload intended for `https://mcsl-team.github.io/schemas/`:
 
     {
       "$schema": "https://mcsl-team.github.io/schemas/mcsl-plugin-2.0.schema.json",

@@ -135,6 +135,31 @@ public sealed class ExtensionProtocolDocsTests
     }
 
     [Fact]
+    public void PublicSchemaMirrorMatchesAuthoredSpecs()
+    {
+        var root = FindRepositoryRoot();
+        var mappings = new[]
+        {
+            (Source: "mcsl-extension-package-1.0.schema.json", Public: "mcsl-extension-1.0.schema.json", Id: "https://mcsl-team.github.io/schemas/mcsl-extension-1.0.schema.json"),
+            (Source: "mcsl-extension-protocol-1.0.schema.json", Public: "mcsl-extension-protocol-1.0.schema.json", Id: "https://mcsl-team.github.io/schemas/mcsl-extension-protocol-1.0.schema.json"),
+            (Source: "mcsl-extension-signature-1.0.schema.json", Public: "mcsl-extension-signature-1.0.schema.json", Id: "https://mcsl-team.github.io/schemas/mcsl-extension-signature-1.0.schema.json"),
+            (Source: "mcsl-plugin-2.0.schema.json", Public: "mcsl-plugin-2.0.schema.json", Id: "https://mcsl-team.github.io/schemas/mcsl-plugin-2.0.schema.json"),
+        };
+
+        foreach (var mapping in mappings)
+        {
+            var sourcePath = Path.Combine(root, "docs", "spec", mapping.Source);
+            var publicPath = Path.Combine(root, "schemas", mapping.Public);
+            var source = File.ReadAllText(sourcePath);
+            var published = File.ReadAllText(publicPath);
+            Assert.Equal(source, published);
+
+            using var document = JsonDocument.Parse(published);
+            Assert.Equal(mapping.Id, document.RootElement.GetProperty("$id").GetString());
+        }
+    }
+
+    [Fact]
     public void PluginManifestTemplateCarriesSchemaAndRequiredFields()
     {
         var root = FindRepositoryRoot();
