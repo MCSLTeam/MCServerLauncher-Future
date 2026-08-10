@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Community.Example.BasicPlugin</RootNamespace>
+    <AssemblyName>Community.Example.BasicPlugin</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MCServerLauncher.Daemon.Plugin.Sdk" Version="1.0.0" />
+  </ItemGroup>
+</Project>

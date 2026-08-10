@@ -8,6 +8,8 @@ Developer SDK for MCServerLauncher Future plugins.
 <PackageReference Include="MCServerLauncher.Daemon.Plugin.Sdk" Version="1.0.0" />
 ```
 
+A minimal copyable project is available at `docs/templates/daemon-plugin-basic`.
+
 Place `mcsl-plugin.json` beside the project (or under the project directory), add the
 schema URI for editor validation, and mark a partial class with `[DaemonPluginModule]`.
 

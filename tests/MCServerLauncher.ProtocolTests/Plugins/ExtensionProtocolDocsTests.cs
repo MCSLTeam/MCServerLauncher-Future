@@ -134,6 +134,24 @@ public sealed class ExtensionProtocolDocsTests
         Assert.Contains("override.process.launcher", extensionPointIds);
     }
 
+    [Fact]
+    public void PluginManifestTemplateCarriesSchemaAndRequiredFields()
+    {
+        var root = FindRepositoryRoot();
+        var manifestPath = Path.Combine(root, "docs", "templates", "daemon-plugin-basic", "mcsl-plugin.json");
+        using var document = JsonDocument.Parse(File.ReadAllText(manifestPath));
+        var rootElement = document.RootElement;
+
+        Assert.Equal("https://mcsl-team.github.io/schemas/mcsl-plugin-2.0.schema.json", rootElement.GetProperty("$schema").GetString());
+        Assert.Equal("community.example.basic", rootElement.GetProperty("package").GetProperty("id").GetString());
+        Assert.Equal("Community.Example.BasicPlugin.dll", rootElement.GetProperty("entry").GetProperty("assembly").GetString());
+        Assert.Contains("rpc.register", rootElement
+            .GetProperty("requires")
+            .GetProperty("features")
+            .EnumerateArray()
+            .Select(static item => item.GetString()));
+    }
+
     private static string FindRepositoryRoot()
     {
         var current = new DirectoryInfo(AppContext.BaseDirectory);

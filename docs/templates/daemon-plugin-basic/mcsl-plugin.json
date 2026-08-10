@@ -1,0 +1,15 @@
+{
+  "$schema": "https://mcsl-team.github.io/schemas/mcsl-plugin-2.0.schema.json",
+  "package": {
+    "id": "community.example.basic",
+    "version": "1.0.0"
+  },
+  "entry": {
+    "assembly": "Community.Example.BasicPlugin.dll",
+    "type": "Community.Example.BasicPlugin.Generated.DaemonPluginAdapter"
+  },
+  "requires": {
+    "api": "[1.0.0,2.0.0)",
+    "features": ["rpc.register"]
+  }
+}

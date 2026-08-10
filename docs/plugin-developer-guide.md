@@ -9,7 +9,8 @@ Plugin API 1.0 plugins reference only the SDK package:
 The SDK carries the exact Daemon API/Common dependency chain, the source generator, and
 the buildTransitive publish targets. Do not add a direct Daemon API package reference.
 Do not implement IDaemonPlugin; the SDK generates that adapter and treats a handwritten
-adapter as a diagnostic error.
+adapter as a diagnostic error. A minimal copyable daemon plugin template lives in
+`docs/templates/daemon-plugin-basic`.
 
 Plugins are trusted in-process code. Features are admission and audit boundaries, not a
 sandbox. Hooks, hot unload, factory/store/control/filesystem capabilities, and broad
