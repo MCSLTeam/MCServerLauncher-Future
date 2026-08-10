@@ -185,6 +185,25 @@ internal sealed class PluginExtensionPointRuntimeRegistry
         return Result.Ok<IReadOnlyDictionary<string, string>, DaemonError>(current);
     }
 
+    internal async ValueTask<Result<Unit, DaemonError>> PublishInstanceLifecycleAsync(
+        PluginInstanceLifecycleEvent lifecycleEvent,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(lifecycleEvent);
+        cancellationToken.ThrowIfCancellationRequested();
+        foreach (var registration in List("hook.instance.lifecycle"))
+        {
+            if (registration.Implementation is not IPluginInstanceLifecycleHook hook)
+                continue;
+
+            var result = await hook.OnLifecycleAsync(lifecycleEvent, cancellationToken).ConfigureAwait(false);
+            if (result.IsErr(out var error))
+                return Result.Err<Unit, DaemonError>(error!);
+        }
+
+        return PluginResult.Ok();
+    }
+
     private async ValueTask<Result<ImmutableArray<PluginExtensionPointContribution<TContribution>>, DaemonError>> ListRegistryContributionsAsync<TContract, TContribution>(
         string extensionPointId,
         Func<TContract, CancellationToken, ValueTask<Result<IReadOnlyList<TContribution>, DaemonError>>> listAsync,

@@ -116,6 +116,7 @@ internal static class DaemonServiceComposition
         a.RegisterSingleton<ITokenIssueApplication, TokenIssueApplication>();
         a.RegisterSingleton<IEventRuleApplication, LocalEventRuleApplication>();
         a.RegisterSingleton<IDaemonApplication, LocalDaemonApplication>();
+        a.RegisterSingleton<PluginInstanceLifecycleHookBridge>();
         a.RegisterSingleton<IDaemonRuntimeLifecycle, LocalDaemonRuntimeLifecycle>();
         a.RegisterSingleton<IPluginEventBus, PluginEventBus>();
 
@@ -217,6 +218,7 @@ internal static class DaemonServiceComposition
 
         var pluginHost = httpService.Resolver.GetRequiredService<PluginHost>();
         pluginHost.StartAsync(CancellationToken.None).GetAwaiter().GetResult();
+        _ = httpService.Resolver.GetRequiredService<PluginInstanceLifecycleHookBridge>();
 
         // Setup completes before ServeAsync starts the HTTP/WebSocket listener, so resolving here
         // guarantees the final catalog is frozen and published before any connection is accepted.

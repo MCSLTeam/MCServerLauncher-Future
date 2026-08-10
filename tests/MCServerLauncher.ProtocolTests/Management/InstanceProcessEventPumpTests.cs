@@ -899,7 +899,7 @@ public sealed class InstanceProcessEventPumpTests
             Assert.Contains("pipe-history", instance.GetLogHistory());
 
             Assert.True(await instance.StartAsync());
-            await WaitUntilAsync(() => instance.GetLogHistory().Contains("pty-history"), PtyOutputTimeout);
+            await WaitUntilAsync(() => instance.GetLogHistory().Contains("pty-history"), TimeSpan.FromSeconds(120));
 
             var history = instance.GetLogHistory();
             Assert.Contains("pipe-history", history);

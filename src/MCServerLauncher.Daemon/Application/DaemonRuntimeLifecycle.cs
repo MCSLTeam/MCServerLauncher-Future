@@ -1,6 +1,7 @@
 using MCServerLauncher.Daemon.Management;
 using MCServerLauncher.Daemon.ApplicationCore.Events;
 using MCServerLauncher.Daemon.Bootstrap;
+using MCServerLauncher.Daemon.Plugins;
 using MCServerLauncher.Daemon.Remote.Event;
 using MCServerLauncher.Daemon.Storage;
 using Microsoft.Extensions.Logging;
@@ -18,6 +19,7 @@ internal sealed class LocalDaemonRuntimeLifecycle(
     InstanceMutationAdmissionGate mutationAdmission,
     DaemonReportPublisher reportPublisher,
     EventTriggerService eventTriggerService,
+    PluginInstanceLifecycleHookBridge pluginLifecycleHookBridge,
     InstanceDomainEventBridge instanceDomainEventBridge,
     InstanceCatalogCommitFeed instanceCatalogCommitFeed,
     InstanceCatalogDomainEventBridge instanceCatalogDomainEventBridge,
@@ -60,6 +62,14 @@ internal sealed class LocalDaemonRuntimeLifecycle(
             () =>
             {
                 instanceManager.DetachInstanceEventProducers();
+                return Task.CompletedTask;
+            },
+            failures);
+        await StopStepAsync(
+            "dispose plugin instance lifecycle hook bridge",
+            () =>
+            {
+                pluginLifecycleHookBridge.Dispose();
                 return Task.CompletedTask;
             },
             failures);

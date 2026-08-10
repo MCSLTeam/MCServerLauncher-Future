@@ -4,6 +4,7 @@ using MCServerLauncher.Daemon.ApplicationCore.Events;
 using MCServerLauncher.Daemon.Bootstrap;
 using MCServerLauncher.Daemon.Management;
 using MCServerLauncher.Daemon.Management.Communicate;
+using MCServerLauncher.Daemon.Plugins;
 using MCServerLauncher.Daemon.Remote.Event;
 using MCServerLauncher.Daemon.Storage;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -33,6 +34,10 @@ public sealed class DaemonRuntimeLifecycleTests
             NullLogger<EventTriggerService>.Instance);
         var catalogBridge = new InstanceCatalogDomainEventBridge(manager.CatalogCommitFeed, domainEvents.Port);
         catalogBridge.Start();
+        using var pluginLifecycleHookBridge = new PluginInstanceLifecycleHookBridge(
+            new PluginExtensionPointRuntimeRegistry(),
+            domainEvents.Port,
+            NullLogger<PluginInstanceLifecycleHookBridge>.Instance);
         var lifecycle = new LocalDaemonRuntimeLifecycle(
             new FileSessionCoordinator(),
             manager,
@@ -42,6 +47,7 @@ public sealed class DaemonRuntimeLifecycleTests
                 domainEvents.Port,
                 NullLogger<DaemonReportPublisher>.Instance),
             trigger,
+            pluginLifecycleHookBridge,
             bridge,
             manager.CatalogCommitFeed,
             catalogBridge,

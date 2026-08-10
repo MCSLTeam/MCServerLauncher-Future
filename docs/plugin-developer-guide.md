@@ -140,9 +140,11 @@ plugin contribution, with plugin id as the deterministic tie-breaker.
 `pipeline.instance.create` stages run before daemon create-instance validation and may set
 `name`, `target`, `version`, `inputEncoding`, `outputEncoding`, `javaPath`, `consoleMode`,
 `source`, `sourceType`, and `usePostProcess`; instance id, instance type, target type, and
-mirror remain daemon-owned inputs. `ui.panel`, `event.daemon`, and `command.daemon`
-continue to use the package UI schema, plugin event publisher, and plugin RPC command
-dispatch paths respectively.
+mirror remain daemon-owned inputs. `hook.instance.lifecycle` receives daemon instance
+status transitions such as `Starting`, `Running`, `Stopped`, and `Crashed`; hook failures
+are logged and isolated from the core lifecycle. `ui.panel`, `event.daemon`, and
+`command.daemon` continue to use the package UI schema, plugin event publisher, and plugin
+RPC command dispatch paths respectively.
 
 Plugins that declare `event.subscribe` get `features.Subscriptions`. Subscriptions accept
 built-in typed event descriptors such as `BuiltInProtocolDefinitions.InstanceLog`, deliver
