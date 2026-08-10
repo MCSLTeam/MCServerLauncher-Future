@@ -9,7 +9,8 @@ namespace MCServerLauncher.WPF.Features.Plugins;
 public sealed record PluginExtensionCenterPackageReview(
     string PackagePath,
     byte[] Bytes,
-    ValidatedPluginMpxPackage Package);
+    ValidatedPluginMpxPackage Package,
+    IReadOnlyList<PluginClientExtensionManifestDrift> Drift);
 
 public sealed record PluginExtensionCenterPackageReviewResult(
     bool Ok,
@@ -84,7 +85,7 @@ public sealed class PluginExtensionCenterService
             return PluginExtensionCenterPackageReviewResult.ValidationFailed(validation.Diagnostics);
 
         return PluginExtensionCenterPackageReviewResult.Success(
-            new PluginExtensionCenterPackageReview(packagePath, bytes, validation.Package));
+            new PluginExtensionCenterPackageReview(packagePath, bytes, validation.Package, _manager.BuildManifestDrift(validation.Package)));
     }
 
     public PluginExtensionCenterInstallResult InstallPackage(string packagePath)

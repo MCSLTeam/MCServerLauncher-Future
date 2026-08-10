@@ -196,6 +196,81 @@ public sealed class PluginMpxPackageValidatorTests
     }
 
     [Fact]
+    public void ClientExtensionManagerReportsInstalledManifestDrift()
+    {
+        var current = PluginMpxPackageValidator.Validate(BuildMpxPackage());
+        Assert.True(current.Ok, FormatDiagnostics(current.Diagnostics));
+        var manager = new PluginClientExtensionManager();
+        var installed = manager.Install(current.Package!);
+        Assert.True(installed.Ok);
+
+        var daemonBundle = Encoding.UTF8.GetBytes("daemon-bundle");
+        var next = PluginMpxPackageValidator.Validate(BuildMpxPackage(
+            extraEntries: new Dictionary<string, byte[]> { ["daemon/plugin-bundle.zip"] = daemonBundle },
+            mutateManifest: manifest =>
+            {
+                var package = (JsonObject)manifest["package"]!;
+                package["version"] = "1.1.0";
+                var runtime = (JsonObject)manifest["runtime"]!;
+                runtime["daemonApi"] = "[1.0.0,2.0.0)";
+                var permissions = (JsonObject)manifest["permissions"]!;
+                permissions["host"] = new JsonArray("ui.state", "daemon.instance.query");
+                permissions["events"] = new JsonArray("daemon.notification");
+                var targets = (JsonObject)manifest["targets"]!;
+                targets["daemon"] = new JsonObject
+                {
+                    ["plugin"] = new JsonObject
+                    {
+                        ["path"] = "daemon/plugin-bundle.zip",
+                        ["sha256"] = Sha256(daemonBundle)
+                    }
+                };
+                manifest["dependencies"] = new JsonObject
+                {
+                    ["extensions"] = new JsonArray
+                    {
+                        new JsonObject
+                        {
+                            ["id"] = "community.example.base",
+                            ["version"] = "[1.0.0,2.0.0)"
+                        }
+                    }
+                };
+                manifest["extensionPoints"] = new JsonArray
+                {
+                    new JsonObject
+                    {
+                        ["kind"] = "override",
+                        ["id"] = "override.process.launcher",
+                        ["target"] = "daemon"
+                    }
+                };
+                manifest["commands"] = new JsonArray
+                {
+                    new JsonObject
+                    {
+                        ["id"] = "launch",
+                        ["target"] = "daemon"
+                    }
+                };
+            }));
+        Assert.True(next.Ok, FormatDiagnostics(next.Diagnostics));
+
+        var drift = PluginClientExtensionManager.BuildManifestDrift(installed.Entry, next.Package!);
+
+        Assert.Equal(
+        [
+            ("Version change", "low"),
+            ("Host permissions", "medium"),
+            ("Event permissions", "medium"),
+            ("Extension points", "high"),
+            ("Daemon commands", "medium"),
+            ("Extension dependencies", "medium"),
+            ("Daemon payload", "high")
+        ], drift.Select(item => (item.Title, item.Level)).ToArray());
+    }
+
+    [Fact]
     public void ClientExtensionManagerPersistsAndRestoresClientCacheEntries()
     {
         var validation = PluginMpxPackageValidator.Validate(BuildMpxPackage());

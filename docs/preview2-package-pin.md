@@ -96,6 +96,15 @@ narrow views, and four new application contracts shipped — so it cannot reuse
 that version. Same-version/different-payload packages break locked restores
 that mix caches (NU1403), which is the same reason preview.2 was retired.
 
+## Extension install audit scope
+
+Preview-2 local `.mpx` installs now compare a replacement package against the
+already-installed client cache entry before writing the new metadata. Web and WPF
+surface drift for host permissions, event permissions, extension points, daemon
+commands, local dependencies, daemon payload identity, package version, and trusted
+signature identity. The check is local-only; it does not query a registry, resolve
+remote updates, or download dependencies.
+
 ## Exact versions
 
 | Package id | Version |

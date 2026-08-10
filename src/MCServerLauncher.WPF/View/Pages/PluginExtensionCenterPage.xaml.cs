@@ -808,7 +808,8 @@ public partial class PluginExtensionCenterPage
             Lang.Tr["Plugin_ExtensionCenter_ReviewUpdates"],
             package.UpdatePolicy is null ? "-" : $"{package.UpdatePolicy.Channel}/{package.UpdatePolicy.Strategy}");
         var riskAudit = FormatRiskReview(package, extensionPoints, daemonPlan?.Plugin is not null);
-        var audit = signatureAudit + Environment.NewLine + dependencyAudit + Environment.NewLine + updateAudit + Environment.NewLine + riskAudit + Environment.NewLine + (daemonPlan?.Plugin is not null
+        var driftAudit = FormatDriftReview(review.Drift);
+        var audit = signatureAudit + Environment.NewLine + dependencyAudit + Environment.NewLine + updateAudit + Environment.NewLine + riskAudit + Environment.NewLine + driftAudit + Environment.NewLine + (daemonPlan?.Plugin is not null
             ? Lang.Tr["Plugin_ExtensionCenter_ReviewDaemonAudit"]
             : Lang.Tr["Plugin_ExtensionCenter_ReviewClientAudit"]);
         var message = string.Format(
@@ -828,6 +829,19 @@ public partial class PluginExtensionCenterPage
             Lang.Tr["Plugin_ExtensionCenter_ReviewTitle"],
             MessageBoxButton.YesNo,
             MessageBoxImage.Warning) == MessageBoxResult.Yes;
+    }
+
+    private static string FormatDriftReview(IReadOnlyList<PluginClientExtensionManifestDrift> drift)
+    {
+        if (drift.Count == 0)
+            return Lang.Tr["Plugin_ExtensionCenter_ReviewDriftNone"];
+
+        return Lang.Tr["Plugin_ExtensionCenter_ReviewDriftSummary"] + Environment.NewLine + string.Join(Environment.NewLine,
+            drift.Take(8).Select(item => string.Format(
+                Lang.Tr["Plugin_ExtensionCenter_ReviewDriftItem"],
+                item.Level,
+                item.Title,
+                item.Details)));
     }
 
     private static string FormatRiskReview(

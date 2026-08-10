@@ -874,6 +874,7 @@ public sealed class PluginUiRuntimeTests
                 null,
                 [],
                 [],
+                null,
                 new Dictionary<string, string>(),
                 new Dictionary<string, string>());
 
@@ -969,6 +970,7 @@ public sealed class PluginUiRuntimeTests
             null,
             [],
             eventPermissions ?? [],
+            null,
             new Dictionary<string, string>(),
             new Dictionary<string, string>());
 

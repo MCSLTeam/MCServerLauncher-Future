@@ -21,8 +21,14 @@ public sealed record PluginClientExtensionCacheEntry(
     PluginMpxUpdatePolicy? UpdatePolicy,
     IReadOnlyList<string> HostCapabilities,
     IReadOnlyList<string> EventPermissions,
+    PluginMpxSignatureTrust? Signature,
     IReadOnlyDictionary<string, string> FileDigests,
     IReadOnlyDictionary<string, string> CachedFiles);
+
+public sealed record PluginClientExtensionManifestDrift(
+    string Level,
+    string Title,
+    string Details);
 
 public sealed record PluginClientExtensionInstallResult(
     bool Ok,
@@ -167,6 +173,7 @@ public sealed class PluginClientExtensionCacheStore(string rootDirectory)
             package.UpdatePolicy,
             new ReadOnlyCollection<string>(package.HostCapabilities.ToArray()),
             new ReadOnlyCollection<string>(package.EventPermissions.ToArray()),
+            package.Signature,
             new ReadOnlyDictionary<string, string>(new Dictionary<string, string>(package.FileDigests, StringComparer.Ordinal)),
             cachedFiles);
 
@@ -254,6 +261,7 @@ public sealed class PluginClientExtensionCacheStore(string rootDirectory)
         PluginMpxUpdatePolicy? UpdatePolicy,
         IReadOnlyList<string>? HostCapabilities,
         IReadOnlyList<string>? EventPermissions,
+        PluginMpxSignatureTrust? Signature,
         Dictionary<string, string> FileDigests,
         Dictionary<string, string> CachedFiles)
     {
@@ -270,6 +278,7 @@ public sealed class PluginClientExtensionCacheStore(string rootDirectory)
             entry.UpdatePolicy,
             new ReadOnlyCollection<string>(entry.HostCapabilities.ToArray()),
             new ReadOnlyCollection<string>(entry.EventPermissions.ToArray()),
+            entry.Signature,
             new Dictionary<string, string>(entry.FileDigests, StringComparer.Ordinal),
             new Dictionary<string, string>(cachedFiles, StringComparer.Ordinal));
 
@@ -316,6 +325,7 @@ public sealed class PluginClientExtensionCacheStore(string rootDirectory)
                 UpdatePolicy,
                 new ReadOnlyCollection<string>((HostCapabilities ?? []).ToArray()),
                 new ReadOnlyCollection<string>((EventPermissions ?? []).ToArray()),
+                Signature,
                 new ReadOnlyDictionary<string, string>(new Dictionary<string, string>(FileDigests, StringComparer.Ordinal)),
                 cachedFiles);
         }
@@ -346,6 +356,7 @@ public sealed class PluginClientExtensionManager(PluginClientExtensionCacheStore
             package.UpdatePolicy,
             new ReadOnlyCollection<string>(package.HostCapabilities.ToArray()),
             new ReadOnlyCollection<string>(package.EventPermissions.ToArray()),
+            package.Signature,
             new ReadOnlyDictionary<string, string>(new Dictionary<string, string>(package.FileDigests, StringComparer.Ordinal)),
             new ReadOnlyDictionary<string, string>(new Dictionary<string, string>(StringComparer.Ordinal)));
         _entries[entry.Id] = entry;
@@ -437,4 +448,117 @@ public sealed class PluginClientExtensionManager(PluginClientExtensionCacheStore
 
     public IReadOnlyList<PluginClientExtensionCacheEntry> List() =>
         new ReadOnlyCollection<PluginClientExtensionCacheEntry>(_entries.Values.OrderBy(entry => entry.Id, StringComparer.Ordinal).ToArray());
+
+    public IReadOnlyList<PluginClientExtensionManifestDrift> BuildManifestDrift(ValidatedPluginMpxPackage package)
+    {
+        ArgumentNullException.ThrowIfNull(package);
+        return BuildManifestDrift(_entries.GetValueOrDefault(package.PluginId), package);
+    }
+
+    public static IReadOnlyList<PluginClientExtensionManifestDrift> BuildManifestDrift(
+        PluginClientExtensionCacheEntry? installed,
+        ValidatedPluginMpxPackage package)
+    {
+        ArgumentNullException.ThrowIfNull(package);
+        if (installed is null)
+            return [];
+
+        List<PluginClientExtensionManifestDrift> findings = [];
+        if (!StringComparer.Ordinal.Equals(installed.Version, package.Version))
+            findings.Add(new PluginClientExtensionManifestDrift("low", "Version change", $"{installed.Version} -> {package.Version}"));
+
+        AddStringSetDrift(
+            findings,
+            "Host permissions",
+            installed.HostCapabilities,
+            package.HostCapabilities,
+            value => value.StartsWith("daemon.", StringComparison.Ordinal) ? "medium" : "low");
+        AddStringSetDrift(
+            findings,
+            "Event permissions",
+            installed.EventPermissions,
+            package.EventPermissions,
+            _ => "medium");
+        AddStringSetDrift(
+            findings,
+            "Extension points",
+            ExtensionPointKeys(installed.DeploymentPlan.Daemon?.ExtensionPoints ?? []),
+            ExtensionPointKeys(package.DeploymentPlan.Daemon?.ExtensionPoints ?? []),
+            value => value.StartsWith("override:override.process.launcher", StringComparison.Ordinal) ? "high" : "medium");
+        AddStringSetDrift(
+            findings,
+            "Daemon commands",
+            installed.Commands.Select(command => command.Id),
+            package.Commands.Select(command => command.Id),
+            _ => "medium");
+        AddStringSetDrift(
+            findings,
+            "Extension dependencies",
+            installed.Dependencies.Select(DependencyKey),
+            package.Dependencies.Select(DependencyKey),
+            _ => "medium");
+
+        var previousDaemon = FileRefKey(installed.DeploymentPlan.Daemon?.Plugin);
+        var nextDaemon = FileRefKey(package.DeploymentPlan.Daemon?.Plugin);
+        if (!StringComparer.Ordinal.Equals(previousDaemon, nextDaemon))
+        {
+            var level = previousDaemon is null || nextDaemon is null ? "high" : "medium";
+            findings.Add(new PluginClientExtensionManifestDrift(level, "Daemon payload", $"{previousDaemon ?? "none"} -> {nextDaemon ?? "none"}"));
+        }
+
+        var previousSignature = SignatureKey(installed.Signature);
+        var nextSignature = SignatureKey(package.Signature);
+        if (!StringComparer.Ordinal.Equals(previousSignature, nextSignature))
+        {
+            var level = installed.Signature is not null && package.Signature is null ? "high" : "medium";
+            findings.Add(new PluginClientExtensionManifestDrift(level, "Signature trust", $"{previousSignature ?? "unsigned"} -> {nextSignature ?? "unsigned"}"));
+        }
+
+        return new ReadOnlyCollection<PluginClientExtensionManifestDrift>(findings);
+    }
+
+    private static void AddStringSetDrift(
+        List<PluginClientExtensionManifestDrift> findings,
+        string title,
+        IEnumerable<string> previousValues,
+        IEnumerable<string> nextValues,
+        Func<string, string> addedLevel)
+    {
+        var previous = previousValues.Where(value => !string.IsNullOrWhiteSpace(value)).ToHashSet(StringComparer.Ordinal);
+        var next = nextValues.Where(value => !string.IsNullOrWhiteSpace(value)).ToHashSet(StringComparer.Ordinal);
+        var added = next.Except(previous, StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray();
+        var removed = previous.Except(next, StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray();
+        if (added.Length == 0 && removed.Length == 0)
+            return;
+
+        var details = string.Join(" ", new[]
+        {
+            added.Length == 0 ? string.Empty : $"Added: {string.Join(", ", added)}.",
+            removed.Length == 0 ? string.Empty : $"Removed: {string.Join(", ", removed)}."
+        }.Where(value => !string.IsNullOrWhiteSpace(value)));
+        findings.Add(new PluginClientExtensionManifestDrift(
+            added.Length == 0 ? "low" : HighestLevel(added.Select(addedLevel)),
+            title,
+            details));
+    }
+
+    private static string HighestLevel(IEnumerable<string> levels)
+    {
+        var materialized = levels.ToArray();
+        if (materialized.Contains("high", StringComparer.Ordinal))
+            return "high";
+        return materialized.Contains("medium", StringComparer.Ordinal) ? "medium" : "low";
+    }
+
+    private static IEnumerable<string> ExtensionPointKeys(IEnumerable<PluginMpxExtensionPoint> points) =>
+        points.Select(point => $"{point.Kind}:{point.Id}{(string.IsNullOrWhiteSpace(point.Target) ? string.Empty : $":{point.Target}")}");
+
+    private static string DependencyKey(PluginMpxExtensionDependency dependency) =>
+        $"{dependency.Id} {dependency.Version}";
+
+    private static string? FileRefKey(PluginMpxDeploymentFile? file) =>
+        file is null ? null : $"{file.Path}@{file.Sha256}";
+
+    private static string? SignatureKey(PluginMpxSignatureTrust? signature) =>
+        signature is null ? null : $"{signature.Publisher}/{signature.KeyId}/{signature.PublicKeySha256}";
 }
