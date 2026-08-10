@@ -132,7 +132,9 @@ extension point id, and the implementation must match the built-in runtime contr
 that point. Preview contracts now exist for `provider.java`, `provider.serverCore`,
 `provider.backup`, `provider.processLauncher`, `registry.template`, `registry.serverCore`,
 `registry.icon`, `registry.formatter`, `registry.command`, `pipeline.instance.create`,
-`hook.instance.lifecycle`, and `override.process.launcher`. `ui.panel`, `event.daemon`,
+`hook.instance.lifecycle`, and `override.process.launcher`. Registered `provider.java`
+contributions are appended to the daemon Java runtime list returned by `mcsl.java.list`;
+duplicate executable paths keep the built-in scanner result. `ui.panel`, `event.daemon`,
 and `command.daemon` continue to use the package UI schema, plugin event publisher, and
 plugin RPC command dispatch paths respectively.
 

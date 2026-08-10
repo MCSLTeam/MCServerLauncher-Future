@@ -73,6 +73,9 @@ internal static class DaemonServiceComposition
         a.RegisterSingleton(instanceManager.MutationAdmission);
         a.RegisterSingleton<IAsyncTimedLazyCell<SystemInfo>>(systemInfoCell);
         a.RegisterSingleton<IAsyncTimedLazyCell<JavaRuntimeList>>(javaRuntimeCell);
+        var extensionPointRuntimeRegistry = new PluginExtensionPointRuntimeRegistry();
+        a.RegisterSingleton(extensionPointRuntimeRegistry);
+        collection.AddSingleton(extensionPointRuntimeRegistry);
 
         var appConfig = AppConfig.Get();
         a.RegisterSingleton(appConfig.Operations);
@@ -159,7 +162,8 @@ internal static class DaemonServiceComposition
             rollbackCleanupTimeout: null,
             shutdownCleanupTimeout: null,
             auditSink: serviceProvider.GetRequiredService<IAuditSink>(),
-            domainEvents: serviceProvider.GetRequiredService<IDomainEventPort>()));
+            domainEvents: serviceProvider.GetRequiredService<IDomainEventPort>(),
+            extensionPointRuntimeRegistry: serviceProvider.GetRequiredService<PluginExtensionPointRuntimeRegistry>()));
         var protocolCatalogAccessor = new FrozenProtocolCatalogAccessor();
         a.RegisterSingleton(protocolCatalogAccessor);
         a.RegisterSingleton<IFrozenProtocolCatalogAccessor>(protocolCatalogAccessor);

@@ -70,7 +70,7 @@ internal sealed class PluginHost
     private readonly List<PluginRuntime> _started = [];
     private readonly List<FailedLoadCleanup> _failedLoadCleanups = [];
     private readonly PluginProviderRegistry _providerRegistry = new();
-    private readonly PluginExtensionPointRuntimeRegistry _extensionPointRuntimeRegistry = new();
+    private readonly PluginExtensionPointRuntimeRegistry _extensionPointRuntimeRegistry;
     private PluginContractAssemblyResolver? _contractResolver;
     private readonly OwnedTaskSupervisor _failedPluginCleanupSupervisor;
     private readonly SemaphoreSlim _operationGate = new(1, 1);
@@ -161,7 +161,8 @@ internal sealed class PluginHost
         TimeSpan? rollbackCleanupTimeout = null,
         TimeSpan? shutdownCleanupTimeout = null,
         IAuditSink? auditSink = null,
-        IDomainEventPort? domainEvents = null)
+        IDomainEventPort? domainEvents = null,
+        PluginExtensionPointRuntimeRegistry? extensionPointRuntimeRegistry = null)
     {
         _instances = instances ?? throw new ArgumentNullException(nameof(instances));
         _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
@@ -211,6 +212,7 @@ internal sealed class PluginHost
         _fileApplication = fileApplication;
         _auditSink = auditSink;
         _domainEvents = domainEvents;
+        _extensionPointRuntimeRegistry = extensionPointRuntimeRegistry ?? new PluginExtensionPointRuntimeRegistry();
     }
 
     /// <summary>

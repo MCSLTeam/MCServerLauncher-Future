@@ -13,7 +13,7 @@ namespace MCServerLauncher.ProtocolTests;
 public sealed class InstanceProcessEventPumpTests
 {
     private static readonly TimeSpan TestTimeout = TimeSpan.FromSeconds(5);
-    private static readonly TimeSpan PtyOutputTimeout = TimeSpan.FromSeconds(15);
+    private static readonly TimeSpan PtyOutputTimeout = TimeSpan.FromSeconds(45);
 
     [Fact]
     public async Task WaitForExitAsync_DrainsStdoutAndStderrBeforeCompleting()

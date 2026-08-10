@@ -89,10 +89,11 @@ public sealed class PluginExtensionPointRuntimeRegistryTests
 
     private sealed class JavaProvider : IPluginJavaRuntimeProvider
     {
-        public ValueTask<Result<PluginJavaRuntimeResolution, DaemonError>> ResolveAsync(
-            PluginJavaRuntimeRequest request,
+        public ValueTask<Result<IReadOnlyList<PluginJavaRuntimeResolution>, DaemonError>> ListAsync(
             CancellationToken cancellationToken) =>
-            ValueTask.FromResult(PluginResult.Ok(new PluginJavaRuntimeResolution("Test Java", "/java", "/java/bin/java")));
+            ValueTask.FromResult(PluginResult.Ok<IReadOnlyList<PluginJavaRuntimeResolution>>([
+                new PluginJavaRuntimeResolution("Test Java", "/java", "/java/bin/java", "21.0.7", "x64")
+            ]));
     }
 
     private sealed class ServerCoreProvider : IPluginServerCoreProvider

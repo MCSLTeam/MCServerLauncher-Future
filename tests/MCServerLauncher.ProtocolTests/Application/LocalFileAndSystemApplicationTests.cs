@@ -1,10 +1,15 @@
+using System.Collections.Frozen;
 using System.Collections.Immutable;
 using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Common.Contracts.System;
 using MCServerLauncher.Daemon.API.Errors;
+using MCServerLauncher.Daemon.API.Plugins;
+using MCServerLauncher.Daemon.API.Protocol;
 using MCServerLauncher.Daemon.ApplicationCore;
+using MCServerLauncher.Daemon.Plugins;
 using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils.LazyCell;
+using NuGet.Versioning;
 using RustyOptions;
 
 namespace MCServerLauncher.ProtocolTests;
@@ -90,6 +95,48 @@ public sealed class LocalFileAndSystemApplicationTests
     }
 
     [Fact]
+    public async Task LocalSystemApplication_MergesDeclaredPluginJavaProviderRuntimes()
+    {
+        var systemInfo = new SystemInfo(
+            new OperatingSystemInfo("TestOS", "x64"),
+            new ProcessorInfo("vendor", "processor", 8, 12.5, 4, 8),
+            new MemoryInfo(4096, 1024),
+            new MCServerLauncher.Common.Contracts.System.DriveInfo("NTFS", 1_000, 400, "C:"),
+            [],
+            "test-daemon");
+        var runtimeList = new JavaRuntimeList([
+            new JavaRuntime("java-17", "17.0.13", "x64")
+        ]);
+        var registry = new PluginExtensionPointRuntimeRegistry();
+        var manifest = CreatePluginManifest([
+            new PluginManifestExtensionPoint(
+                "provider.java",
+                PluginExtensionPointKind.Provider,
+                20,
+                null,
+                ImmutableArray<string>.Empty,
+                null)
+        ]);
+        var registered = registry
+            .CreateRegistrar(manifest, new PluginErrorFactory(manifest.Identity))
+            .Register<IPluginJavaRuntimeProvider>("provider.java", new TestJavaProvider());
+        Assert.True(registered.IsOk(out _));
+        var application = new LocalSystemApplication(
+            new ControlledAsyncTimedLazyCell<SystemInfo>(Task.FromResult(systemInfo)),
+            new ControlledAsyncTimedLazyCell<JavaRuntimeList>(Task.FromResult(runtimeList)),
+            registry);
+
+        var javaResult = await application.ListJavaRuntimesAsync(CancellationToken.None);
+
+        Assert.True(javaResult.IsOk(out var mappedRuntimes));
+        Assert.Equal(
+            ["java-17", "/plugin/java/bin/java"],
+            mappedRuntimes.Items.Select(static runtime => runtime.Path).ToArray());
+        Assert.Equal("21.0.7", mappedRuntimes.Items[1].Version);
+        Assert.Equal("arm64", mappedRuntimes.Items[1].Architecture);
+    }
+
+    [Fact]
     public async Task LocalSystemApplication_PropagatesCallerCancellationAndMapsCellFailures()
     {
         var pendingSystemInfo = new TaskCompletionSource<SystemInfo>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -108,6 +155,32 @@ public sealed class LocalFileAndSystemApplicationTests
         Assert.True(failedJavaResult.IsErr(out var error));
         Assert.IsType<InternalDaemonError>(error);
         Assert.Equal("system.java_unavailable", error.Code);
+    }
+
+    private static PluginManifest CreatePluginManifest(ImmutableArray<PluginManifestExtensionPoint> extensionPoints) =>
+        new(
+            new PluginIdentity("community.example.java", "1.0.0"),
+            "Runtime.dll",
+            "Community.Example.Java.Plugin",
+            NuGetVersion.Parse("1.0.0"),
+            VersionRange.Parse("[1.0.0,2.0.0)"),
+            Array.Empty<PluginFeature>().ToFrozenSet(),
+            ImmutableArray<PluginManifestPluginDependency>.Empty,
+            ImmutableArray<PluginManifestContractDependency>.Empty,
+            extensionPoints,
+            ImmutableArray<PluginManifestCommand>.Empty,
+            "/tmp/community.example.java",
+            "/tmp/community.example.java/Runtime.dll",
+            "digest");
+
+    private sealed class TestJavaProvider : IPluginJavaRuntimeProvider
+    {
+        public ValueTask<Result<IReadOnlyList<PluginJavaRuntimeResolution>, DaemonError>> ListAsync(
+            CancellationToken cancellationToken) =>
+            ValueTask.FromResult(PluginResult.Ok<IReadOnlyList<PluginJavaRuntimeResolution>>([
+                new PluginJavaRuntimeResolution("Duplicate Java", "/java-17", "java-17", "17.0.13", "x64"),
+                new PluginJavaRuntimeResolution("Plugin Java", "/plugin/java", "/plugin/java/bin/java", "21.0.7", "arm64")
+            ]));
     }
 
     private sealed class ControlledAsyncTimedLazyCell<T>(Task<T> value) : IAsyncTimedLazyCell<T>

@@ -26,12 +26,13 @@ public sealed record PluginJavaRuntimeResolution(
     string DisplayName,
     string JavaHome,
     string? ExecutablePath,
+    string Version,
+    string Architecture,
     IReadOnlyDictionary<string, string>? Metadata = null);
 
 public interface IPluginJavaRuntimeProvider
 {
-    ValueTask<Result<PluginJavaRuntimeResolution, DaemonError>> ResolveAsync(
-        PluginJavaRuntimeRequest request,
+    ValueTask<Result<IReadOnlyList<PluginJavaRuntimeResolution>, DaemonError>> ListAsync(
         CancellationToken cancellationToken);
 }
 
