@@ -839,7 +839,9 @@ public partial class PluginExtensionCenterPage
             : string.Format(
                 Lang.Tr["Plugin_ExtensionCenter_ReviewSignatureTrusted"],
                 package.Signature.Publisher,
-                package.Signature.KeyId);
+                package.Signature.KeyId,
+                ShortFingerprint(package.Signature.PublicKeySha256),
+                package.Signature.SignedAt?.ToString("u") ?? Lang.Tr["Plugin_ExtensionCenter_ReviewSignatureTimeUnknown"]);
         var dependencyAudit = string.Format(
             Lang.Tr["Plugin_ExtensionCenter_ReviewDependencies"],
             JoinForReview(package.Dependencies.Select(dependency => $"{dependency.Id} {dependency.Version}")));
@@ -869,6 +871,9 @@ public partial class PluginExtensionCenterPage
             MessageBoxButton.YesNo,
             MessageBoxImage.Warning) == MessageBoxResult.Yes;
     }
+
+    private static string ShortFingerprint(string fingerprint) =>
+        fingerprint.Length <= 24 ? fingerprint : fingerprint[..12] + "..." + fingerprint[^8..];
 
     private static string FormatDriftReview(IReadOnlyList<PluginClientExtensionManifestDrift> drift)
     {
