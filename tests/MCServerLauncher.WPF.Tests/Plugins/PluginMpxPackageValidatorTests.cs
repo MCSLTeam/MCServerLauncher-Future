@@ -268,8 +268,13 @@ public sealed class PluginMpxPackageValidatorTests
     public void ClientExtensionManagerPersistsValidatedClientPayloadFiles()
     {
         var iconBytes = new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 };
+        var daemonBundleBytes = Encoding.UTF8.GetBytes("daemon-bundle");
         var packageBytes = BuildMpxPackage(
-            extraEntries: new Dictionary<string, byte[]> { ["client/resources/icon.png"] = iconBytes },
+            extraEntries: new Dictionary<string, byte[]>
+            {
+                ["client/resources/icon.png"] = iconBytes,
+                ["daemon/plugin-bundle.zip"] = daemonBundleBytes
+            },
             mutateManifest: manifest =>
             {
                 var resources = (JsonArray)manifest["resources"]!;
@@ -280,6 +285,15 @@ public sealed class PluginMpxPackageValidatorTests
                     ["mime"] = "image/png",
                     ["bytes"] = iconBytes.Length
                 });
+                var targets = (JsonObject)manifest["targets"]!;
+                targets["daemon"] = new JsonObject
+                {
+                    ["plugin"] = new JsonObject
+                    {
+                        ["path"] = "daemon/plugin-bundle.zip",
+                        ["sha256"] = Sha256(daemonBundleBytes)
+                    }
+                };
             });
         var validation = PluginMpxPackageValidator.Validate(packageBytes);
         Assert.True(validation.Ok, FormatDiagnostics(validation.Diagnostics));
@@ -294,16 +308,20 @@ public sealed class PluginMpxPackageValidatorTests
             Assert.True(install.Entry!.CachedFiles.TryGetValue("client/ui.json", out var cachedUi));
             Assert.True(install.Entry.CachedFiles.TryGetValue("bundle.js", out var cachedScript));
             Assert.True(install.Entry.CachedFiles.TryGetValue("client/resources/icon.png", out var cachedIcon));
+            Assert.True(install.Entry.CachedFiles.TryGetValue("daemon/plugin-bundle.zip", out var cachedDaemonBundle));
             Assert.True(File.Exists(cachedUi));
             Assert.True(File.Exists(cachedScript));
             Assert.Equal(iconBytes, File.ReadAllBytes(cachedIcon!));
+            Assert.Equal(daemonBundleBytes, File.ReadAllBytes(cachedDaemonBundle!));
 
             var reader = new PluginClientExtensionManager(store);
             reader.Restore();
             var restored = reader.Get("community.example.status-panel");
             Assert.NotNull(restored);
             Assert.True(restored.CachedFiles.TryGetValue("client/resources/icon.png", out cachedIcon));
+            Assert.True(restored.CachedFiles.TryGetValue("daemon/plugin-bundle.zip", out cachedDaemonBundle));
             Assert.True(File.Exists(cachedIcon));
+            Assert.True(File.Exists(cachedDaemonBundle));
 
             File.WriteAllBytes(cachedIcon!, [0, 1, 2, 3]);
             var tampered = new PluginClientExtensionManager(store);

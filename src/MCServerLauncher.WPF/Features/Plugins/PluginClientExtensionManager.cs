@@ -84,7 +84,7 @@ public sealed class PluginClientExtensionCacheStore(string rootDirectory)
         Directory.CreateDirectory(payloadRoot);
         Dictionary<string, string> cachedRelativeFiles = new(StringComparer.Ordinal);
         using var archive = new ZipArchive(new MemoryStream(packageBytes, writable: false), ZipArchiveMode.Read);
-        foreach (var packagePath in ClientPackagePaths(package.DeploymentPlan.Client))
+        foreach (var packagePath in PackagePayloadPaths(package.DeploymentPlan))
         {
             var entry = archive.GetEntry(packagePath) ?? throw new InvalidDataException($"Package payload '{packagePath}' is missing.");
             var cachedPath = SafePayloadPath(payloadRoot, packagePath);
@@ -163,8 +163,9 @@ public sealed class PluginClientExtensionCacheStore(string rootDirectory)
             new ReadOnlyDictionary<string, string>(new Dictionary<string, string>(package.FileDigests, StringComparer.Ordinal)),
             cachedFiles);
 
-    private static IEnumerable<string> ClientPackagePaths(PluginMpxClientDeployment? client)
+    private static IEnumerable<string> PackagePayloadPaths(PluginMpxDeploymentPlan deploymentPlan)
     {
+        var client = deploymentPlan.Client;
         if (client?.Ui is not null)
             yield return client.Ui.Path;
         if (client?.Theme is not null)
@@ -176,6 +177,8 @@ public sealed class PluginClientExtensionCacheStore(string rootDirectory)
             foreach (var resource in client.Resources)
                 yield return resource.Path;
         }
+        if (deploymentPlan.Daemon?.Plugin is not null)
+            yield return deploymentPlan.Daemon.Plugin.Path;
     }
 
     private static void WriteDocument(string directory, CacheDocument document) =>

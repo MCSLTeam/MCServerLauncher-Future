@@ -1,13 +1,19 @@
+using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Daemon.API.Events;
 using MCServerLauncher.Daemon.API.Protocol;
 using MCServerLauncher.DaemonClient;
 using MCServerLauncher.WPF.Features.Plugins;
 using MCServerLauncher.WPF.Modules;
+using MCServerLauncher.WPF.Services;
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Collections.ObjectModel;
+using System.IO;
+using System.Security.Cryptography;
+using System.Threading;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
@@ -91,6 +97,22 @@ public partial class PluginExtensionCenterPage
             : Lang.Tr["Plugin_ExtensionCenter_RemoveMissing"];
     }
 
+    private async void DeployDaemon_Click(object sender, RoutedEventArgs e)
+    {
+        if (ExtensionList.SelectedItem is not PluginExtensionCenterEntryViewModel selected)
+            return;
+
+        await DeployDaemonBundleAsync(selected.Entry).ConfigureAwait(false);
+    }
+
+    private async void RemoveDaemon_Click(object sender, RoutedEventArgs e)
+    {
+        if (ExtensionList.SelectedItem is not PluginExtensionCenterEntryViewModel selected)
+            return;
+
+        await RemoveDaemonBundleAsync(selected.Entry).ConfigureAwait(false);
+    }
+
     private void ExtensionList_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (ExtensionList.SelectedItem is PluginExtensionCenterEntryViewModel selected)
@@ -122,6 +144,8 @@ public partial class PluginExtensionCenterPage
     private async Task RenderSelectedAsync(PluginClientExtensionCacheEntry entry)
     {
         RemoveButton.IsEnabled = true;
+        DeployDaemonButton.IsEnabled = entry.DeploymentPlan.Daemon?.Plugin is not null;
+        RemoveDaemonButton.IsEnabled = entry.DeploymentPlan.Daemon?.Plugin is not null;
         var summary = PluginExtensionCenterService.Summarize(entry);
         SelectedTitle.Text = entry.Id;
         SelectedSubtitle.Text = string.Format(
@@ -175,6 +199,8 @@ public partial class PluginExtensionCenterPage
     private void ClearSelection()
     {
         RemoveButton.IsEnabled = false;
+        DeployDaemonButton.IsEnabled = false;
+        RemoveDaemonButton.IsEnabled = false;
         SelectedTitle.Text = Lang.Tr["Plugin_ExtensionCenter_NoSelection"];
         SelectedSubtitle.Text = string.Empty;
         RenderHost.Content = null;
@@ -399,6 +425,181 @@ public partial class PluginExtensionCenterPage
             : string.Join(Environment.NewLine, dispatched.Diagnostics.Select(diagnostic => diagnostic.Message));
     }
 
+    private async Task DeployDaemonBundleAsync(PluginClientExtensionCacheEntry entry)
+    {
+        var daemonBundle = entry.DeploymentPlan.Daemon?.Plugin;
+        if (daemonBundle is null)
+            return;
+
+        var daemon = GetReadyDaemon();
+        if (daemon is null)
+        {
+            StatusText.Text = Lang.Tr["Plugin_ExtensionCenter_DaemonUnavailable"];
+            return;
+        }
+
+        if (!entry.CachedFiles.TryGetValue(daemonBundle.Path, out var cachedBundlePath) || !File.Exists(cachedBundlePath))
+        {
+            StatusText.Text = Lang.Tr["Plugin_ExtensionCenter_DaemonBundleMissing"];
+            return;
+        }
+
+        SetDeploymentButtons(enabled: false);
+        StatusText.Text = Lang.Tr["Plugin_ExtensionCenter_DaemonDeploying"];
+        try
+        {
+            var actualHash = await Sha256FileAsync(cachedBundlePath, CancellationToken.None).ConfigureAwait(false);
+            if (!StringComparer.Ordinal.Equals(actualHash, daemonBundle.Sha256))
+            {
+                await Dispatcher.InvokeAsync(() => StatusText.Text = Lang.Tr["Plugin_ExtensionCenter_DaemonBundleHashMismatch"]);
+                return;
+            }
+
+            var uploadPath = $"caches/uploads/extensions/{entry.Id}-{entry.Version}.zip";
+            await UploadFileToDaemonAsync(daemon, cachedBundlePath, uploadPath, daemonBundle.Sha256, CancellationToken.None).ConfigureAwait(false);
+            var deployed = await daemon.InstallExtensionDaemonBundleAsync(
+                new ExtensionDaemonBundleInstallRequest(entry.Id, uploadPath, daemonBundle.Sha256),
+                CancellationToken.None).ConfigureAwait(false);
+            if (deployed.IsErr(out var deployError))
+                throw DaemonErrorLocalization.ToException(deployError!);
+
+            var result = deployed.Unwrap();
+            await Dispatcher.InvokeAsync(() => StatusText.Text = FormatDeploymentResult(result));
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException or ArgumentException or NotSupportedException)
+        {
+            await Dispatcher.InvokeAsync(() => StatusText.Text = exception.Message);
+        }
+        finally
+        {
+            await Dispatcher.InvokeAsync(() => SetDeploymentButtons(enabled: true));
+        }
+    }
+
+    private async Task RemoveDaemonBundleAsync(PluginClientExtensionCacheEntry entry)
+    {
+        if (entry.DeploymentPlan.Daemon?.Plugin is null)
+            return;
+
+        var daemon = GetReadyDaemon();
+        if (daemon is null)
+        {
+            StatusText.Text = Lang.Tr["Plugin_ExtensionCenter_DaemonUnavailable"];
+            return;
+        }
+
+        SetDeploymentButtons(enabled: false);
+        StatusText.Text = Lang.Tr["Plugin_ExtensionCenter_DaemonRemoving"];
+        try
+        {
+            var removed = await daemon.RemoveExtensionDaemonBundleAsync(
+                new ExtensionDaemonBundleRemoveRequest(entry.Id),
+                CancellationToken.None).ConfigureAwait(false);
+            if (removed.IsErr(out var removeError))
+                throw DaemonErrorLocalization.ToException(removeError!);
+
+            var result = removed.Unwrap();
+            await Dispatcher.InvokeAsync(() => StatusText.Text = FormatDeploymentResult(result));
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException or ArgumentException or NotSupportedException)
+        {
+            await Dispatcher.InvokeAsync(() => StatusText.Text = exception.Message);
+        }
+        finally
+        {
+            await Dispatcher.InvokeAsync(() => SetDeploymentButtons(enabled: true));
+        }
+    }
+
+    private void SetDeploymentButtons(bool enabled)
+    {
+        if (ExtensionList.SelectedItem is not PluginExtensionCenterEntryViewModel selected || selected.Entry.DeploymentPlan.Daemon?.Plugin is null)
+        {
+            DeployDaemonButton.IsEnabled = false;
+            RemoveDaemonButton.IsEnabled = false;
+            return;
+        }
+
+        DeployDaemonButton.IsEnabled = enabled;
+        RemoveDaemonButton.IsEnabled = enabled;
+    }
+
+    private static async Task UploadFileToDaemonAsync(
+        DaemonClient.DaemonClient daemon,
+        string sourcePath,
+        string destinationPath,
+        string sha256,
+        CancellationToken cancellationToken)
+    {
+        Guid? sessionId = null;
+        var closed = false;
+        await using var stream = new FileStream(
+            sourcePath,
+            FileMode.Open,
+            FileAccess.Read,
+            FileShare.Read,
+            1024 * 1024,
+            FileOptions.Asynchronous | FileOptions.SequentialScan);
+        var openResult = await daemon.Files.OpenUploadAsync(
+            new UploadOpenRequest(destinationPath, stream.Length, sha256),
+            cancellationToken).ConfigureAwait(false);
+        if (openResult.IsErr(out var openError))
+            throw DaemonErrorLocalization.ToException(openError!);
+
+        var session = openResult.Unwrap();
+        sessionId = session.SessionId;
+        try
+        {
+            var buffer = new byte[session.MaxChunkSize];
+            var offset = 0L;
+            while (true)
+            {
+                var read = await stream.ReadAsync(buffer.AsMemory(0, buffer.Length), cancellationToken).ConfigureAwait(false);
+                if (read == 0)
+                    break;
+
+                var writeResult = await daemon.Files.WriteUploadChunkAsync(
+                    new UploadChunkRequest(session.SessionId, offset, ImmutableArray.Create(buffer, 0, read)),
+                    cancellationToken).ConfigureAwait(false);
+                if (writeResult.IsErr(out var writeError))
+                    throw DaemonErrorLocalization.ToException(writeError!);
+
+                offset += read;
+            }
+
+            var closeResult = await daemon.Files.CloseUploadAsync(session.SessionId, cancellationToken).ConfigureAwait(false);
+            if (closeResult.IsErr(out var closeError))
+                throw DaemonErrorLocalization.ToException(closeError!);
+            closed = true;
+        }
+        finally
+        {
+            if (sessionId is { } openedSessionId && !closed)
+                _ = await daemon.Files.CancelUploadAsync(openedSessionId, CancellationToken.None).ConfigureAwait(false);
+        }
+    }
+
+    private static async Task<string> Sha256FileAsync(string path, CancellationToken cancellationToken)
+    {
+        await using var stream = new FileStream(
+            path,
+            FileMode.Open,
+            FileAccess.Read,
+            FileShare.Read,
+            1024 * 1024,
+            FileOptions.Asynchronous | FileOptions.SequentialScan);
+        var hash = await SHA256.HashDataAsync(stream, cancellationToken).ConfigureAwait(false);
+        return Convert.ToHexString(hash).ToLowerInvariant();
+    }
+
+    private static string FormatDeploymentResult(ExtensionDaemonBundleDeploymentResult result)
+    {
+        var message = string.IsNullOrWhiteSpace(result.Message) ? result.Status : result.Message;
+        return result.RestartRequired
+            ? message + Environment.NewLine + Lang.Tr["Plugin_ExtensionCenter_DaemonRestartRequired"]
+            : message;
+    }
+
     private static string FormatMetadata(PluginExtensionCenterEntrySummary summary)
     {
         static string Join(IReadOnlyList<string> values) => values.Count == 0 ? "-" : string.Join(", ", values.Take(8));
@@ -447,6 +648,9 @@ public partial class PluginExtensionCenterPage
     {
         List<string> resources = [];
         var client = package.DeploymentPlan.Client;
+        var daemon = package.DeploymentPlan.Daemon;
+        if (daemon?.Plugin is not null)
+            resources.Add(daemon.Plugin.Path);
         if (client?.Ui is not null)
             resources.Add(client.Ui.Path);
         if (client?.Theme is not null)

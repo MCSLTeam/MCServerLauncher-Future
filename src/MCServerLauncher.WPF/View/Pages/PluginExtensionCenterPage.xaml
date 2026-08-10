@@ -85,10 +85,20 @@
                         <TextBlock x:Name="SelectedTitle" Style="{StaticResource SubtitleTextBlock}" />
                         <TextBlock x:Name="SelectedSubtitle" Style="{StaticResource CaptionTextBlock}" TextWrapping="Wrap" Margin="0,4,10,0" />
                     </StackPanel>
-                    <Button Grid.Column="1" x:Name="RemoveButton" Click="Remove_Click" IsEnabled="False">
-                        <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Delete}"
-                                        Content="{Binding [Delete], Source={x:Static i18n:Lang.Tr}}" />
-                    </Button>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button x:Name="DeployDaemonButton" Margin="0,0,8,0" Click="DeployDaemon_Click" IsEnabled="False">
+                            <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Upload}"
+                                            Content="{Binding [Plugin_ExtensionCenter_DeployDaemon], Source={x:Static i18n:Lang.Tr}}" />
+                        </Button>
+                        <Button x:Name="RemoveDaemonButton" Margin="0,0,8,0" Click="RemoveDaemon_Click" IsEnabled="False">
+                            <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Delete}"
+                                            Content="{Binding [Plugin_ExtensionCenter_RemoveDaemon], Source={x:Static i18n:Lang.Tr}}" />
+                        </Button>
+                        <Button x:Name="RemoveButton" Click="Remove_Click" IsEnabled="False">
+                            <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Delete}"
+                                            Content="{Binding [Delete], Source={x:Static i18n:Lang.Tr}}" />
+                        </Button>
+                    </StackPanel>
                 </Grid>
 
                 <TextBlock Grid.Row="1" x:Name="StatusText" Style="{StaticResource CaptionTextBlock}"
