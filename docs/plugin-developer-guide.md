@@ -136,9 +136,13 @@ that point. Preview contracts now exist for `provider.java`, `provider.serverCor
 contributions are appended to the daemon Java runtime list returned by `mcsl.java.list`;
 duplicate executable paths keep the built-in scanner result. Registry extension points are
 runtime-collected in priority order; duplicate contribution ids keep the higher-priority
-plugin contribution, with plugin id as the deterministic tie-breaker. `ui.panel`,
-`event.daemon`, and `command.daemon` continue to use the package UI schema, plugin event
-publisher, and plugin RPC command dispatch paths respectively.
+plugin contribution, with plugin id as the deterministic tie-breaker.
+`pipeline.instance.create` stages run before daemon create-instance validation and may set
+`name`, `target`, `version`, `inputEncoding`, `outputEncoding`, `javaPath`, `consoleMode`,
+`source`, `sourceType`, and `usePostProcess`; instance id, instance type, target type, and
+mirror remain daemon-owned inputs. `ui.panel`, `event.daemon`, and `command.daemon`
+continue to use the package UI schema, plugin event publisher, and plugin RPC command
+dispatch paths respectively.
 
 Plugins that declare `event.subscribe` get `features.Subscriptions`. Subscriptions accept
 built-in typed event descriptors such as `BuiltInProtocolDefinitions.InstanceLog`, deliver

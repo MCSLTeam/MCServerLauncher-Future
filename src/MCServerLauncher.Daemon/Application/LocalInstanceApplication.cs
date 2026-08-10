@@ -3,13 +3,17 @@ using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.API.Application;
 using MCServerLauncher.Daemon.API.Errors;
+using MCServerLauncher.Daemon.API.Plugins;
 using MCServerLauncher.Daemon.Management;
+using MCServerLauncher.Daemon.Plugins;
 using RustyOptions;
 using Serilog;
 
 namespace MCServerLauncher.Daemon.ApplicationCore;
 
-internal sealed class LocalInstanceApplication(IInstanceManager instanceManager) : IInstanceApplication
+internal sealed class LocalInstanceApplication(
+    IInstanceManager instanceManager,
+    PluginExtensionPointRuntimeRegistry? extensionPointRuntimeRegistry = null) : IInstanceApplication
 {
     private readonly ConsoleSessionCoordinator _consoles = new(instanceManager);
 
@@ -23,11 +27,16 @@ internal sealed class LocalInstanceApplication(IInstanceManager instanceManager)
 
         try
         {
-            var validation = request.Setting.ValidateSetting();
+            var pipelineResult = await ApplyInstanceCreatePipelineAsync(request.Setting, cancellationToken).ConfigureAwait(false);
+            if (pipelineResult.IsErr(out var pipelineError))
+                return Result.Err<CreateInstanceResult, DaemonError>(pipelineError!);
+
+            var setting = pipelineResult.Unwrap();
+            var validation = setting.ValidateSetting();
             if (validation.IsErr(out var validationError))
                 return Result.Err<CreateInstanceResult, DaemonError>(validationError!);
 
-            var result = await instanceManager.TryAddInstance(request.Setting, cancellationToken);
+            var result = await instanceManager.TryAddInstance(setting, cancellationToken);
             if (result.IsErr(out var createError))
                 return Result.Err<CreateInstanceResult, DaemonError>(createError!);
 
@@ -44,6 +53,133 @@ internal sealed class LocalInstanceApplication(IInstanceManager instanceManager)
             return Result.Err<CreateInstanceResult, DaemonError>(
                 new InternalDaemonError("instance.create_failed", "The instance could not be created."));
         }
+    }
+
+    private async Task<Result<InstanceFactoryConfiguration, DaemonError>> ApplyInstanceCreatePipelineAsync(
+        InstanceFactoryConfiguration setting,
+        CancellationToken cancellationToken)
+    {
+        if (extensionPointRuntimeRegistry is null)
+            return Result.Ok<InstanceFactoryConfiguration, DaemonError>(setting);
+
+        var context = new PluginInstanceCreatePipelineContext(
+            setting.Configuration.InstanceType.ToString(),
+            CreatePipelineInputs(setting));
+        var pipelineResult = await extensionPointRuntimeRegistry.ExecuteInstanceCreatePipelineAsync(context, cancellationToken)
+            .ConfigureAwait(false);
+        if (pipelineResult.IsErr(out var pipelineError))
+            return Result.Err<InstanceFactoryConfiguration, DaemonError>(pipelineError!);
+
+        return ApplyInstanceCreatePipelineOutputs(setting, pipelineResult.Unwrap());
+    }
+
+    private static IReadOnlyDictionary<string, string> CreatePipelineInputs(InstanceFactoryConfiguration setting)
+    {
+        var config = setting.Configuration;
+        return new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["instanceId"] = config.InstanceId.ToString("D"),
+            ["name"] = config.Name,
+            ["target"] = config.Target,
+            ["instanceType"] = config.InstanceType.ToString(),
+            ["targetType"] = config.TargetType.ToString(),
+            ["version"] = config.Version,
+            ["inputEncoding"] = config.InputEncoding,
+            ["outputEncoding"] = config.OutputEncoding,
+            ["javaPath"] = config.JavaPath,
+            ["consoleMode"] = config.ConsoleMode.ToString(),
+            ["source"] = setting.Source,
+            ["sourceType"] = setting.SourceType.ToString(),
+            ["mirror"] = setting.Mirror.ToString(),
+            ["usePostProcess"] = setting.UsePostProcess ? "true" : "false"
+        };
+    }
+
+    private static Result<InstanceFactoryConfiguration, DaemonError> ApplyInstanceCreatePipelineOutputs(
+        InstanceFactoryConfiguration setting,
+        IReadOnlyDictionary<string, string> outputs)
+    {
+        var config = setting.Configuration;
+        if (!TryParseEnum(outputs, "consoleMode", config.ConsoleMode, out ConsoleMode consoleMode, out var consoleModeError))
+            return Result.Err<InstanceFactoryConfiguration, DaemonError>(consoleModeError!);
+        if (!TryParseEnum(outputs, "sourceType", setting.SourceType, out SourceType sourceType, out var sourceTypeError))
+            return Result.Err<InstanceFactoryConfiguration, DaemonError>(sourceTypeError!);
+        if (!TryParseBool(outputs, "usePostProcess", setting.UsePostProcess, out var usePostProcess, out var boolError))
+            return Result.Err<InstanceFactoryConfiguration, DaemonError>(boolError!);
+
+        var updatedConfig = new InstanceConfiguration(
+            config.InstanceId,
+            GetOutput(outputs, "name", config.Name),
+            GetOutput(outputs, "target", config.Target),
+            config.InstanceType,
+            config.TargetType,
+            GetOutput(outputs, "version", config.Version),
+            GetOutput(outputs, "inputEncoding", config.InputEncoding),
+            GetOutput(outputs, "outputEncoding", config.OutputEncoding),
+            GetOutput(outputs, "javaPath", config.JavaPath),
+            config.Arguments,
+            config.EnvironmentVariables,
+            config.EventRules,
+            consoleMode);
+
+        return Result.Ok<InstanceFactoryConfiguration, DaemonError>(new InstanceFactoryConfiguration(
+            updatedConfig,
+            GetOutput(outputs, "source", setting.Source),
+            sourceType,
+            setting.Mirror,
+            usePostProcess));
+    }
+
+    private static string GetOutput(IReadOnlyDictionary<string, string> outputs, string key, string fallback) =>
+        outputs.TryGetValue(key, out var value) ? value : fallback;
+
+    private static bool TryParseEnum<TEnum>(
+        IReadOnlyDictionary<string, string> outputs,
+        string key,
+        TEnum fallback,
+        out TEnum value,
+        out DaemonError? error)
+        where TEnum : struct, Enum
+    {
+        if (!outputs.TryGetValue(key, out var text))
+        {
+            value = fallback;
+            error = null;
+            return true;
+        }
+
+        if (Enum.TryParse<TEnum>(text, ignoreCase: true, out value))
+        {
+            error = null;
+            return true;
+        }
+
+        error = new ValidationDaemonError("instance.pipeline_output.invalid", $"Pipeline output '{key}' has an unsupported value.");
+        return false;
+    }
+
+    private static bool TryParseBool(
+        IReadOnlyDictionary<string, string> outputs,
+        string key,
+        bool fallback,
+        out bool value,
+        out DaemonError? error)
+    {
+        if (!outputs.TryGetValue(key, out var text))
+        {
+            value = fallback;
+            error = null;
+            return true;
+        }
+
+        if (bool.TryParse(text, out value))
+        {
+            error = null;
+            return true;
+        }
+
+        error = new ValidationDaemonError("instance.pipeline_output.invalid", $"Pipeline output '{key}' has an unsupported value.");
+        return false;
     }
 
     public async Task<Result<Unit, DaemonError>> RemoveInstanceAsync(

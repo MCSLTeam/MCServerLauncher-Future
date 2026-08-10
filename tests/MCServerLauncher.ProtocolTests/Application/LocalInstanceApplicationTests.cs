@@ -1,16 +1,21 @@
 using System.Collections.Concurrent;
+using System.Collections.Frozen;
 using System.Collections.Immutable;
 using MCServerLauncher.Common.Contracts.Instances;
 using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.API.Errors;
+using MCServerLauncher.Daemon.API.Plugins;
+using MCServerLauncher.Daemon.API.Protocol;
 using MCServerLauncher.Daemon.ApplicationCore;
 using MCServerLauncher.Daemon.ApplicationCore.Events;
 using MCServerLauncher.Daemon.Management;
 using MCServerLauncher.Daemon.Management.Communicate;
 using MCServerLauncher.Daemon.Management.Factory;
+using MCServerLauncher.Daemon.Plugins;
 using MCServerLauncher.Daemon.Storage;
 using MCServerLauncher.Daemon.Utils;
 using MCServerLauncher.ProtocolTests.Helpers;
+using NuGet.Versioning;
 using RustyOptions;
 using LegacyInstanceReport = MCServerLauncher.Common.ProtoType.Instance.InstanceReport;
 
@@ -29,6 +34,51 @@ public sealed class LocalInstanceApplicationTests
             CancellationToken.None);
 
         Assert.True(result.IsOk(out _));
+    }
+
+    [Fact]
+    public async Task CreateInstance_AppliesInstanceCreatePipelineOutputsBeforeValidation()
+    {
+        Directory.CreateDirectory(FileManager.UploadRoot);
+        var sourcePath = Path.Combine(FileManager.UploadRoot, $"pipeline-create-{Guid.NewGuid():N}.jar");
+        await File.WriteAllTextAsync(sourcePath, "core");
+        var manager = new RecordingInstanceManager();
+        var registry = new PluginExtensionPointRuntimeRegistry();
+        var manifest = CreatePipelineManifest();
+        var registered = registry
+            .CreateRegistrar(manifest, new PluginErrorFactory(manifest.Identity))
+            .Register<IPluginInstanceCreatePipelineStage>("pipeline.instance.create", new CreatePipelineStage(new Dictionary<string, string>
+            {
+                ["name"] = "pipeline-name",
+                ["version"] = "1.20.2",
+                ["javaPath"] = "java",
+                ["usePostProcess"] = "true"
+            }));
+        Assert.True(registered.IsOk(out _));
+        var application = new LocalInstanceApplication(manager, registry);
+        var setting = new InstanceFactoryConfiguration(
+            InstanceConfigurationMapper.ToContract(CreateConfig("original-name")),
+            sourcePath,
+            SourceType.Core,
+            InstanceFactoryMirror.None,
+            false);
+
+        try
+        {
+            var result = await application.CreateInstanceAsync(new CreateInstanceRequest(setting), CancellationToken.None);
+
+            Assert.True(result.IsOk(out var created));
+            Assert.NotNull(manager.CapturedSetting);
+            Assert.Equal("pipeline-name", manager.CapturedSetting.Configuration.Name);
+            Assert.Equal("1.20.2", manager.CapturedSetting.Configuration.Version);
+            Assert.True(manager.CapturedSetting.UsePostProcess);
+            Assert.Equal("pipeline-name", created.Config.Name);
+        }
+        finally
+        {
+            if (File.Exists(sourcePath))
+                File.Delete(sourcePath);
+        }
     }
 
     [Fact]
@@ -1874,6 +1924,83 @@ public sealed class LocalInstanceApplicationTests
             JavaPath = "java",
             Arguments = ["nogui"]
         };
+    }
+
+    private static PluginManifest CreatePipelineManifest() =>
+        new(
+            new PluginIdentity("community.example.pipeline", "1.0.0"),
+            "Pipeline.dll",
+            "Community.Example.Pipeline.Plugin",
+            NuGetVersion.Parse("1.0.0"),
+            VersionRange.Parse("[1.0.0,2.0.0)"),
+            Array.Empty<PluginFeature>().ToFrozenSet(),
+            ImmutableArray<PluginManifestPluginDependency>.Empty,
+            ImmutableArray<PluginManifestContractDependency>.Empty,
+            [new PluginManifestExtensionPoint(
+                "pipeline.instance.create",
+                PluginExtensionPointKind.Pipeline,
+                0,
+                null,
+                ImmutableArray<string>.Empty,
+                null)],
+            ImmutableArray<PluginManifestCommand>.Empty,
+            "/tmp/community.example.pipeline",
+            "/tmp/community.example.pipeline/Pipeline.dll",
+            "digest");
+
+    private sealed class CreatePipelineStage(IReadOnlyDictionary<string, string> outputs) : IPluginInstanceCreatePipelineStage
+    {
+        public ValueTask<Result<PluginInstanceCreatePipelineResult, DaemonError>> ExecuteAsync(
+            PluginInstanceCreatePipelineContext context,
+            CancellationToken cancellationToken) =>
+            ValueTask.FromResult(PluginResult.Ok(new PluginInstanceCreatePipelineResult(outputs)));
+    }
+
+    private sealed class RecordingInstanceManager : IInstanceManager
+    {
+        public ConcurrentDictionary<Guid, IInstance> Instances { get; } = new();
+        public ConcurrentDictionary<Guid, IInstance> RunningInstances { get; } = new();
+        public InstanceFactoryConfiguration? CapturedSetting { get; private set; }
+
+        public Task<Result<InstanceConfiguration, DaemonError>> TryAddInstance(
+            InstanceFactoryConfiguration setting,
+            CancellationToken ct = default)
+        {
+            CapturedSetting = setting;
+            return Task.FromResult(ResultExt.Ok(setting.Configuration));
+        }
+
+        public Task<bool> TryRemoveInstance(Guid instanceId, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<IInstance?> TryStartInstance(Guid instanceId, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<bool> TryStopInstance(Guid instanceId, CancellationToken ct = default) => throw new NotSupportedException();
+        public bool SendToInstance(Guid instanceId, string message) => throw new NotSupportedException();
+        public bool TryWriteConsole(Guid instanceId, ReadOnlyMemory<byte> data) => throw new NotSupportedException();
+        public bool TryResizeConsole(Guid instanceId, ushort columns, ushort rows) => throw new NotSupportedException();
+        public Guid? AttachConsole(Guid instanceId, Func<ReadOnlyMemory<byte>, long, CancellationToken, Task> handler, bool replayHistory = true) => throw new NotSupportedException();
+        public void DetachConsole(Guid instanceId, Guid subscriberId) => throw new NotSupportedException();
+        public Task KillInstanceAsync(Guid instanceId, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<LegacyInstanceReport?> GetInstanceReport(Guid instanceId, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<Dictionary<Guid, LegacyInstanceReport>> GetAllReports(CancellationToken ct = default) => throw new NotSupportedException();
+
+        public bool TryGetInstanceLog(Guid instanceId, out IReadOnlyList<string> logs)
+        {
+            logs = [];
+            return false;
+        }
+
+        public Task<Result<InstanceSettingsResult, DaemonError>> GetInstanceSettings(Guid instanceId, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<Result<UpdateInstanceSettingsResult, DaemonError>> UpdateInstanceSettings(UpdateInstanceSettingsRequest request, CancellationToken ct = default) => throw new NotSupportedException();
+        public IDisposable AcquireInstanceMutation(Guid instanceId) => NullDisposable.Instance;
+        public ValueTask<IDisposable> AcquireInstanceMutationAsync(Guid instanceId, CancellationToken ct = default) => new(NullDisposable.Instance);
+        public Task StopAllInstances(CancellationToken ct = default) => Task.CompletedTask;
+    }
+
+    private sealed class NullDisposable : IDisposable
+    {
+        public static readonly NullDisposable Instance = new();
+        public void Dispose()
+        {
+        }
     }
 
     [InstanceFactory(InstanceType.MCBedrock, SourceType.Core)]

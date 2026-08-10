@@ -139,6 +139,52 @@ internal sealed class PluginExtensionPointRuntimeRegistry
                 : null,
             cancellationToken);
 
+    internal async ValueTask<Result<IReadOnlyDictionary<string, string>, DaemonError>> ExecuteInstanceCreatePipelineAsync(
+        PluginInstanceCreatePipelineContext context,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        cancellationToken.ThrowIfCancellationRequested();
+        var registrations = List("pipeline.instance.create");
+        if (registrations.Length == 0)
+            return Result.Ok<IReadOnlyDictionary<string, string>, DaemonError>(context.Inputs);
+
+        var current = new Dictionary<string, string>(context.Inputs, StringComparer.Ordinal);
+        foreach (var registration in registrations)
+        {
+            if (registration.Implementation is not IPluginInstanceCreatePipelineStage stage)
+                continue;
+
+            var stageContext = new PluginInstanceCreatePipelineContext(context.InstanceType, current);
+            var result = await stage.ExecuteAsync(stageContext, cancellationToken).ConfigureAwait(false);
+            if (result.IsErr(out var error))
+                return Result.Err<IReadOnlyDictionary<string, string>, DaemonError>(error!);
+
+            var stageResult = result.Unwrap();
+            if (stageResult.Outputs is null)
+            {
+                return Result.Err<IReadOnlyDictionary<string, string>, DaemonError>(
+                    new InternalDaemonError("extension_point_pipeline_invalid", $"Plugin '{registration.Owner.Id}' returned null outputs for 'pipeline.instance.create'."));
+            }
+
+            foreach (var (key, value) in stageResult.Outputs)
+            {
+                if (string.IsNullOrWhiteSpace(key) || value is null)
+                {
+                    return Result.Err<IReadOnlyDictionary<string, string>, DaemonError>(
+                        new InternalDaemonError("extension_point_pipeline_invalid", $"Plugin '{registration.Owner.Id}' returned an invalid pipeline output."));
+                }
+
+                current[key] = value;
+            }
+
+            if (!stageResult.ContinuePipeline)
+                break;
+        }
+
+        return Result.Ok<IReadOnlyDictionary<string, string>, DaemonError>(current);
+    }
+
     private async ValueTask<Result<ImmutableArray<PluginExtensionPointContribution<TContribution>>, DaemonError>> ListRegistryContributionsAsync<TContract, TContribution>(
         string extensionPointId,
         Func<TContract, CancellationToken, ValueTask<Result<IReadOnlyList<TContribution>, DaemonError>>> listAsync,
