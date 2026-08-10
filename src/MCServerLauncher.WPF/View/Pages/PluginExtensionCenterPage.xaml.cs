@@ -781,7 +781,7 @@ public partial class PluginExtensionCenterPage
     private static async Task<string> FormatExtensionAuditAsync(DaemonClient.DaemonClient daemon, string extensionId)
     {
         var audit = await daemon.Audit.QueryAsync(
-            new AuditQuery(MaximumRecords: 5, Target: extensionId),
+            new AuditQuery(MaximumRecords: 12, Target: extensionId),
             CancellationToken.None).ConfigureAwait(false);
         if (audit.IsErr(out var error))
             return DaemonErrorLocalization.GetMessage(error!);
@@ -794,22 +794,41 @@ public partial class PluginExtensionCenterPage
         }
         else
         {
-            foreach (var record in result.Records)
-            {
-                var outcome = record.Succeeded
-                    ? Lang.Tr["Plugin_ExtensionCenter_AuditOutcomeOk"]
-                    : string.Format(Lang.Tr["Plugin_ExtensionCenter_AuditOutcomeFailed"], record.ErrorCode ?? "unknown");
-                lines.Add(string.Format(
-                    Lang.Tr["Plugin_ExtensionCenter_AuditRecord"],
-                    record.Timestamp.ToLocalTime().ToString("u"),
-                    record.Method,
-                    outcome));
-            }
+            var methods = result.Records
+                .Select(record => record.Method)
+                .Distinct(StringComparer.Ordinal)
+                .Take(6)
+                .ToArray();
+            lines.Add(string.Format(Lang.Tr["Plugin_ExtensionCenter_AuditMethods"], JoinForReview(methods)));
+            lines.Add(Lang.Tr["Plugin_ExtensionCenter_AuditFailures"]);
+            AppendAuditGroup(lines, result.Records.Where(record => !record.Succeeded).Take(4));
+            lines.Add(Lang.Tr["Plugin_ExtensionCenter_AuditSuccesses"]);
+            AppendAuditGroup(lines, result.Records.Where(record => record.Succeeded).Take(4));
         }
 
         if (result.DroppedRecords > 0)
             lines.Add(string.Format(Lang.Tr["Plugin_ExtensionCenter_AuditDropped"], result.DroppedRecords));
         return string.Join(Environment.NewLine, lines);
+    }
+
+    private static void AppendAuditGroup(List<string> lines, IEnumerable<AuditRecord> records)
+    {
+        var added = false;
+        foreach (var record in records)
+        {
+            added = true;
+            var outcome = record.Succeeded
+                ? Lang.Tr["Plugin_ExtensionCenter_AuditOutcomeOk"]
+                : string.Format(Lang.Tr["Plugin_ExtensionCenter_AuditOutcomeFailed"], record.ErrorCode ?? "unknown");
+            lines.Add(string.Format(
+                Lang.Tr["Plugin_ExtensionCenter_AuditRecord"],
+                record.Timestamp.ToLocalTime().ToString("u"),
+                record.Method,
+                outcome));
+        }
+
+        if (!added)
+            lines.Add(Lang.Tr["Plugin_ExtensionCenter_AuditNone"]);
     }
 
     private static string FormatMetadata(PluginExtensionCenterEntrySummary summary)
@@ -899,17 +918,33 @@ public partial class PluginExtensionCenterPage
         var eventRisk = package.EventPermissions.Count > 0
             ? Lang.Tr["Plugin_ExtensionCenter_RiskMedium"]
             : Lang.Tr["Plugin_ExtensionCenter_RiskLow"];
-        var extensionPointRisk = extensionPoints.Any(point => point.Kind == "override") || hasDaemonPayload
+        var daemonPayloadRisk = hasDaemonPayload
+            ? Lang.Tr["Plugin_ExtensionCenter_RiskHigh"]
+            : Lang.Tr["Plugin_ExtensionCenter_RiskLow"];
+        var extensionPointRisk = extensionPoints.Any(point => point.Kind == "override")
             ? Lang.Tr["Plugin_ExtensionCenter_RiskHigh"]
             : extensionPoints.Any(point => point.Target == "daemon")
                 ? Lang.Tr["Plugin_ExtensionCenter_RiskMedium"]
                 : Lang.Tr["Plugin_ExtensionCenter_RiskLow"];
+        var commandRisk = package.Commands.Count > 0
+            ? Lang.Tr["Plugin_ExtensionCenter_RiskMedium"]
+            : Lang.Tr["Plugin_ExtensionCenter_RiskLow"];
+        var dependencyRisk = package.Dependencies.Count > 0
+            ? Lang.Tr["Plugin_ExtensionCenter_RiskMedium"]
+            : Lang.Tr["Plugin_ExtensionCenter_RiskLow"];
+        var signatureRisk = package.Signature is null
+            ? Lang.Tr["Plugin_ExtensionCenter_RiskMedium"]
+            : Lang.Tr["Plugin_ExtensionCenter_RiskLow"];
 
         return Lang.Tr["Plugin_ExtensionCenter_ReviewRiskSummary"] + Environment.NewLine + string.Join(Environment.NewLine,
         [
             string.Format(Lang.Tr["Plugin_ExtensionCenter_ReviewHostRisk"], hostRisk, JoinForReview(package.HostCapabilities)),
             string.Format(Lang.Tr["Plugin_ExtensionCenter_ReviewEventRisk"], eventRisk, JoinForReview(package.EventPermissions)),
-            string.Format(Lang.Tr["Plugin_ExtensionCenter_ReviewExtensionPointRisk"], extensionPointRisk, JoinForReview(extensionPoints.Select(point => $"{point.Kind}:{point.Id}")))
+            string.Format(Lang.Tr["Plugin_ExtensionCenter_ReviewDaemonPayloadRisk"], daemonPayloadRisk, hasDaemonPayload ? Lang.Tr["Plugin_ExtensionCenter_ReviewDaemonPayloadPresent"] : "-"),
+            string.Format(Lang.Tr["Plugin_ExtensionCenter_ReviewExtensionPointRisk"], extensionPointRisk, JoinForReview(extensionPoints.Select(point => $"{point.Kind}:{point.Id}"))),
+            string.Format(Lang.Tr["Plugin_ExtensionCenter_ReviewCommandRisk"], commandRisk, JoinForReview(package.Commands.Select(command => command.Id))),
+            string.Format(Lang.Tr["Plugin_ExtensionCenter_ReviewDependencyRisk"], dependencyRisk, JoinForReview(package.Dependencies.Select(dependency => $"{dependency.Id} {dependency.Version}"))),
+            string.Format(Lang.Tr["Plugin_ExtensionCenter_ReviewSignatureRisk"], signatureRisk, package.Signature is null ? Lang.Tr["Plugin_ExtensionCenter_ReviewSignatureUnsigned"] : ShortFingerprint(package.Signature.PublicKeySha256))
         ]);
     }
 

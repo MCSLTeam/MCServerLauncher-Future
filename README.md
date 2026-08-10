@@ -17,6 +17,8 @@ frontend or Tauri launcher, just click [here](https://github.com/MCSLTeam/MCServ
 
 **Multi-instance Management**: Control multiple servers simultaneously from a single interface.
 
+**Local Extension Preview**: Trusted local packages can add daemon capabilities, client UI/theme surfaces, and formal Extension Point contributions. Online marketplace, remote dependency resolution, full visual designer, and service-manager restart orchestration are future work.
+
 ## Overview
 
 MCServerLauncher Future is the next generation of server management software, providing an intuitive interface for
