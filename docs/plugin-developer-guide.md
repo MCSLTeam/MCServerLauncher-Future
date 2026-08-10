@@ -142,7 +142,9 @@ plugin contribution, with plugin id as the deterministic tie-breaker.
 `source`, `sourceType`, and `usePostProcess`; instance id, instance type, target type, and
 mirror remain daemon-owned inputs. `hook.instance.lifecycle` receives daemon instance
 status transitions such as `Starting`, `Running`, `Stopped`, and `Crashed`; hook failures
-are logged and isolated from the core lifecycle. `ui.panel`, `event.daemon`, and
+are logged and isolated from the core lifecycle. `override.process.launcher` may replace
+the final process executable, argument list, working directory, and environment after the
+daemon has built and validated its default launch plan. `ui.panel`, `event.daemon`, and
 `command.daemon` continue to use the package UI schema, plugin event publisher, and plugin
 RPC command dispatch paths respectively.
 

@@ -1,6 +1,9 @@
+using System.Diagnostics;
 using MCServerLauncher.Common.Minecraft;
 using MCServerLauncher.Common.Network;
 using MCServerLauncher.Common.ProtoType.Instance;
+using MCServerLauncher.Daemon.API.Errors;
+using RustyOptions;
 using Serilog;
 
 namespace MCServerLauncher.Daemon.Management.Minecraft;
@@ -11,17 +14,34 @@ public class MinecraftInstance : InstanceBase
 
     public MinecraftInstance(InstanceConfig config) : base(config)
     {
+        _properties = CreatePropertiesHandler(config);
+    }
+
+    internal MinecraftInstance(
+        InstanceConfig config,
+        Func<InstanceConfig, CancellationToken, Task<Result<ProcessStartInfo, DaemonError>>> startInfoFactory)
+        : base(
+            config,
+            startInfoFactory,
+            static (startInfo, instanceType, consoleMode) => new Communicate.InstanceProcess(startInfo, instanceType, consoleMode))
+    {
+        _properties = CreatePropertiesHandler(config);
+    }
+
+    private PropertiesHandler CreatePropertiesHandler(InstanceConfig config)
+    {
         var workingDirectory = config.GetWorkingDirectory();
         var propertiesPath = Path.Combine(workingDirectory, PropertiesHandler.FileName);
 
-        _properties = new PropertiesHandler(propertiesPath);
-        _properties.OnPropertiesUpdated += properties =>
+        var propertiesHandler = new PropertiesHandler(propertiesPath);
+        propertiesHandler.OnPropertiesUpdated += properties =>
         {
             Port = ushort.TryParse(properties.GetValueOrDefault("server-port", string.Empty), out var port)
                 ? port
                 : -1;
         };
-        _properties.Load();
+        propertiesHandler.Load();
+        return propertiesHandler;
     }
 
     public Dictionary<string, string> Properties =>

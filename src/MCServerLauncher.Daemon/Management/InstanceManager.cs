@@ -1023,15 +1023,18 @@ internal class InstanceManager : IInstanceManager
         }
     }
 
-    internal static IInstanceManager Create()
+    internal static IInstanceManager Create(Func<InstanceConfig, IInstance>? instanceFactory = null)
     {
-        return Create(Directory.GetDirectories(FileManager.InstancesRoot, "*", SearchOption.TopDirectoryOnly));
+        return Create(Directory.GetDirectories(FileManager.InstancesRoot, "*", SearchOption.TopDirectoryOnly), instanceFactory);
     }
 
-    internal static IInstanceManager Create(IEnumerable<string> directories)
+    internal static IInstanceManager Create(
+        IEnumerable<string> directories,
+        Func<InstanceConfig, IInstance>? instanceFactory = null)
     {
         ArgumentNullException.ThrowIfNull(directories);
-        var instanceManager = new InstanceManager();
+        Func<InstanceConfig, IInstance> resolvedInstanceFactory = instanceFactory ?? (static config => config.CreateInstance());
+        var instanceManager = new InstanceManager(resolvedInstanceFactory);
 
         foreach (var directory in directories)
         {
@@ -1075,7 +1078,7 @@ internal class InstanceManager : IInstanceManager
                     }
                 }
 
-                var instance = reconciledConfig.CreateInstance();
+                var instance = instanceManager._instanceFactory(reconciledConfig);
                 if (instanceManager.Instances.TryAdd(reconciledConfig.Uuid, instance))
                 {
                     instanceManager.AttachInstance(instance);

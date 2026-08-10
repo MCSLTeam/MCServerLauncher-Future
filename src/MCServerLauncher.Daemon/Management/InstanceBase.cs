@@ -2,8 +2,10 @@ using System.Diagnostics;
 using System.Collections.Concurrent;
 using MCServerLauncher.Common.Minecraft;
 using MCServerLauncher.Common.ProtoType.Instance;
+using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.Management.Communicate;
 using MCServerLauncher.Daemon.Management.Minecraft;
+using RustyOptions;
 using Serilog;
 using DisposableObject = MCServerLauncher.Daemon.Utils.DisposableObject;
 
@@ -20,6 +22,7 @@ public abstract class InstanceBase : DisposableObject, IInstance, IInstanceRepor
     /// </summary>
     private static readonly TimeSpan DefaultDrainDeadline = TimeSpan.FromSeconds(5);
     private readonly Func<ProcessStartInfo, InstanceType, ConsoleMode, InstanceProcess> _processFactory;
+    private readonly Func<InstanceConfig, CancellationToken, Task<Result<ProcessStartInfo, DaemonError>>> _startInfoFactory;
     private readonly object _processBindingGate = new();
     private ProcessBinding? _processBinding;
     private long _nextProcessGeneration;
@@ -35,6 +38,7 @@ public abstract class InstanceBase : DisposableObject, IInstance, IInstanceRepor
     protected InstanceBase(InstanceConfig config)
         : this(
             config,
+            DefaultStartInfoFactory,
             static (startInfo, instanceType, consoleMode) =>
                 new InstanceProcess(startInfo, instanceType, consoleMode))
     {
@@ -43,9 +47,26 @@ public abstract class InstanceBase : DisposableObject, IInstance, IInstanceRepor
     internal InstanceBase(
         InstanceConfig config,
         Func<ProcessStartInfo, InstanceType, ConsoleMode, InstanceProcess> processFactory)
+        : this(config, DefaultStartInfoFactory, processFactory)
+    {
+    }
+
+    internal InstanceBase(
+        InstanceConfig config,
+        Func<InstanceConfig, CancellationToken, Task<Result<ProcessStartInfo, DaemonError>>> startInfoFactory,
+        Func<ProcessStartInfo, InstanceType, ConsoleMode, InstanceProcess> processFactory)
     {
         ProtectedConfig = config;
+        _startInfoFactory = startInfoFactory ?? throw new ArgumentNullException(nameof(startInfoFactory));
         _processFactory = processFactory ?? throw new ArgumentNullException(nameof(processFactory));
+    }
+
+    private static Task<Result<ProcessStartInfo, DaemonError>> DefaultStartInfoFactory(
+        InstanceConfig config,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult(config.TryGetStartInfo());
     }
 
     public InstanceConfig Config => ProtectedConfig;
@@ -110,7 +131,7 @@ public abstract class InstanceBase : DisposableObject, IInstance, IInstanceRepor
         if (Volatile.Read(ref _processBinding) is { } existingBinding)
             await DisposeManagedProcessAsync(existingBinding, DefaultDrainDeadline, ct).ConfigureAwait(false);
 
-        var startInfoResult = Config.TryGetStartInfo();
+        var startInfoResult = await _startInfoFactory(Config, ct).ConfigureAwait(false);
         if (startInfoResult.IsErr(out var error))
         {
             Log.Error(

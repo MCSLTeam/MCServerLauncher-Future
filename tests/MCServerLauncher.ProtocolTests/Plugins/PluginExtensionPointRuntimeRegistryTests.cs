@@ -1,8 +1,10 @@
 using System.Collections.Frozen;
 using System.Collections.Immutable;
+using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.API.Plugins;
 using MCServerLauncher.Daemon.API.Protocol;
+using MCServerLauncher.Daemon.Management;
 using MCServerLauncher.Daemon.Plugins;
 using NuGet.Versioning;
 using RustyOptions;
@@ -142,6 +144,38 @@ public sealed class PluginExtensionPointRuntimeRegistryTests
         Assert.Equal("extension_point_registry_invalid", error!.Code);
     }
 
+    [Fact]
+    public async Task CreateProcessStartInfoUsesHandledLauncherOverride()
+    {
+        var registry = new PluginExtensionPointRuntimeRegistry();
+        var manifest = CreateManifest([
+            new PluginManifestExtensionPoint(
+                "override.process.launcher",
+                PluginExtensionPointKind.Override,
+                0,
+                null,
+                ImmutableArray<string>.Empty,
+                null)
+        ]);
+        var launcherOverride = new ProcessLauncherOverride();
+        Assert.True(registry
+            .CreateRegistrar(manifest, new PluginErrorFactory(manifest.Identity))
+            .Register<IPluginProcessLauncherOverride>("override.process.launcher", launcherOverride)
+            .IsOk(out _));
+        var config = CreateInstanceConfig();
+
+        var result = await registry.CreateProcessStartInfoAsync(config, CancellationToken.None);
+
+        Assert.True(result.IsOk(out var startInfo));
+        Assert.Equal("custom-launcher", startInfo.FileName);
+        Assert.Equal(["--instance", config.Uuid.ToString("D")], startInfo.ArgumentList.ToArray());
+        Assert.Equal(config.GetWorkingDirectory(), startInfo.WorkingDirectory);
+        Assert.Equal("1", startInfo.Environment["MCSL_OVERRIDE"]);
+        Assert.NotNull(launcherOverride.LastRequest);
+        Assert.Equal(config.Uuid.ToString("D"), launcherOverride.LastRequest.InstanceId);
+        Assert.Contains("-jar", launcherOverride.LastRequest.Command[^1], StringComparison.Ordinal);
+    }
+
     private static PluginManifest CreateManifest(
         ImmutableArray<PluginManifestExtensionPoint> extensionPoints,
         string pluginId = "community.example.runtime") =>
@@ -159,6 +193,41 @@ public sealed class PluginExtensionPointRuntimeRegistryTests
             "/tmp/community.example.runtime",
             "/tmp/community.example.runtime/Runtime.dll",
             "digest");
+
+    private static InstanceConfig CreateInstanceConfig() =>
+        new()
+        {
+            Uuid = Guid.NewGuid(),
+            Name = "launcher-test",
+            Target = "server.jar",
+            TargetType = TargetType.Jar,
+            InstanceType = InstanceType.MCJava,
+            Version = "1.20.1",
+            JavaPath = "java",
+            Arguments = ["nogui"]
+        };
+
+    private sealed class ProcessLauncherOverride : IPluginProcessLauncherOverride
+    {
+        public PluginProcessLaunchRequest? LastRequest { get; private set; }
+
+        public ValueTask<Result<PluginProcessLauncherOverrideResult, DaemonError>> TryCreatePlanAsync(
+            PluginProcessLaunchRequest request,
+            CancellationToken cancellationToken)
+        {
+            LastRequest = request;
+            return ValueTask.FromResult(PluginResult.Ok(new PluginProcessLauncherOverrideResult(
+                true,
+                new PluginProcessLaunchPlan(
+                    "custom-launcher",
+                    ["--instance", request.InstanceId],
+                    request.WorkingDirectory,
+                    new Dictionary<string, string>(StringComparer.Ordinal)
+                    {
+                        ["MCSL_OVERRIDE"] = "1"
+                    }))));
+        }
+    }
 
     private sealed class CommandRegistry(IReadOnlyList<PluginCommandContribution> commands) : IPluginCommandRegistry
     {

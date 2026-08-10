@@ -1,6 +1,9 @@
 using System.Collections.Immutable;
+using System.Diagnostics;
+using MCServerLauncher.Common.ProtoType.Instance;
 using MCServerLauncher.Daemon.API.Errors;
 using MCServerLauncher.Daemon.API.Plugins;
+using MCServerLauncher.Daemon.Management;
 using RustyOptions;
 
 namespace MCServerLauncher.Daemon.Plugins;
@@ -204,6 +207,44 @@ internal sealed class PluginExtensionPointRuntimeRegistry
         return PluginResult.Ok();
     }
 
+    internal async Task<Result<ProcessStartInfo, DaemonError>> CreateProcessStartInfoAsync(
+        InstanceConfig config,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var defaultResult = config.TryGetStartInfo();
+        if (defaultResult.IsErr(out var defaultError))
+            return Result.Err<ProcessStartInfo, DaemonError>(defaultError!);
+
+        var defaultStartInfo = defaultResult.Unwrap();
+        foreach (var registration in List("override.process.launcher"))
+        {
+            if (registration.Implementation is not IPluginProcessLauncherOverride launcherOverride)
+                continue;
+
+            var result = await launcherOverride.TryCreatePlanAsync(
+                CreateProcessLaunchRequest(config, defaultStartInfo),
+                cancellationToken).ConfigureAwait(false);
+            if (result.IsErr(out var error))
+                return Result.Err<ProcessStartInfo, DaemonError>(error!);
+
+            var overrideResult = result.Unwrap();
+            if (!overrideResult.Handled)
+                continue;
+
+            if (overrideResult.Plan is null)
+            {
+                return Result.Err<ProcessStartInfo, DaemonError>(new InternalDaemonError(
+                    "extension_point_launcher_override_invalid",
+                    $"Plugin '{registration.Owner.Id}' handled process launcher override without returning a launch plan."));
+            }
+
+            return Result.Ok<ProcessStartInfo, DaemonError>(CreateProcessStartInfo(defaultStartInfo, overrideResult.Plan));
+        }
+
+        return Result.Ok<ProcessStartInfo, DaemonError>(defaultStartInfo);
+    }
+
     private async ValueTask<Result<ImmutableArray<PluginExtensionPointContribution<TContribution>>, DaemonError>> ListRegistryContributionsAsync<TContract, TContribution>(
         string extensionPointId,
         Func<TContract, CancellationToken, ValueTask<Result<IReadOnlyList<TContribution>, DaemonError>>> listAsync,
@@ -333,6 +374,57 @@ internal sealed class PluginExtensionPointRuntimeRegistry
         }
 
         return PluginResult.Ok();
+    }
+
+    private static PluginProcessLaunchRequest CreateProcessLaunchRequest(
+        InstanceConfig config,
+        ProcessStartInfo defaultStartInfo)
+    {
+        var command = ImmutableArray.CreateBuilder<string>();
+        command.Add(defaultStartInfo.FileName);
+        if (defaultStartInfo.ArgumentList.Count != 0)
+            command.AddRange(defaultStartInfo.ArgumentList);
+        else if (!string.IsNullOrWhiteSpace(defaultStartInfo.Arguments))
+            command.Add(defaultStartInfo.Arguments);
+
+        return new PluginProcessLaunchRequest(
+            config.Uuid.ToString("D"),
+            defaultStartInfo.WorkingDirectory,
+            command.ToImmutable(),
+            defaultStartInfo.Environment
+                .Where(static pair => pair.Value is not null)
+                .ToDictionary(
+                    static pair => pair.Key,
+                    static pair => pair.Value!,
+                    StringComparer.Ordinal));
+    }
+
+    private static ProcessStartInfo CreateProcessStartInfo(
+        ProcessStartInfo defaults,
+        PluginProcessLaunchPlan plan)
+    {
+        var startInfo = new ProcessStartInfo(plan.Executable)
+        {
+            UseShellExecute = false,
+            WorkingDirectory = plan.WorkingDirectory,
+            RedirectStandardError = true,
+            RedirectStandardOutput = true,
+            RedirectStandardInput = true
+        };
+
+        foreach (var argument in plan.Arguments)
+            startInfo.ArgumentList.Add(argument);
+
+        foreach (var (key, value) in defaults.Environment)
+            startInfo.Environment[key] = value;
+
+        if (plan.Environment is not null)
+        {
+            foreach (var (key, value) in plan.Environment)
+                startInfo.Environment[key] = value;
+        }
+
+        return startInfo;
     }
 
     private sealed class Registrar(

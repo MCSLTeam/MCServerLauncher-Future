@@ -54,7 +54,9 @@ internal static class DaemonServiceComposition
         a.RegisterSingleton<GracefulShutdown>();
         a.RegisterSingleton<IHttpService>(httpService);
 
-        var instanceManager = (InstanceManager)InstanceManager.Create();
+        var extensionPointRuntimeRegistry = new PluginExtensionPointRuntimeRegistry();
+        var instanceManager = (InstanceManager)InstanceManager.Create(config =>
+            config.CreateInstance(extensionPointRuntimeRegistry.CreateProcessStartInfoAsync));
         // Host-scoped singleton via TouchSocket DI (not process-static Shared).
         a.RegisterSingleton<FileSessionCoordinator>();
         var systemInfoCell = new AsyncTimedLazyCell<SystemInfo>(
@@ -73,7 +75,6 @@ internal static class DaemonServiceComposition
         a.RegisterSingleton(instanceManager.MutationAdmission);
         a.RegisterSingleton<IAsyncTimedLazyCell<SystemInfo>>(systemInfoCell);
         a.RegisterSingleton<IAsyncTimedLazyCell<JavaRuntimeList>>(javaRuntimeCell);
-        var extensionPointRuntimeRegistry = new PluginExtensionPointRuntimeRegistry();
         a.RegisterSingleton(extensionPointRuntimeRegistry);
         collection.AddSingleton(extensionPointRuntimeRegistry);
 

@@ -167,11 +167,20 @@ public static class InstanceConfigExtensions
     /// </summary>
     /// <param name="config"></param>
     /// <returns></returns>
-    public static IInstance CreateInstance(this InstanceConfig config)
+    public static IInstance CreateInstance(
+        this InstanceConfig config,
+        Func<InstanceConfig, CancellationToken, Task<Result<ProcessStartInfo, DaemonError>>>? startInfoFactory = null)
     {
-        if (config.CanSafeCastTo<MinecraftInstance>()) return new MinecraftInstance(config);
+        if (startInfoFactory is null)
+        {
+            return config.CanSafeCastTo<MinecraftInstance>()
+                ? new MinecraftInstance(config)
+                : new GenericInstance(config);
+        }
 
-        return new GenericInstance(config);
+        if (config.CanSafeCastTo<MinecraftInstance>()) return new MinecraftInstance(config, startInfoFactory);
+
+        return new GenericInstance(config, startInfoFactory);
     }
 
     public static ProcessStartInfo GetStartInfo(this InstanceConfig config)
