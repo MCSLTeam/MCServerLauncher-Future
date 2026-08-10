@@ -606,7 +606,8 @@ public partial class PluginExtensionCenterPage
             var message = string.IsNullOrWhiteSpace(result.Message)
                 ? Lang.Tr["Plugin_ExtensionCenter_DaemonShutdownRequested"]
                 : result.Message;
-            await Dispatcher.InvokeAsync(() => StatusText.Text = message);
+            await Dispatcher.InvokeAsync(() => StatusText.Text = message + Environment.NewLine + Lang.Tr["Plugin_ExtensionCenter_DaemonRestartWaitingDisconnect"]);
+            _ = TrackDaemonRestartAsync(daemon, entry.Id);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidOperationException or ArgumentException or NotSupportedException)
         {
@@ -617,6 +618,44 @@ public partial class PluginExtensionCenterPage
             if (!shutdownRequested)
                 await Dispatcher.InvokeAsync(() => SetDeploymentButtons(enabled: true));
         }
+    }
+
+    private async Task TrackDaemonRestartAsync(DaemonClient.DaemonClient requestedDaemon, string extensionId)
+    {
+        var disconnected = false;
+        for (var attempt = 0; attempt < 10; attempt++)
+        {
+            await Task.Delay(TimeSpan.FromSeconds(1)).ConfigureAwait(false);
+            if (requestedDaemon.ConnectionState is DaemonConnectionState.Closing or DaemonConnectionState.Closed)
+            {
+                disconnected = true;
+                await Dispatcher.InvokeAsync(() => StatusText.Text = Lang.Tr["Plugin_ExtensionCenter_DaemonRestartWaitingReconnect"]);
+                break;
+            }
+        }
+
+        if (!disconnected)
+        {
+            await Dispatcher.InvokeAsync(() => StatusText.Text = Lang.Tr["Plugin_ExtensionCenter_DaemonRestartDisconnectNotObserved"]);
+            return;
+        }
+
+        for (var attempt = 0; attempt < 30; attempt++)
+        {
+            await Task.Delay(TimeSpan.FromSeconds(2)).ConfigureAwait(false);
+            await DaemonsWsManager.CreateAllDaemonWsAsync(CancellationToken.None).ConfigureAwait(false);
+            if (GetReadyDaemon() is not null)
+            {
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    StatusText.Text = string.Format(Lang.Tr["Plugin_ExtensionCenter_DaemonRestartReconnected"], extensionId);
+                    SetDeploymentButtons(enabled: true);
+                });
+                return;
+            }
+        }
+
+        await Dispatcher.InvokeAsync(() => StatusText.Text = Lang.Tr["Plugin_ExtensionCenter_DaemonRestartStillOffline"]);
     }
 
     private void SetDeploymentButtons(bool enabled)
