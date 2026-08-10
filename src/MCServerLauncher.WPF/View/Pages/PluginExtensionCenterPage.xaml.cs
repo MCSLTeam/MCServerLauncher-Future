@@ -807,7 +807,8 @@ public partial class PluginExtensionCenterPage
         var updateAudit = string.Format(
             Lang.Tr["Plugin_ExtensionCenter_ReviewUpdates"],
             package.UpdatePolicy is null ? "-" : $"{package.UpdatePolicy.Channel}/{package.UpdatePolicy.Strategy}");
-        var audit = signatureAudit + Environment.NewLine + dependencyAudit + Environment.NewLine + updateAudit + Environment.NewLine + (daemonPlan?.Plugin is not null
+        var riskAudit = FormatRiskReview(package, extensionPoints, daemonPlan?.Plugin is not null);
+        var audit = signatureAudit + Environment.NewLine + dependencyAudit + Environment.NewLine + updateAudit + Environment.NewLine + riskAudit + Environment.NewLine + (daemonPlan?.Plugin is not null
             ? Lang.Tr["Plugin_ExtensionCenter_ReviewDaemonAudit"]
             : Lang.Tr["Plugin_ExtensionCenter_ReviewClientAudit"]);
         var message = string.Format(
@@ -827,6 +828,31 @@ public partial class PluginExtensionCenterPage
             Lang.Tr["Plugin_ExtensionCenter_ReviewTitle"],
             MessageBoxButton.YesNo,
             MessageBoxImage.Warning) == MessageBoxResult.Yes;
+    }
+
+    private static string FormatRiskReview(
+        ValidatedPluginMpxPackage package,
+        IReadOnlyList<PluginMpxExtensionPoint> extensionPoints,
+        bool hasDaemonPayload)
+    {
+        var hostRisk = package.HostCapabilities.Any(capability => capability.StartsWith("daemon.", StringComparison.Ordinal))
+            ? Lang.Tr["Plugin_ExtensionCenter_RiskMedium"]
+            : Lang.Tr["Plugin_ExtensionCenter_RiskLow"];
+        var eventRisk = package.EventPermissions.Count > 0
+            ? Lang.Tr["Plugin_ExtensionCenter_RiskMedium"]
+            : Lang.Tr["Plugin_ExtensionCenter_RiskLow"];
+        var extensionPointRisk = extensionPoints.Any(point => point.Kind == "override") || hasDaemonPayload
+            ? Lang.Tr["Plugin_ExtensionCenter_RiskHigh"]
+            : extensionPoints.Any(point => point.Target == "daemon")
+                ? Lang.Tr["Plugin_ExtensionCenter_RiskMedium"]
+                : Lang.Tr["Plugin_ExtensionCenter_RiskLow"];
+
+        return Lang.Tr["Plugin_ExtensionCenter_ReviewRiskSummary"] + Environment.NewLine + string.Join(Environment.NewLine,
+        [
+            string.Format(Lang.Tr["Plugin_ExtensionCenter_ReviewHostRisk"], hostRisk, JoinForReview(package.HostCapabilities)),
+            string.Format(Lang.Tr["Plugin_ExtensionCenter_ReviewEventRisk"], eventRisk, JoinForReview(package.EventPermissions)),
+            string.Format(Lang.Tr["Plugin_ExtensionCenter_ReviewExtensionPointRisk"], extensionPointRisk, JoinForReview(extensionPoints.Select(point => $"{point.Kind}:{point.Id}")))
+        ]);
     }
 
     private static IReadOnlyList<string> ListPackageResources(ValidatedPluginMpxPackage package)
