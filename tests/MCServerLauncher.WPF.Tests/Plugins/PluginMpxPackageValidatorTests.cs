@@ -458,10 +458,10 @@ public sealed class PluginMpxPackageValidatorTests
     }
 
     [Fact]
-    public void ClientExtensionManagerDoesNotPersistDaemonOnlyPackagesIntoClientCache()
+    public void ClientExtensionManagerPersistsDaemonOnlyPackagesIntoExtensionCache()
     {
         var daemonPlugin = Encoding.UTF8.GetBytes("not-a-real-assembly-yet");
-        var validation = PluginMpxPackageValidator.Validate(BuildMpxPackage(
+        var packageBytes = BuildMpxPackage(
             ui: null,
             script: null,
             extraEntries: new Dictionary<string, byte[]> { ["daemon/plugin-bundle.zip"] = daemonPlugin },
@@ -479,16 +479,25 @@ public sealed class PluginMpxPackageValidatorTests
                         }
                     }
                 };
-            }));
+            });
+        var validation = PluginMpxPackageValidator.Validate(packageBytes);
         Assert.True(validation.Ok, FormatDiagnostics(validation.Diagnostics));
         var root = Directory.CreateTempSubdirectory("mcsl-client-extension-cache-").FullName;
         try
         {
             var manager = new PluginClientExtensionManager(new PluginClientExtensionCacheStore(root));
-            var install = manager.InstallPersisted(validation.Package!);
+            var install = manager.InstallPersisted(validation.Package!, packageBytes);
 
-            Assert.False(install.Ok);
-            Assert.Empty(Directory.EnumerateFileSystemEntries(root));
+            Assert.True(install.Ok, install.Message);
+            Assert.True(install.Entry!.CachedFiles.TryGetValue("daemon/plugin-bundle.zip", out var cachedBundle));
+            Assert.Equal(daemonPlugin, File.ReadAllBytes(cachedBundle!));
+
+            var reader = new PluginClientExtensionManager(new PluginClientExtensionCacheStore(root));
+            reader.Restore();
+            var restored = reader.Get("community.example.status-panel");
+            Assert.NotNull(restored);
+            Assert.Null(restored.UiSchema);
+            Assert.True(restored.CachedFiles.TryGetValue("daemon/plugin-bundle.zip", out cachedBundle));
         }
         finally
         {
@@ -536,7 +545,7 @@ public sealed class PluginMpxPackageValidatorTests
     }
 
     [Fact]
-    public void ClientExtensionManagerRejectsDaemonOnlyPackages()
+    public void ClientExtensionManagerCachesDaemonOnlyPackages()
     {
         var daemonPlugin = Encoding.UTF8.GetBytes("not-a-real-assembly-yet");
         var validation = PluginMpxPackageValidator.Validate(BuildMpxPackage(
@@ -563,8 +572,9 @@ public sealed class PluginMpxPackageValidatorTests
         var manager = new PluginClientExtensionManager();
         var install = manager.Install(validation.Package!);
 
-        Assert.False(install.Ok);
-        Assert.Equal("client_target_missing", install.Code);
+        Assert.True(install.Ok, install.Message);
+        Assert.Null(install.Entry!.UiSchema);
+        Assert.Equal("daemon/plugin-bundle.zip", install.Entry.DeploymentPlan.Daemon?.Plugin?.Path);
     }
 
     [Fact]

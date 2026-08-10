@@ -61,8 +61,8 @@ public sealed class PluginClientExtensionCacheStore(string rootDirectory)
     {
         ArgumentNullException.ThrowIfNull(package);
         ArgumentNullException.ThrowIfNull(packageBytes);
-        if (!package.DeploymentPlan.Scopes.Contains("client", StringComparer.Ordinal))
-            throw new InvalidDataException("Package has no client deployment target.");
+        if (!HasInstallableTarget(package.DeploymentPlan))
+            throw new InvalidDataException("Package has no installable client or daemon deployment target.");
 
         var validation = PluginMpxPackageValidator.Validate(packageBytes);
         if (!validation.Ok || validation.Package is null)
@@ -119,7 +119,7 @@ public sealed class PluginClientExtensionCacheStore(string rootDirectory)
             try
             {
                 var document = JsonSerializer.Deserialize<CacheDocument>(File.ReadAllText(metadataPath), JsonOptions);
-                if (document?.ToEntry(directory) is { } entry && entry.DeploymentPlan.Scopes.Contains("client", StringComparer.Ordinal))
+                if (document?.ToEntry(directory) is { } entry && HasInstallableTarget(entry.DeploymentPlan))
                     entries.Add(entry);
             }
             catch (Exception exception) when (exception is JsonException or IOException or UnauthorizedAccessException or ArgumentException)
@@ -147,6 +147,9 @@ public sealed class PluginClientExtensionCacheStore(string rootDirectory)
             throw new ArgumentException("Extension id is not a canonical cache key.", nameof(id));
         return Path.Combine(_rootDirectory, id);
     }
+
+    public static bool HasInstallableTarget(PluginMpxDeploymentPlan deploymentPlan) =>
+        deploymentPlan.Scopes.Contains("client", StringComparer.Ordinal) || deploymentPlan.Daemon?.Plugin is not null;
 
     private static PluginClientExtensionCacheEntry CreateEntry(
         ValidatedPluginMpxPackage package,
@@ -283,6 +286,8 @@ public sealed class PluginClientExtensionCacheStore(string rootDirectory)
             }
 
             var cachedFiles = ResolveCachedFiles(entryDirectory, CachedFiles ?? []);
+            if (DeploymentPlan.Daemon?.Plugin is { } daemonBundle && !cachedFiles.ContainsKey(daemonBundle.Path))
+                return null;
             foreach (var (packagePath, cachedPath) in cachedFiles)
             {
                 if (!File.Exists(cachedPath))
@@ -315,8 +320,8 @@ public sealed class PluginClientExtensionManager(PluginClientExtensionCacheStore
     public PluginClientExtensionInstallResult Install(ValidatedPluginMpxPackage package)
     {
         ArgumentNullException.ThrowIfNull(package);
-        if (!package.DeploymentPlan.Scopes.Contains("client", StringComparer.Ordinal))
-            return PluginClientExtensionInstallResult.Failure("client_target_missing", "Package has no client deployment target.");
+        if (!PluginClientExtensionCacheStore.HasInstallableTarget(package.DeploymentPlan))
+            return PluginClientExtensionInstallResult.Failure("deployment_target_missing", "Package has no installable client or daemon deployment target.");
 
         var entry = new PluginClientExtensionCacheEntry(
             package.PluginId,
@@ -345,8 +350,8 @@ public sealed class PluginClientExtensionManager(PluginClientExtensionCacheStore
     {
         ArgumentNullException.ThrowIfNull(package);
         ArgumentNullException.ThrowIfNull(packageBytes);
-        if (!package.DeploymentPlan.Scopes.Contains("client", StringComparer.Ordinal))
-            return PluginClientExtensionInstallResult.Failure("client_target_missing", "Package has no client deployment target.");
+        if (!PluginClientExtensionCacheStore.HasInstallableTarget(package.DeploymentPlan))
+            return PluginClientExtensionInstallResult.Failure("deployment_target_missing", "Package has no installable client or daemon deployment target.");
 
         if (_store is null)
             return Install(package);
