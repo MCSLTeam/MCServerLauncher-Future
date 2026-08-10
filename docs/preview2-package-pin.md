@@ -102,8 +102,10 @@ Preview-2 local `.mpx` installs now compare a replacement package against the
 already-installed client cache entry before writing the new metadata. Web and WPF
 surface drift for host permissions, event permissions, extension points, daemon
 commands, local dependencies, daemon payload identity, package version, and trusted
-signature identity. The check is local-only; it does not query a registry, resolve
-remote updates, or download dependencies.
+signature identity. The extension-center detail surfaces also query the existing daemon audit
+history for records whose target matches the installed extension id, so bundle deploy/remove and
+extension dispatch actions are visible without adding a new audit protocol. The check is
+local-only; it does not query a registry, resolve remote updates, or download dependencies.
 
 ## Exact versions
 

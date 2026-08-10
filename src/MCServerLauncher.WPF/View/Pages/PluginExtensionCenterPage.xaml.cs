@@ -1,3 +1,4 @@
+using MCServerLauncher.Common.Contracts.Audit;
 using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Daemon.API.Events;
@@ -758,19 +759,57 @@ public partial class PluginExtensionCenterPage
         PluginExtensionCenterEntrySummary summary)
     {
         var metadata = FormatMetadata(summary);
-        if (summary.DaemonPluginPath is null)
-            return metadata;
-
         var daemon = GetReadyDaemon();
         if (daemon is null)
-            return metadata + Environment.NewLine + Lang.Tr["Plugin_ExtensionCenter_DaemonUnavailable"];
+            return summary.DaemonPluginPath is null
+                ? metadata
+                : metadata + Environment.NewLine + Lang.Tr["Plugin_ExtensionCenter_DaemonUnavailable"];
+
+        var audit = await FormatExtensionAuditAsync(daemon, entry.Id).ConfigureAwait(false);
+        if (summary.DaemonPluginPath is null)
+            return metadata + Environment.NewLine + audit;
 
         var status = await daemon.GetExtensionDaemonBundleStatusAsync(
             new ExtensionDaemonBundleStatusRequest(entry.Id),
             CancellationToken.None).ConfigureAwait(false);
-        return status.IsOk(out var result)
-            ? metadata + Environment.NewLine + FormatDeploymentResult(result!)
-            : metadata + Environment.NewLine + DaemonErrorLocalization.GetMessage(status.UnwrapErr());
+        var deployment = status.IsOk(out var result)
+            ? FormatDeploymentResult(result!)
+            : DaemonErrorLocalization.GetMessage(status.UnwrapErr());
+        return metadata + Environment.NewLine + deployment + Environment.NewLine + audit;
+    }
+
+    private static async Task<string> FormatExtensionAuditAsync(DaemonClient.DaemonClient daemon, string extensionId)
+    {
+        var audit = await daemon.Audit.QueryAsync(
+            new AuditQuery(MaximumRecords: 5, Target: extensionId),
+            CancellationToken.None).ConfigureAwait(false);
+        if (audit.IsErr(out var error))
+            return DaemonErrorLocalization.GetMessage(error!);
+
+        var result = audit.Unwrap();
+        List<string> lines = [Lang.Tr["Plugin_ExtensionCenter_AuditHistory"]];
+        if (result.Records.Length == 0)
+        {
+            lines.Add(Lang.Tr["Plugin_ExtensionCenter_AuditEmpty"]);
+        }
+        else
+        {
+            foreach (var record in result.Records)
+            {
+                var outcome = record.Succeeded
+                    ? Lang.Tr["Plugin_ExtensionCenter_AuditOutcomeOk"]
+                    : string.Format(Lang.Tr["Plugin_ExtensionCenter_AuditOutcomeFailed"], record.ErrorCode ?? "unknown");
+                lines.Add(string.Format(
+                    Lang.Tr["Plugin_ExtensionCenter_AuditRecord"],
+                    record.Timestamp.ToLocalTime().ToString("u"),
+                    record.Method,
+                    outcome));
+            }
+        }
+
+        if (result.DroppedRecords > 0)
+            lines.Add(string.Format(Lang.Tr["Plugin_ExtensionCenter_AuditDropped"], result.DroppedRecords));
+        return string.Join(Environment.NewLine, lines);
     }
 
     private static string FormatMetadata(PluginExtensionCenterEntrySummary summary)
