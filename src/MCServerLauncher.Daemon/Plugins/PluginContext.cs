@@ -269,6 +269,7 @@ internal sealed class PluginContext : IPluginContext
         IPluginEventSubscriber? subscriptions,
         IPluginProviderRegistry providers,
         IPluginProviderImports imports,
+        IPluginExtensionPointRegistrar extensionPoints,
         Task activation,
         CancellationToken lifetimeToken)
     {
@@ -285,6 +286,7 @@ internal sealed class PluginContext : IPluginContext
         _subscriptions = subscriptions;
         Providers = providers ?? throw new ArgumentNullException(nameof(providers));
         Imports = imports ?? throw new ArgumentNullException(nameof(imports));
+        ExtensionPoints = extensionPoints ?? throw new ArgumentNullException(nameof(extensionPoints));
         Activation = activation ?? throw new ArgumentNullException(nameof(activation));
         LifetimeToken = lifetimeToken;
     }
@@ -305,6 +307,8 @@ internal sealed class PluginContext : IPluginContext
     public IPluginProviderRegistry Providers { get; }
 
     public IPluginProviderImports Imports { get; }
+
+    public IPluginExtensionPointRegistrar ExtensionPoints { get; }
 
     /// <summary>
     /// Revokes the plugin's file capability and closes every session it still holds. The host calls

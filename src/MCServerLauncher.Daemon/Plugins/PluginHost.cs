@@ -70,6 +70,7 @@ internal sealed class PluginHost
     private readonly List<PluginRuntime> _started = [];
     private readonly List<FailedLoadCleanup> _failedLoadCleanups = [];
     private readonly PluginProviderRegistry _providerRegistry = new();
+    private readonly PluginExtensionPointRuntimeRegistry _extensionPointRuntimeRegistry = new();
     private PluginContractAssemblyResolver? _contractResolver;
     private readonly OwnedTaskSupervisor _failedPluginCleanupSupervisor;
     private readonly SemaphoreSlim _operationGate = new(1, 1);
@@ -426,6 +427,7 @@ internal sealed class PluginHost
                 CloseHttpEndpointAdmission(runtime);
                 CancelLifetime(runtime, "stop");
                 _providerRegistry.Remove(runtime.Manifest.Identity.Id);
+                _extensionPointRuntimeRegistry.Remove(runtime.Manifest.Identity.Id);
                 // Stop accepting plugin-originated events before invoking plugin code.
                 runtime.Draft.Clear();
                 runtime.EventOwner.Dispose(_logger, runtime.Manifest.Identity.Id);
@@ -507,6 +509,7 @@ internal sealed class PluginHost
                 CloseHttpEndpointAdmission(runtime);
                 CancelLifetime(runtime, "cleanup");
                 _providerRegistry.Remove(runtime.Manifest.Identity.Id);
+                _extensionPointRuntimeRegistry.Remove(runtime.Manifest.Identity.Id);
                 runtime.Draft.Clear();
                 runtime.EventOwner.Dispose(_logger, runtime.Manifest.Identity.Id);
                 runtime.Activation.TrySetCanceled();
@@ -690,6 +693,7 @@ internal sealed class PluginHost
                 subscriptions,
                 _providerRegistry.CreateExporter(manifest, errors),
                 _providerRegistry.CreateImports(manifest, errors),
+                _extensionPointRuntimeRegistry.CreateRegistrar(manifest, errors),
                 activation.Task,
                 lifetime.Token);
             var runtime = new PluginRuntime(

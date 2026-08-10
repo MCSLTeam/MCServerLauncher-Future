@@ -126,6 +126,16 @@ contract interface type must come from a declared Contracts assembly, and import
 a matching `dependencies.plugins` provider declaration. The host does not expose a root
 service provider or RPC fallback for plugin-to-plugin calls.
 
+Formal Extension Points use `features.ExtensionPoints.Register<T>(extensionPointId,
+implementation)`. Registration is accepted only when `mcsl-plugin.json` declares the same
+extension point id, and the implementation must match the built-in runtime contract for
+that point. Preview contracts now exist for `provider.java`, `provider.serverCore`,
+`provider.backup`, `provider.processLauncher`, `registry.template`, `registry.serverCore`,
+`registry.icon`, `registry.formatter`, `registry.command`, `pipeline.instance.create`,
+`hook.instance.lifecycle`, and `override.process.launcher`. `ui.panel`, `event.daemon`,
+and `command.daemon` continue to use the package UI schema, plugin event publisher, and
+plugin RPC command dispatch paths respectively.
+
 Plugins that declare `event.subscribe` get `features.Subscriptions`. Subscriptions accept
 built-in typed event descriptors such as `BuiltInProtocolDefinitions.InstanceLog`, deliver
 `DaemonEventField<TMeta>` / `DaemonEventField<TData>` values with the same missing/null/value

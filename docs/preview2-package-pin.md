@@ -151,13 +151,13 @@ git show HEAD:src/MCServerLauncher.Daemon.Plugin.Sdk/buildTransitive/MCServerLau
 
 | Entry | SHA-256 |
 |---|---|
-| `lib/net10.0/MCServerLauncher.Common.dll` | `cbc2ecae77dcb650d913f81f757049211a9bfecc3fda9c08ed1b7ab65c6086da` |
+| `lib/net10.0/MCServerLauncher.Common.dll` | `57248313ac15c4332dd685259e9b286da1c0636cef0caf449a16f6a37e8c2e09` |
 
 ### `MCServerLauncher.Daemon.API.1.0.0.nupkg`
 
 | Entry | SHA-256 |
 |---|---|
-| `lib/net10.0/MCServerLauncher.Daemon.API.dll` | `957135e4193fe8b608e8d34db38d1d60a6c0d6daaa125d4f89e87724e9d02489` |
+| `lib/net10.0/MCServerLauncher.Daemon.API.dll` | `8197a55cb282accd626cb7ebf213f2625986b95b0e44c4c634ad25b1080d032f` |
 | `buildTransitive/MCServerLauncher.Daemon.API.targets` | `81a79275e7ab2a10cf08ac950c27692db1e7455387944377b06047b0a340c17c` |
 
 ### `MCServerLauncher.Daemon.Plugin.Sdk.1.0.0.nupkg`

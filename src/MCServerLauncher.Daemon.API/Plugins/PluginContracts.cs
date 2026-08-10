@@ -123,6 +123,8 @@ public interface IPluginContext : IPluginAuthorizedApplications
 
     IPluginProviderImports Imports { get; }
 
+    IPluginExtensionPointRegistrar ExtensionPoints { get; }
+
     /// <summary>
     /// Cold-start configuration reader (base API; not a feature).
     /// </summary>
