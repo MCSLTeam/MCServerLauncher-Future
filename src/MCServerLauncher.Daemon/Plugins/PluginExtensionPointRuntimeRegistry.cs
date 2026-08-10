@@ -15,6 +15,12 @@ internal sealed record PluginExtensionPointRuntimeRegistration(
     Type ContractType,
     object Implementation);
 
+internal sealed record PluginExtensionPointContribution<TContribution>(
+    string ExtensionPointId,
+    PluginIdentity Owner,
+    int Priority,
+    TContribution Value);
+
 internal sealed class PluginExtensionPointRuntimeRegistry
 {
     private static readonly IReadOnlyDictionary<string, Type> ContractTypes = new Dictionary<string, Type>(StringComparer.Ordinal)
@@ -64,6 +70,131 @@ internal sealed class PluginExtensionPointRuntimeRegistry
                     _registrations.Remove(extensionPointId);
             }
         }
+    }
+
+    internal ValueTask<Result<ImmutableArray<PluginExtensionPointContribution<PluginInstanceTemplateContribution>>, DaemonError>> ListInstanceTemplatesAsync(
+        CancellationToken cancellationToken) =>
+        ListRegistryContributionsAsync<IPluginInstanceTemplateRegistry, PluginInstanceTemplateContribution>(
+            "registry.template",
+            static (registry, token) => registry.ListAsync(token),
+            static contribution => contribution.Id,
+            static contribution => string.IsNullOrWhiteSpace(contribution.Id) ||
+                                   string.IsNullOrWhiteSpace(contribution.DisplayName) ||
+                                   string.IsNullOrWhiteSpace(contribution.InstanceType)
+                ? "id, displayName, and instanceType are required"
+                : null,
+            cancellationToken);
+
+    internal ValueTask<Result<ImmutableArray<PluginExtensionPointContribution<PluginServerCoreCatalogEntry>>, DaemonError>> ListServerCoreCatalogAsync(
+        CancellationToken cancellationToken) =>
+        ListRegistryContributionsAsync<IPluginServerCoreRegistry, PluginServerCoreCatalogEntry>(
+            "registry.serverCore",
+            static (registry, token) => registry.ListAsync(token),
+            static contribution => contribution.Id,
+            static contribution => string.IsNullOrWhiteSpace(contribution.Id) ||
+                                   string.IsNullOrWhiteSpace(contribution.Family) ||
+                                   string.IsNullOrWhiteSpace(contribution.Version) ||
+                                   string.IsNullOrWhiteSpace(contribution.DisplayName)
+                ? "id, family, version, and displayName are required"
+                : null,
+            cancellationToken);
+
+    internal ValueTask<Result<ImmutableArray<PluginExtensionPointContribution<PluginIconContribution>>, DaemonError>> ListIconsAsync(
+        CancellationToken cancellationToken) =>
+        ListRegistryContributionsAsync<IPluginIconRegistry, PluginIconContribution>(
+            "registry.icon",
+            static (registry, token) => registry.ListAsync(token),
+            static contribution => contribution.Id,
+            static contribution => string.IsNullOrWhiteSpace(contribution.Id) ||
+                                   string.IsNullOrWhiteSpace(contribution.DisplayName) ||
+                                   string.IsNullOrWhiteSpace(contribution.ResourcePath) ||
+                                   string.IsNullOrWhiteSpace(contribution.MimeType)
+                ? "id, displayName, resourcePath, and mimeType are required"
+                : null,
+            cancellationToken);
+
+    internal ValueTask<Result<ImmutableArray<PluginExtensionPointContribution<PluginFormatterContribution>>, DaemonError>> ListFormattersAsync(
+        CancellationToken cancellationToken) =>
+        ListRegistryContributionsAsync<IPluginFormatterRegistry, PluginFormatterContribution>(
+            "registry.formatter",
+            static (registry, token) => registry.ListAsync(token),
+            static contribution => contribution.Id,
+            static contribution => string.IsNullOrWhiteSpace(contribution.Id) ||
+                                   string.IsNullOrWhiteSpace(contribution.DisplayName) ||
+                                   string.IsNullOrWhiteSpace(contribution.AppliesTo)
+                ? "id, displayName, and appliesTo are required"
+                : null,
+            cancellationToken);
+
+    internal ValueTask<Result<ImmutableArray<PluginExtensionPointContribution<PluginCommandContribution>>, DaemonError>> ListCommandsAsync(
+        CancellationToken cancellationToken) =>
+        ListRegistryContributionsAsync<IPluginCommandRegistry, PluginCommandContribution>(
+            "registry.command",
+            static (registry, token) => registry.ListAsync(token),
+            static contribution => contribution.Id,
+            static contribution => string.IsNullOrWhiteSpace(contribution.Id) ||
+                                   string.IsNullOrWhiteSpace(contribution.DisplayName) ||
+                                   string.IsNullOrWhiteSpace(contribution.Target)
+                ? "id, displayName, and target are required"
+                : null,
+            cancellationToken);
+
+    private async ValueTask<Result<ImmutableArray<PluginExtensionPointContribution<TContribution>>, DaemonError>> ListRegistryContributionsAsync<TContract, TContribution>(
+        string extensionPointId,
+        Func<TContract, CancellationToken, ValueTask<Result<IReadOnlyList<TContribution>, DaemonError>>> listAsync,
+        Func<TContribution, string?> getId,
+        Func<TContribution, string?> validate,
+        CancellationToken cancellationToken)
+        where TContract : class
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var registrations = List(extensionPointId);
+        if (registrations.Length == 0)
+        {
+            return Result.Ok<ImmutableArray<PluginExtensionPointContribution<TContribution>>, DaemonError>(
+                ImmutableArray<PluginExtensionPointContribution<TContribution>>.Empty);
+        }
+
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        var builder = ImmutableArray.CreateBuilder<PluginExtensionPointContribution<TContribution>>();
+        foreach (var registration in registrations)
+        {
+            if (registration.Implementation is not TContract contract)
+                continue;
+
+            var result = await listAsync(contract, cancellationToken).ConfigureAwait(false);
+            if (result.IsErr(out var error))
+                return Result.Err<ImmutableArray<PluginExtensionPointContribution<TContribution>>, DaemonError>(error!);
+
+            var contributions = result.Unwrap();
+            if (contributions is null)
+            {
+                return Result.Err<ImmutableArray<PluginExtensionPointContribution<TContribution>>, DaemonError>(
+                    new InternalDaemonError("extension_point_registry_invalid", $"Plugin '{registration.Owner.Id}' returned null contributions for '{extensionPointId}'."));
+            }
+
+            foreach (var contribution in contributions)
+            {
+                var invalidReason = validate(contribution);
+                if (invalidReason is not null)
+                {
+                    return Result.Err<ImmutableArray<PluginExtensionPointContribution<TContribution>>, DaemonError>(
+                        new InternalDaemonError("extension_point_registry_invalid", $"Plugin '{registration.Owner.Id}' returned invalid '{extensionPointId}' contribution: {invalidReason}."));
+                }
+
+                var id = getId(contribution);
+                if (id is null || !seen.Add(id))
+                    continue;
+
+                builder.Add(new PluginExtensionPointContribution<TContribution>(
+                    extensionPointId,
+                    registration.Owner,
+                    registration.Priority,
+                    contribution));
+            }
+        }
+
+        return Result.Ok<ImmutableArray<PluginExtensionPointContribution<TContribution>>, DaemonError>(builder.ToImmutable());
     }
 
     private Result<Unit, DaemonError> Register<TContract>(

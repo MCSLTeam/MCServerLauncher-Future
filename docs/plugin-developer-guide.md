@@ -134,9 +134,11 @@ that point. Preview contracts now exist for `provider.java`, `provider.serverCor
 `registry.icon`, `registry.formatter`, `registry.command`, `pipeline.instance.create`,
 `hook.instance.lifecycle`, and `override.process.launcher`. Registered `provider.java`
 contributions are appended to the daemon Java runtime list returned by `mcsl.java.list`;
-duplicate executable paths keep the built-in scanner result. `ui.panel`, `event.daemon`,
-and `command.daemon` continue to use the package UI schema, plugin event publisher, and
-plugin RPC command dispatch paths respectively.
+duplicate executable paths keep the built-in scanner result. Registry extension points are
+runtime-collected in priority order; duplicate contribution ids keep the higher-priority
+plugin contribution, with plugin id as the deterministic tie-breaker. `ui.panel`,
+`event.daemon`, and `command.daemon` continue to use the package UI schema, plugin event
+publisher, and plugin RPC command dispatch paths respectively.
 
 Plugins that declare `event.subscribe` get `features.Subscriptions`. Subscriptions accept
 built-in typed event descriptors such as `BuiltInProtocolDefinitions.InstanceLog`, deliver
