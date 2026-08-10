@@ -31,7 +31,9 @@ internal static class BenchmarkProtocolCatalogFactory
         return new BuiltInProtocolCatalogComposition(
             new ThrowingInstanceApplication(),
             new ThrowingFileApplication(),
+            new ThrowingExtensionDeploymentApplication(),
             new ThrowingSystemApplication(),
+            new ThrowingDaemonLifecycleApplication(),
             new ThrowingEventRuleApplication(),
             new ThrowingOperationApplication(),
             new ThrowingProvisioningApplication(),
@@ -59,6 +61,20 @@ internal static class BenchmarkProtocolCatalogFactory
     {
         public Task<Result<SystemInfo, DaemonError>> GetSystemInfoAsync(CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<Result<JavaRuntimeList, DaemonError>> ListJavaRuntimesAsync(CancellationToken cancellationToken) => throw new NotSupportedException();
+    }
+
+    private sealed class ThrowingDaemonLifecycleApplication : IDaemonLifecycleApplication
+    {
+        public Task<Result<DaemonShutdownResult, DaemonError>> RequestShutdownAsync(DaemonShutdownRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
+    }
+
+    private sealed class ThrowingExtensionDeploymentApplication : IExtensionDeploymentApplication
+    {
+        public Task<Result<ExtensionDaemonBundleDeploymentResult, DaemonError>> InstallDaemonBundleAsync(ExtensionDaemonBundleInstallRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<ExtensionDaemonBundleDeploymentResult, DaemonError>> GetDaemonBundleStatusAsync(ExtensionDaemonBundleStatusRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<ExtensionDaemonBundleDeploymentResult, DaemonError>> EnableDaemonBundleAsync(ExtensionDaemonBundleEnableRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<ExtensionDaemonBundleDeploymentResult, DaemonError>> DisableDaemonBundleAsync(ExtensionDaemonBundleDisableRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<Result<ExtensionDaemonBundleDeploymentResult, DaemonError>> RemoveDaemonBundleAsync(ExtensionDaemonBundleRemoveRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
     }
 
     private sealed class ThrowingEventRuleApplication : IEventRuleApplication
