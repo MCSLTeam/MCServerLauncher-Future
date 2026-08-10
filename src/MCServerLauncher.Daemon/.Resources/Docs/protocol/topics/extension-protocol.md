@@ -104,6 +104,19 @@ envelopes for installed entries that explicitly declared the matching `daemon.*`
 permission, but state synchronization from daemon business logic should use the
 plugin-owned extension event channel.
 
+## Daemon Bundle Deployment
+
+Runtime `.mpx` packages that include daemon business logic carry a complete daemon plugin
+bundle zip, not a standalone DLL. The bundle must contain `mcsl-plugin.json`, the entry
+assembly, and private dependencies. Clients first cache and review the package, then upload
+the daemon bundle to the daemon upload staging area. The daemon-only RPC
+`mcsl.extension.daemon.bundle.install` validates the staged zip hash, rejects zip-slip
+entries, verifies the manifest plugin id, validates the plugin bundle, installs it under
+`plugins/<plugin-id>/`, enables the plugin entry in `config.json`, and returns
+`restart_required: true`. `mcsl.extension.daemon.bundle.remove` disables and removes an
+installed bundle and also returns `restart_required: true`; active plugin code is unloaded
+only by daemon restart.
+
 ## Installed Client Runtime
 
 Web and WPF clients render installed Client Extensions from validated cache entries, not

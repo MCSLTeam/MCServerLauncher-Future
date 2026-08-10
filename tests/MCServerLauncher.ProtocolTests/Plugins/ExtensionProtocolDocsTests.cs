@@ -49,6 +49,8 @@ public sealed class ExtensionProtocolDocsTests
         Assert.Contains("Runtime packages load UI Schema and resources from local package cache", topic, StringComparison.Ordinal);
         Assert.Contains("mcsl.extension.dispatch", topic, StringComparison.Ordinal);
         Assert.Contains("plugin.<plugin>.event.extension", topic, StringComparison.Ordinal);
+        Assert.Contains("mcsl.extension.daemon.bundle.install", topic, StringComparison.Ordinal);
+        Assert.Contains("restart_required", topic, StringComparison.Ordinal);
         Assert.Contains("__proto__", topic, StringComparison.Ordinal);
     }
 

@@ -1,6 +1,7 @@
 using MCServerLauncher.Common.Contracts.EventRules;
 using MCServerLauncher.Common.Contracts.Files;
 using MCServerLauncher.Common.Contracts.Instances;
+using MCServerLauncher.Common.Contracts.Protocol;
 using MCServerLauncher.Common.Contracts.System;
 using MCServerLauncher.Daemon.API.Errors;
 using RustyOptions;
@@ -180,6 +181,17 @@ public interface ISystemApplication
     Task<Result<SystemInfo, DaemonError>> GetSystemInfoAsync(CancellationToken cancellationToken);
 
     Task<Result<JavaRuntimeList, DaemonError>> ListJavaRuntimesAsync(CancellationToken cancellationToken);
+}
+
+public interface IExtensionDeploymentApplication
+{
+    Task<Result<ExtensionDaemonBundleDeploymentResult, DaemonError>> InstallDaemonBundleAsync(
+        ExtensionDaemonBundleInstallRequest request,
+        CancellationToken cancellationToken);
+
+    Task<Result<ExtensionDaemonBundleDeploymentResult, DaemonError>> RemoveDaemonBundleAsync(
+        ExtensionDaemonBundleRemoveRequest request,
+        CancellationToken cancellationToken);
 }
 
 public interface IEventRuleApplication

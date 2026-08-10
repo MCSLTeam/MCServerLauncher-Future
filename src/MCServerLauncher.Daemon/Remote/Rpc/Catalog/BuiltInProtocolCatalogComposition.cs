@@ -16,6 +16,7 @@ internal sealed class BuiltInProtocolCatalogComposition
     internal BuiltInProtocolCatalogComposition(
         IInstanceApplication instanceApplication,
         IFileApplication fileApplication,
+        IExtensionDeploymentApplication extensionDeploymentApplication,
         ISystemApplication systemApplication,
         IEventRuleApplication eventRuleApplication,
         IOperationApplication operationApplication,
@@ -31,6 +32,7 @@ internal sealed class BuiltInProtocolCatalogComposition
         : this(
             instanceApplication,
             fileApplication,
+            extensionDeploymentApplication,
             systemApplication,
             eventRuleApplication,
             operationApplication,
@@ -50,6 +52,7 @@ internal sealed class BuiltInProtocolCatalogComposition
     public BuiltInProtocolCatalogComposition(
         IInstanceApplication instanceApplication,
         IFileApplication fileApplication,
+        IExtensionDeploymentApplication extensionDeploymentApplication,
         ISystemApplication systemApplication,
         IEventRuleApplication eventRuleApplication,
         IOperationApplication operationApplication,
@@ -66,6 +69,7 @@ internal sealed class BuiltInProtocolCatalogComposition
         : this(
             instanceApplication,
             fileApplication,
+            extensionDeploymentApplication,
             systemApplication,
             eventRuleApplication,
             operationApplication,
@@ -85,6 +89,7 @@ internal sealed class BuiltInProtocolCatalogComposition
     internal BuiltInProtocolCatalogComposition(
         IInstanceApplication instanceApplication,
         IFileApplication fileApplication,
+        IExtensionDeploymentApplication extensionDeploymentApplication,
         ISystemApplication systemApplication,
         IEventRuleApplication eventRuleApplication,
         IOperationApplication operationApplication,
@@ -101,6 +106,7 @@ internal sealed class BuiltInProtocolCatalogComposition
     {
         ArgumentNullException.ThrowIfNull(instanceApplication);
         ArgumentNullException.ThrowIfNull(fileApplication);
+        ArgumentNullException.ThrowIfNull(extensionDeploymentApplication);
         ArgumentNullException.ThrowIfNull(systemApplication);
         ArgumentNullException.ThrowIfNull(eventRuleApplication);
         ArgumentNullException.ThrowIfNull(operationApplication);
@@ -124,6 +130,7 @@ internal sealed class BuiltInProtocolCatalogComposition
             timeProvider,
             catalogAccessor);
         BuiltInFileRpcRegistrar.Register(builder, fileApplication);
+        BuiltInExtensionDeploymentRpcRegistrar.Register(builder, extensionDeploymentApplication);
         BuiltInInstanceRpcRegistrar.Register(builder, instanceApplication);
         BuiltInEventRuleRpcRegistrar.Register(builder, eventRuleApplication);
         BuiltInOperationRpcRegistrar.Register(builder, operationApplication);

@@ -80,6 +80,9 @@ internal static class DaemonServiceComposition
         a.RegisterSingleton<IDomainEventPort, DomainEventPort>();
         a.RegisterSingleton<IInstanceApplication, LocalInstanceApplication>();
         a.RegisterSingleton<IFileApplication, LocalFileApplication>();
+        collection.AddSingleton<IExtensionDeploymentApplication>(_ => new LocalExtensionDeploymentApplication(
+            appConfig,
+            System.IO.Path.Combine(AppContext.BaseDirectory, "plugins")));
         a.RegisterSingleton<ISystemApplication, LocalSystemApplication>();
         a.RegisterSingleton<IOperationApplication, OperationCoordinator>();
         a.RegisterSingleton<PlanKernel>();

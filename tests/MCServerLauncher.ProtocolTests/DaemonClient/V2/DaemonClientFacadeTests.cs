@@ -98,7 +98,7 @@ public sealed class DaemonClientFacadeTests
                 .Select(static property => property.Name)
                 .Order());
         Assert.Equal(
-            ["ConnectAsync", "DiscoverAsync", "DispatchExtensionProtocolAsync", "DisposeAsync", "InvokeAsync", "OpenConsoleAsync", "PingAsync", "RestartInstanceAsync", "SubscribeAsync"],
+            ["ConnectAsync", "DiscoverAsync", "DispatchExtensionProtocolAsync", "DisposeAsync", "InstallExtensionDaemonBundleAsync", "InvokeAsync", "OpenConsoleAsync", "PingAsync", "RemoveExtensionDaemonBundleAsync", "RestartInstanceAsync", "SubscribeAsync"],
             type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly)
                 .Where(static method => !method.IsSpecialName)
                 .Select(static method => method.Name)
@@ -116,6 +116,20 @@ public sealed class DaemonClientFacadeTests
             [typeof(ExtensionProtocolDispatchRequest), typeof(CancellationToken)],
             dispatch.GetParameters().Select(static parameter => parameter.ParameterType));
         Assert.True(dispatch.GetParameters()[1].IsOptional);
+        var install = type.GetMethod(nameof(MCServerLauncher.DaemonClient.DaemonClient.InstallExtensionDaemonBundleAsync));
+        Assert.NotNull(install);
+        Assert.Equal(typeof(Task<Result<ExtensionDaemonBundleDeploymentResult, DaemonError>>), install.ReturnType);
+        Assert.Equal(
+            [typeof(ExtensionDaemonBundleInstallRequest), typeof(CancellationToken)],
+            install.GetParameters().Select(static parameter => parameter.ParameterType));
+        Assert.True(install.GetParameters()[1].IsOptional);
+        var remove = type.GetMethod(nameof(MCServerLauncher.DaemonClient.DaemonClient.RemoveExtensionDaemonBundleAsync));
+        Assert.NotNull(remove);
+        Assert.Equal(typeof(Task<Result<ExtensionDaemonBundleDeploymentResult, DaemonError>>), remove.ReturnType);
+        Assert.Equal(
+            [typeof(ExtensionDaemonBundleRemoveRequest), typeof(CancellationToken)],
+            remove.GetParameters().Select(static parameter => parameter.ParameterType));
+        Assert.True(remove.GetParameters()[1].IsOptional);
         var openConsole = type.GetMethod(nameof(MCServerLauncher.DaemonClient.DaemonClient.OpenConsoleAsync));
         Assert.NotNull(openConsole);
         Assert.Equal(typeof(Task<Result<DaemonConsoleSession, DaemonError>>), openConsole.ReturnType);

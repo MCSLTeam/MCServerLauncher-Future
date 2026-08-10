@@ -40,6 +40,8 @@ internal static class RpcAuditPolicy
         "mcsl.directory.delete",
         "mcsl.directory.move",
         "mcsl.directory.rename",
+        "mcsl.extension.daemon.bundle.install",
+        "mcsl.extension.daemon.bundle.remove",
         "mcsl.extension.dispatch",
         "mcsl.file.copy",
         "mcsl.file.delete",
@@ -198,6 +200,8 @@ internal static class RpcAuditPolicy
         AutomationEnableRequest enable => enable.PolicyId.ToString("D"),
         ProvisioningResolveRequest resolve => resolve.InstanceName,
         ExtensionProtocolDispatchRequest extension => DescribeExtensionDispatch(extension),
+        ExtensionDaemonBundleInstallRequest install => install.PluginId,
+        ExtensionDaemonBundleRemoveRequest remove => remove.PluginId,
         _ => null
     };
 

@@ -26,6 +26,20 @@ public sealed record ExtensionProtocolDispatchRequest(JsonElement Envelope);
 
 public sealed record ExtensionProtocolDispatchResult(JsonElement Envelope);
 
+public sealed record ExtensionDaemonBundleInstallRequest(
+    string PluginId,
+    string SourcePath,
+    string Sha256);
+
+public sealed record ExtensionDaemonBundleRemoveRequest(string PluginId);
+
+public sealed record ExtensionDaemonBundleDeploymentResult(
+    string PluginId,
+    string Status,
+    bool RestartRequired,
+    string PluginDirectory,
+    string Message);
+
 [JsonConverter(typeof(EventSubscriptionRequestJsonConverter))]
 public sealed class EventSubscriptionRequest
 {

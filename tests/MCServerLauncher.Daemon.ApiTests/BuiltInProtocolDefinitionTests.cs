@@ -28,7 +28,8 @@ public sealed class BuiltInProtocolDefinitionTests
         RpcDescriptor[] namedRpcs =
         [
             BuiltInProtocolDefinitions.GetAuthPermissions, BuiltInProtocolDefinitions.IssueToken, BuiltInProtocolDefinitions.PingDaemon,
-            BuiltInProtocolDefinitions.DispatchExtensionProtocol,
+            BuiltInProtocolDefinitions.DispatchExtensionProtocol, BuiltInProtocolDefinitions.InstallExtensionDaemonBundle,
+            BuiltInProtocolDefinitions.RemoveExtensionDaemonBundle,
             BuiltInProtocolDefinitions.CopyDirectory, BuiltInProtocolDefinitions.CreateDirectory,
             BuiltInProtocolDefinitions.DeleteDirectory, BuiltInProtocolDefinitions.GetDirectoryInfo,
             BuiltInProtocolDefinitions.MoveDirectory, BuiltInProtocolDefinitions.RenameDirectory,
@@ -89,7 +90,8 @@ public sealed class BuiltInProtocolDefinitionTests
             "mcsl.backup.restore.confirm", "mcsl.backup.restore.execute", "mcsl.backup.restore.plan",
             "mcsl.daemon.ping", "mcsl.directory.copy", "mcsl.directory.create", "mcsl.directory.delete",
             "mcsl.directory.info.get", "mcsl.directory.move", "mcsl.directory.rename", "mcsl.event.subscribe",
-            "mcsl.event.unsubscribe", "mcsl.extension.dispatch", "mcsl.file.copy", "mcsl.file.delete", "mcsl.file.download.close",
+            "mcsl.event.unsubscribe", "mcsl.extension.daemon.bundle.install", "mcsl.extension.daemon.bundle.remove",
+            "mcsl.extension.dispatch", "mcsl.file.copy", "mcsl.file.delete", "mcsl.file.download.close",
             "mcsl.file.download.open", "mcsl.file.download.read", "mcsl.file.info.get", "mcsl.file.move",
             "mcsl.file.rename", "mcsl.file.upload.cancel", "mcsl.file.upload.close", "mcsl.file.upload.open",
             "mcsl.instance.catalog.get", "mcsl.instance.command.send", "mcsl.instance.console.close", "mcsl.instance.console.open",
@@ -144,6 +146,8 @@ public sealed class BuiltInProtocolDefinitionTests
             ["mcsl.directory.rename"] = ("mcsl.directory.rename", typeof(PathRenameRequest), typeof(UnitResult)),
             ["mcsl.event.subscribe"] = ("mcsl.event.subscribe", typeof(EventSubscriptionRequest), typeof(UnitResult)),
             ["mcsl.event.unsubscribe"] = ("mcsl.event.unsubscribe", typeof(EventSubscriptionRequest), typeof(UnitResult)),
+            ["mcsl.extension.daemon.bundle.install"] = ("mcsl.extension.daemon.bundle.install", typeof(ExtensionDaemonBundleInstallRequest), typeof(ExtensionDaemonBundleDeploymentResult)),
+            ["mcsl.extension.daemon.bundle.remove"] = ("mcsl.extension.daemon.bundle.remove", typeof(ExtensionDaemonBundleRemoveRequest), typeof(ExtensionDaemonBundleDeploymentResult)),
             ["mcsl.extension.dispatch"] = ("mcsl.extension.dispatch", typeof(ExtensionProtocolDispatchRequest), typeof(ExtensionProtocolDispatchResult)),
             ["mcsl.file.copy"] = ("mcsl.file.copy", typeof(PathTransferRequest), typeof(UnitResult)),
             ["mcsl.file.delete"] = ("mcsl.file.delete", typeof(PathRequest), typeof(UnitResult)),
