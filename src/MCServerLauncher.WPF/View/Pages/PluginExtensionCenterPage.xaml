@@ -48,12 +48,24 @@
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
                 <TextBlock Grid.Row="0" Style="{StaticResource SubtitleTextBlock}"
                            Text="{Binding [Plugin_ExtensionCenter_Installed], Source={x:Static i18n:Lang.Tr}}"
                            Margin="0,0,0,10" />
-                <ListBox Grid.Row="1" x:Name="ExtensionList" ItemsSource="{Binding Entries}"
+                <Border Grid.Row="1" Style="{StaticResource StyledBorder}" Padding="10" Margin="0,0,0,10" Opacity="0.72">
+                    <StackPanel>
+                        <Button IsEnabled="False" HorizontalAlignment="Left" Margin="0,0,0,6">
+                            <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Package}"
+                                            Content="{Binding [Plugin_ExtensionCenter_Marketplace], Source={x:Static i18n:Lang.Tr}}" />
+                        </Button>
+                        <TextBlock Style="{StaticResource CaptionTextBlock}"
+                                   Text="{Binding [Plugin_ExtensionCenter_MarketplaceUnavailable], Source={x:Static i18n:Lang.Tr}}"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+                <ListBox Grid.Row="2" x:Name="ExtensionList" ItemsSource="{Binding Entries}"
                          SelectionChanged="ExtensionList_SelectionChanged"
                          BorderThickness="0" Background="Transparent">
                     <ListBox.ItemTemplate>
