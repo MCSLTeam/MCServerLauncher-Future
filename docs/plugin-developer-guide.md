@@ -18,10 +18,11 @@ limited to explicitly declared provider dependencies and shared Contracts assemb
 
 ## Manifest
 
-Add one mcsl-plugin.json next to the project file. The SDK passes it to the generator
-and copies it beside the published entry assembly.
+Add one mcsl-plugin.json next to the project file. Use the checked-in schema for editor
+completion and validation:
 
     {
+      "$schema": "https://mcsl-team.github.io/schemas/mcsl-plugin-2.0.schema.json",
       "package": {
         "id": "community.example.health",
         "version": "1.0.0"
@@ -35,6 +36,8 @@ and copies it beside the published entry assembly.
         "features": ["rpc.register"]
       }
     }
+
+The SDK passes it to the generator and copies it beside the published entry assembly.
 
 The package id is lowercase and dot-separated. It owns the plugin.<id>. protocol
 namespace. The host validates the generated metadata and manifest digest before loading

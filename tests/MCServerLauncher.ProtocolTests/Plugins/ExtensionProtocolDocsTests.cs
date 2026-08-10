@@ -94,6 +94,46 @@ public sealed class ExtensionProtocolDocsTests
         Assert.Contains(eventItemSchemas, item => item.TryGetProperty("pattern", out var pattern) && pattern.GetString()!.Contains("event\\.extension", StringComparison.Ordinal));
     }
 
+    [Fact]
+    public void PluginManifestSchemaDocumentsGeneratorManifestGrammar()
+    {
+        var root = FindRepositoryRoot();
+        var schemaPath = Path.Combine(root, "docs", "spec", "mcsl-plugin-2.0.schema.json");
+        using var document = JsonDocument.Parse(File.ReadAllText(schemaPath));
+        var properties = document.RootElement.GetProperty("properties");
+        var definitions = document.RootElement.GetProperty("$defs");
+
+        Assert.Equal("https://mcsl-team.github.io/schemas/mcsl-plugin-2.0.schema.json", document.RootElement.GetProperty("$id").GetString());
+        Assert.True(properties.TryGetProperty("package", out _));
+        Assert.True(properties.TryGetProperty("entry", out _));
+        Assert.True(properties.TryGetProperty("requires", out _));
+        Assert.True(properties.TryGetProperty("dependencies", out _));
+        Assert.True(properties.TryGetProperty("extensionPoints", out _));
+        Assert.True(properties.TryGetProperty("commands", out _));
+
+        var features = definitions
+            .GetProperty("feature")
+            .GetProperty("enum")
+            .EnumerateArray()
+            .Select(static item => item.GetString())
+            .ToArray();
+        Assert.Contains("rpc.register", features);
+        Assert.Contains("event.subscribe", features);
+        Assert.Contains("audit.query", features);
+
+        var extensionPointIds = definitions
+            .GetProperty("extensionPoint")
+            .GetProperty("properties")
+            .GetProperty("id")
+            .GetProperty("enum")
+            .EnumerateArray()
+            .Select(static item => item.GetString())
+            .ToArray();
+        Assert.Contains("provider.java", extensionPointIds);
+        Assert.Contains("pipeline.instance.create", extensionPointIds);
+        Assert.Contains("override.process.launcher", extensionPointIds);
+    }
+
     private static string FindRepositoryRoot()
     {
         var current = new DirectoryInfo(AppContext.BaseDirectory);

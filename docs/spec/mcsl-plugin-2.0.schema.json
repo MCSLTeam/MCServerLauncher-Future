@@ -1,0 +1,224 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mcsl-team.github.io/schemas/mcsl-plugin-2.0.schema.json",
+  "title": "MCSL Daemon Plugin Manifest v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["package", "entry", "requires"],
+  "properties": {
+    "$schema": {
+      "const": "https://mcsl-team.github.io/schemas/mcsl-plugin-2.0.schema.json"
+    },
+    "package": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version"],
+      "properties": {
+        "id": { "$ref": "#/$defs/pluginId" },
+        "version": { "$ref": "#/$defs/nugetVersion" }
+      }
+    },
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["assembly", "type"],
+      "properties": {
+        "assembly": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.-]+\\.dll$"
+        },
+        "type": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z_][A-Za-z0-9_]*)+$"
+        }
+      }
+    },
+    "requires": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["api", "features"],
+      "properties": {
+        "api": { "$ref": "#/$defs/versionRange" },
+        "features": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/feature" },
+          "uniqueItems": true
+        }
+      }
+    },
+    "dependencies": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version"],
+      "properties": {
+        "version": { "const": 1 },
+        "plugins": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/pluginDependency" },
+          "uniqueItems": true
+        },
+        "contracts": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/contractDependency" },
+          "uniqueItems": true
+        }
+      }
+    },
+    "extensionPoints": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/extensionPoint" },
+      "uniqueItems": true
+    },
+    "commands": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/command" },
+      "uniqueItems": true
+    }
+  },
+  "$defs": {
+    "pluginId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9.-]{2,127}$"
+    },
+    "nugetVersion": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+(?:[-+][0-9A-Za-z.-]+)?$"
+    },
+    "versionRange": {
+      "type": "string",
+      "minLength": 1,
+      "description": "NuGet version range such as [1.0.0,2.0.0)."
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "feature": {
+      "enum": [
+        "rpc.register",
+        "event.publish",
+        "event.subscribe",
+        "instance.query",
+        "instance.manage",
+        "file.read",
+        "file.write",
+        "system.query",
+        "event-rule.manage",
+        "operation.query",
+        "operation.cancel",
+        "provisioning.manage",
+        "backup.manage",
+        "monitoring.query",
+        "automation.manage",
+        "audit.query",
+        "storage.private",
+        "network.http.listen",
+        "auth.verify"
+      ]
+    },
+    "pluginDependency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version"],
+      "properties": {
+        "id": { "$ref": "#/$defs/pluginId" },
+        "version": { "$ref": "#/$defs/versionRange" }
+      }
+    },
+    "contractDependency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["assembly", "version", "sha256"],
+      "properties": {
+        "assembly": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.-]+\\.dll$"
+        },
+        "version": { "$ref": "#/$defs/versionRange" },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "extensionPoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind"],
+      "properties": {
+        "id": {
+          "enum": [
+            "provider.java",
+            "provider.serverCore",
+            "provider.backup",
+            "provider.processLauncher",
+            "registry.template",
+            "registry.serverCore",
+            "registry.icon",
+            "registry.formatter",
+            "registry.command",
+            "pipeline.instance.create",
+            "hook.instance.lifecycle",
+            "override.process.launcher",
+            "ui.panel",
+            "event.daemon",
+            "command.daemon"
+          ]
+        },
+        "kind": {
+          "enum": ["provider", "registry", "pipeline", "hook", "override", "ui", "event", "command"]
+        },
+        "priority": { "type": "integer" },
+        "conflicts": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/extensionPointId" },
+          "uniqueItems": true
+        }
+      },
+      "allOf": [
+        { "if": { "properties": { "id": { "const": "provider.java" } }, "required": ["id"] }, "then": { "properties": { "kind": { "const": "provider" } } } },
+        { "if": { "properties": { "id": { "const": "provider.serverCore" } }, "required": ["id"] }, "then": { "properties": { "kind": { "const": "provider" } } } },
+        { "if": { "properties": { "id": { "const": "provider.backup" } }, "required": ["id"] }, "then": { "properties": { "kind": { "const": "provider" } } } },
+        { "if": { "properties": { "id": { "const": "provider.processLauncher" } }, "required": ["id"] }, "then": { "properties": { "kind": { "const": "provider" } } } },
+        { "if": { "properties": { "id": { "const": "registry.template" } }, "required": ["id"] }, "then": { "properties": { "kind": { "const": "registry" } } } },
+        { "if": { "properties": { "id": { "const": "registry.serverCore" } }, "required": ["id"] }, "then": { "properties": { "kind": { "const": "registry" } } } },
+        { "if": { "properties": { "id": { "const": "registry.icon" } }, "required": ["id"] }, "then": { "properties": { "kind": { "const": "registry" } } } },
+        { "if": { "properties": { "id": { "const": "registry.formatter" } }, "required": ["id"] }, "then": { "properties": { "kind": { "const": "registry" } } } },
+        { "if": { "properties": { "id": { "const": "registry.command" } }, "required": ["id"] }, "then": { "properties": { "kind": { "const": "registry" } } } },
+        { "if": { "properties": { "id": { "const": "pipeline.instance.create" } }, "required": ["id"] }, "then": { "properties": { "kind": { "const": "pipeline" } } } },
+        { "if": { "properties": { "id": { "const": "hook.instance.lifecycle" } }, "required": ["id"] }, "then": { "properties": { "kind": { "const": "hook" } } } },
+        { "if": { "properties": { "id": { "const": "override.process.launcher" } }, "required": ["id"] }, "then": { "properties": { "kind": { "const": "override" } } } },
+        { "if": { "properties": { "id": { "const": "ui.panel" } }, "required": ["id"] }, "then": { "properties": { "kind": { "const": "ui" } } } },
+        { "if": { "properties": { "id": { "const": "event.daemon" } }, "required": ["id"] }, "then": { "properties": { "kind": { "const": "event" } } } },
+        { "if": { "properties": { "id": { "const": "command.daemon" } }, "required": ["id"] }, "then": { "properties": { "kind": { "const": "command" } } } }
+      ]
+    },
+    "extensionPointId": {
+      "enum": [
+        "provider.java",
+        "provider.serverCore",
+        "provider.backup",
+        "provider.processLauncher",
+        "registry.template",
+        "registry.serverCore",
+        "registry.icon",
+        "registry.formatter",
+        "registry.command",
+        "pipeline.instance.create",
+        "hook.instance.lifecycle",
+        "override.process.launcher",
+        "ui.panel",
+        "event.daemon",
+        "command.daemon"
+      ]
+    },
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-zA-Z0-9_.-]{1,96}$" },
+        "title": { "type": "string", "minLength": 1 },
+        "description": { "type": "string", "minLength": 1 },
+        "target": { "const": "daemon" }
+      }
+    }
+  }
+}

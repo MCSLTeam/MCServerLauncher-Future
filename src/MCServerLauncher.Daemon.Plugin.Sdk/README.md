@@ -8,7 +8,23 @@ Developer SDK for MCServerLauncher Future plugins.
 <PackageReference Include="MCServerLauncher.Daemon.Plugin.Sdk" Version="1.0.0" />
 ```
 
-Place `mcsl-plugin.json` beside the project (or under the project directory) and mark a partial class with `[DaemonPluginModule]`.
+Place `mcsl-plugin.json` beside the project (or under the project directory), add the
+schema URI for editor validation, and mark a partial class with `[DaemonPluginModule]`.
+
+```json
+{
+  "$schema": "https://mcsl-team.github.io/schemas/mcsl-plugin-2.0.schema.json",
+  "package": { "id": "community.example.health", "version": "1.0.0" },
+  "entry": {
+    "assembly": "Example.Plugin.dll",
+    "type": "Example.Plugin.Generated.DaemonPluginAdapter"
+  },
+  "requires": {
+    "api": "[1.0.0,2.0.0)",
+    "features": ["rpc.register"]
+  }
+}
+```
 
 ## Module shape
 
