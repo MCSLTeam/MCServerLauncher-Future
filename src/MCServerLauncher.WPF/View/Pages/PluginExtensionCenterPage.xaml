@@ -40,8 +40,7 @@
             <WrapPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Top">
                 <TextBlock Text="{Binding [Plugin_ExtensionCenter_TargetFilter], Source={x:Static i18n:Lang.Tr}}"
                            Style="{StaticResource CaptionTextBlock}" VerticalAlignment="Center" Margin="0,0,8,8" />
-                <ComboBox Width="140" Margin="0,0,10,8" x:Name="TargetFilterCombo"
-                          SelectedIndex="0" SelectionChanged="TargetFilterCombo_SelectionChanged">
+                <ComboBox Width="140" Margin="0,0,10,8" x:Name="TargetFilterCombo" SelectedIndex="0">
                     <ComboBoxItem Content="{Binding [Plugin_ExtensionCenter_TargetAll], Source={x:Static i18n:Lang.Tr}}" />
                     <ComboBoxItem Content="{Binding [Plugin_ExtensionCenter_TargetLocal], Source={x:Static i18n:Lang.Tr}}" />
                     <ComboBoxItem Content="{Binding [Plugin_ExtensionCenter_TargetServer], Source={x:Static i18n:Lang.Tr}}" />

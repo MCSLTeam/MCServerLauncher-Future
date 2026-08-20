@@ -37,6 +37,8 @@ public partial class PluginExtensionCenterPage
         InitializeComponent();
         DataContext = this;
         SearchTextBox.TextChanged += (_, _) => ApplySearchFilter();
+        TargetFilterCombo.SelectionChanged += TargetFilterCombo_SelectionChanged;
+        _targetFilterIndex = TargetFilterCombo.SelectedIndex;
         IsVisibleChanged += (_, _) =>
         {
             if (IsVisible)
@@ -61,6 +63,8 @@ public partial class PluginExtensionCenterPage
         if (TargetFilterCombo.SelectedIndex < 0)
             return;
         _targetFilterIndex = TargetFilterCombo.SelectedIndex;
+        if (SearchTextBox is null)
+            return;
         RefreshFilteredEntries(SearchTextBox.Text.Trim());
     }
 
