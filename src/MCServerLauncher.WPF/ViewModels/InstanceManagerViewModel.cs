@@ -27,10 +27,13 @@ public partial class InstanceManagerViewModel : ObservableObject
 
     public ObservableCollection<InstanceCardModel> AllInstances { get; } = [];
     public ObservableCollection<InstanceCardModel> FilteredInstances { get; } = [];
+    public ObservableCollection<InstanceCardModel> SelectedInstances { get; } = [];
     public ObservableCollection<string> DaemonFilterItems { get; } = [];
     [ObservableProperty] private int _selectedDaemonIndex;
     [ObservableProperty] private string _selectedStatusFilter = "All";
     [ObservableProperty] private string _searchText = string.Empty;
+    [ObservableProperty] private int _selectedCount;
+    [ObservableProperty] private bool _isBatchBarVisible;
     [ObservableProperty] private bool _isLoading;
     [ObservableProperty] private string? _errorState;
 
@@ -62,6 +65,7 @@ public partial class InstanceManagerViewModel : ObservableObject
     [RelayCommand]
     private async Task RefreshAsync()
     {
+        ClearSelection();
         AllInstances.Clear();
         FilteredInstances.Clear();
         ErrorState = null;
@@ -463,6 +467,139 @@ public partial class InstanceManagerViewModel : ObservableObject
     private static bool Contains(string? value, string searchText)
     {
         return value?.Contains(searchText, StringComparison.OrdinalIgnoreCase) == true;
+    }
+
+    public void SyncSelection(IReadOnlyList<InstanceCardModel> selected)
+    {
+        SelectedInstances.Clear();
+        foreach (var instance in selected)
+            SelectedInstances.Add(instance);
+        SelectedCount = SelectedInstances.Count;
+        IsBatchBarVisible = SelectedInstances.Count > 0;
+    }
+
+    public void SelectAllMatching()
+    {
+        foreach (var instance in FilteredInstances)
+        {
+            if (!SelectedInstances.Contains(instance))
+                SelectedInstances.Add(instance);
+        }
+        SelectedCount = SelectedInstances.Count;
+    }
+
+    public void ClearSelection()
+    {
+        SelectedInstances.Clear();
+        SelectedCount = 0;
+        IsBatchBarVisible = false;
+    }
+
+    public async Task BatchStartAsync(IReadOnlyList<InstanceCardModel> selected)
+    {
+        var candidates = selected.Where(static card => card.CanStart).ToArray();
+        if (candidates.Length == 0)
+        {
+            ClearSelection();
+            return;
+        }
+
+        var result = await _dialog.ShowConfirmAsync(
+            Lang.Tr["BatchStartConfirmTitle"],
+            string.Format(Lang.Tr["BatchStartConfirmContent"], candidates.Length),
+            Lang.Tr["Start"], Lang.Tr["Cancel"]);
+        if (result != ContentDialogResult.Primary)
+            return;
+
+        var (success, fail) = await RunBatchAsync(candidates, async (daemon, card) =>
+            (await daemon.Instances.StartInstanceAsync(new InstanceReference(card.InstanceId), default)).IsOk(out _));
+        PushBatchResult("BatchStartComplete", success, fail);
+        await RefreshCardsInPlaceAsync();
+    }
+
+    public async Task BatchStopAsync(IReadOnlyList<InstanceCardModel> selected)
+    {
+        var candidates = selected.Where(static card => card.CanStop).ToArray();
+        if (candidates.Length == 0)
+        {
+            ClearSelection();
+            return;
+        }
+
+        var result = await _dialog.ShowConfirmAsync(
+            Lang.Tr["BatchStopConfirmTitle"],
+            string.Format(Lang.Tr["BatchStopConfirmContent"], candidates.Length),
+            Lang.Tr["Stop"], Lang.Tr["Cancel"]);
+        if (result != ContentDialogResult.Primary)
+            return;
+
+        var (success, fail) = await RunBatchAsync(candidates, async (daemon, card) =>
+            (await daemon.Instances.StopInstanceAsync(new InstanceReference(card.InstanceId), default)).IsOk(out _));
+        PushBatchResult("BatchStopComplete", success, fail);
+        await RefreshCardsInPlaceAsync();
+    }
+
+    public async Task BatchDeleteAsync(IReadOnlyList<InstanceCardModel> selected)
+    {
+        var candidates = selected.Where(static card => card.CanDelete).ToArray();
+        if (candidates.Length == 0)
+        {
+            ClearSelection();
+            return;
+        }
+
+        var result = await _dialog.ShowConfirmAsync(
+            Lang.Tr["BatchDeleteConfirmTitle"],
+            string.Format(Lang.Tr["BatchDeleteConfirmContent"], candidates.Length),
+            Lang.Tr["Delete"], Lang.Tr["Cancel"]);
+        if (result != ContentDialogResult.Primary)
+            return;
+
+        var (success, fail) = await RunBatchAsync(candidates, async (daemon, card) =>
+            (await daemon.Instances.RemoveInstanceAsync(new InstanceReference(card.InstanceId), default)).IsOk(out _));
+        PushBatchResult("BatchDeleteComplete", success, fail);
+        await RefreshCardsInPlaceAsync();
+    }
+
+    private async Task<(int Success, int Fail)> RunBatchAsync(
+        IReadOnlyList<InstanceCardModel> candidates,
+        Func<TypedDaemonClient, InstanceCardModel, Task<bool>> action)
+    {
+        var success = 0;
+        var fail = 0;
+        foreach (var card in candidates)
+        {
+            try
+            {
+                var connectionResult = await _daemonService.GetAsync(card.DaemonConfig);
+                if (connectionResult.IsErr(out var connectionError))
+                {
+                    fail++;
+                    continue;
+                }
+
+                if (await action(connectionResult.Unwrap(), card))
+                    success++;
+                else
+                    fail++;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "[InstanceManager] Batch operation failed for {0}", card.InstanceId);
+                fail++;
+            }
+        }
+        return (success, fail);
+    }
+
+    private void PushBatchResult(string completeKey, int success, int fail)
+    {
+        _notification.Push(
+            Lang.Tr[completeKey],
+            string.Format(Lang.Tr["BatchOperationResult"], success, fail),
+            false,
+            fail > 0 ? InfoBarSeverity.Warning : InfoBarSeverity.Success);
+        ClearSelection();
     }
 
     private async Task RefreshCardsInPlaceAsync()

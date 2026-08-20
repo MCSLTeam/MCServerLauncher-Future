@@ -26,7 +26,10 @@ public partial class DaemonManagerViewModel : ObservableObject
 
     public ObservableCollection<DaemonCardModel> Daemons { get; } = [];
     public ObservableCollection<DaemonCardModel> FilteredDaemons { get; } = [];
+    public ObservableCollection<DaemonCardModel> SelectedDaemons { get; } = [];
     [ObservableProperty] private string _searchText = string.Empty;
+    [ObservableProperty] private int _selectedCount;
+    [ObservableProperty] private bool _isBatchBarVisible;
 
     public DaemonManagerViewModel(
         IDaemonConnectionService daemonService,
@@ -41,6 +44,7 @@ public partial class DaemonManagerViewModel : ObservableObject
     [RelayCommand]
     private async Task RefreshAsync()
     {
+        ClearSelection();
         Daemons.Clear();
         FilteredDaemons.Clear();
 
@@ -207,6 +211,77 @@ public partial class DaemonManagerViewModel : ObservableObject
             Log.Error($"[Daemon] Error occurred when deleting daemon: {ex}");
             _notification.Push(Lang.Tr["Status_Error"], string.Format(Lang.Tr["DaemonDeleteFailed"], ex.Message), true, InfoBarSeverity.Error);
         }
+    }
+
+    public void SyncSelection(IReadOnlyList<DaemonCardModel> selected)
+    {
+        SelectedDaemons.Clear();
+        foreach (var daemon in selected)
+            SelectedDaemons.Add(daemon);
+        SelectedCount = SelectedDaemons.Count;
+        IsBatchBarVisible = SelectedDaemons.Count > 0;
+    }
+
+    public void SelectAllMatching()
+    {
+        foreach (var daemon in FilteredDaemons)
+        {
+            if (!SelectedDaemons.Contains(daemon))
+                SelectedDaemons.Add(daemon);
+        }
+        SelectedCount = SelectedDaemons.Count;
+    }
+
+    public void ClearSelection()
+    {
+        SelectedDaemons.Clear();
+        SelectedCount = 0;
+        IsBatchBarVisible = false;
+    }
+
+    public async Task BatchDeleteAsync(IReadOnlyList<DaemonCardModel> selected)
+    {
+        var candidates = selected.ToArray();
+        if (candidates.Length == 0)
+        {
+            ClearSelection();
+            return;
+        }
+
+        var result = await _dialog.ShowCountdownConfirmAsync(
+            Lang.Tr["BatchDeleteConfirmTitle"],
+            string.Format(Lang.Tr["BatchDeleteConfirmContent"], candidates.Length),
+            Lang.Tr["Delete"], Lang.Tr["Cancel"]);
+        if (result != ContentDialogResult.Primary)
+            return;
+
+        var success = 0;
+        var fail = 0;
+        foreach (var daemon in candidates)
+        {
+            try
+            {
+                var removeResult = await _daemonService.RemoveAsync(daemon.Config);
+                if (removeResult.IsErr(out var removeError))
+                    throw DaemonErrorLocalization.ToException(removeError!);
+                Daemons.Remove(daemon);
+                DaemonsListManager.RemoveDaemon(daemon.Config);
+                success++;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "[Daemon] Batch delete failed for {0}", daemon.Address);
+                fail++;
+            }
+        }
+
+        ApplyFilters();
+        _notification.Push(
+            Lang.Tr["BatchDeleteComplete"],
+            string.Format(Lang.Tr["BatchOperationResult"], success, fail),
+            false,
+            fail > 0 ? InfoBarSeverity.Warning : InfoBarSeverity.Success);
+        ClearSelection();
     }
 
     private async Task<bool> TryConnectNewDaemonAsync(NewDaemonConnectionInput input)

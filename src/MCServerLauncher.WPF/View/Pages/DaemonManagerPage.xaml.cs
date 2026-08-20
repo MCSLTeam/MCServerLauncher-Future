@@ -127,6 +127,43 @@ namespace MCServerLauncher.WPF.View.Pages
             return _viewModel.AddConnectionCommand.ExecuteAsync(null);
         }
 
+        private void SyncSelection()
+        {
+            _viewModel.SyncSelection(DaemonCardItemsControl.SelectedItems.Cast<DaemonCardModel>().ToArray());
+            UpdateBatchBar();
+        }
+
+        private void UpdateBatchBar()
+        {
+            BatchOperationBar.Visibility = _viewModel.IsBatchBarVisible ? Visibility.Visible : Visibility.Collapsed;
+            SelectedCountTextBlock.Text = string.Format(
+                Modules.Lang.Tr["SelectedCount"], _viewModel.SelectedCount);
+        }
+
+        private void SelectAllBatch_Click(object sender, RoutedEventArgs e)
+        {
+            DaemonCardItemsControl.SelectedItems.Clear();
+            foreach (var daemon in _viewModel.FilteredDaemons)
+                DaemonCardItemsControl.SelectedItems.Add(daemon);
+            SyncSelection();
+        }
+
+        private async void BatchDelete_Click(object sender, RoutedEventArgs e)
+        {
+            var selected = DaemonCardItemsControl.SelectedItems.Cast<DaemonCardModel>().ToArray();
+            if (selected.Length == 0) return;
+            await _viewModel.BatchDeleteAsync(selected);
+            DaemonCardItemsControl.SelectedItems.Clear();
+            SyncSelection();
+        }
+
+        private void CancelSelectionBatch_Click(object sender, RoutedEventArgs e)
+        {
+            DaemonCardItemsControl.SelectedItems.Clear();
+            _viewModel.ClearSelection();
+            UpdateBatchBar();
+        }
+
         private void CardListView_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             _pendingSelectionStart = e.GetPosition(DaemonCardItemsControl);
@@ -180,6 +217,7 @@ namespace MCServerLauncher.WPF.View.Pages
             if (!_isBoxSelecting)
             {
                 _hasPendingBoxSelection = false;
+                SyncSelection();
                 return;
             }
 
@@ -188,6 +226,7 @@ namespace MCServerLauncher.WPF.View.Pages
             _hasPendingBoxSelection = false;
             SelectionBox.Visibility = Visibility.Collapsed;
             DaemonCardItemsControl.ReleaseMouseCapture();
+            SyncSelection();
         }
 
         private void CardListView_LostMouseCapture(object sender, MouseEventArgs e)
@@ -208,6 +247,7 @@ namespace MCServerLauncher.WPF.View.Pages
             foreach (var item in _initialSelection)
                 DaemonCardItemsControl.SelectedItems.Add(item);
             SelectionBox.Visibility = Visibility.Collapsed;
+            SyncSelection();
         }
 
         private void UpdateBoxSelection(Point viewportPoint)

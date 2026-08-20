@@ -14,7 +14,7 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="280" />
+            <ColumnDefinition Width="340" />
             <ColumnDefinition Width="16" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
@@ -97,32 +97,47 @@
                         <TextBlock x:Name="SelectedTitle" Style="{StaticResource SubtitleTextBlock}" />
                         <TextBlock x:Name="SelectedSubtitle" Style="{StaticResource CaptionTextBlock}" TextWrapping="Wrap" Margin="0,4,10,0" />
                     </StackPanel>
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button x:Name="DeployDaemonButton" Margin="0,0,8,0" Click="DeployDaemon_Click" IsEnabled="False">
-                            <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Upload}"
-                                            Content="{Binding [Plugin_ExtensionCenter_DeployDaemon], Source={x:Static i18n:Lang.Tr}}" />
-                        </Button>
-                        <Button x:Name="EnableDaemonButton" Margin="0,0,8,0" Click="EnableDaemon_Click" IsEnabled="False">
-                            <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Play}"
-                                            Content="{Binding [Plugin_ExtensionCenter_EnableDaemon], Source={x:Static i18n:Lang.Tr}}" />
-                        </Button>
-                        <Button x:Name="DisableDaemonButton" Margin="0,0,8,0" Click="DisableDaemon_Click" IsEnabled="False">
-                            <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Pause}"
-                                            Content="{Binding [Plugin_ExtensionCenter_DisableDaemon], Source={x:Static i18n:Lang.Tr}}" />
-                        </Button>
-                        <Button x:Name="RequestDaemonRestartButton" Margin="0,0,8,0" Click="RequestDaemonRestart_Click" IsEnabled="False">
-                            <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Sync}"
-                                            Content="{Binding [Plugin_ExtensionCenter_RequestDaemonRestart], Source={x:Static i18n:Lang.Tr}}" />
-                        </Button>
-                        <Button x:Name="RemoveDaemonButton" Margin="0,0,8,0" Click="RemoveDaemon_Click" IsEnabled="False">
-                            <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Delete}"
-                                            Content="{Binding [Plugin_ExtensionCenter_RemoveDaemon], Source={x:Static i18n:Lang.Tr}}" />
-                        </Button>
-                        <Button x:Name="RemoveButton" Click="Remove_Click" IsEnabled="False">
-                            <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Delete}"
-                                            Content="{Binding [Delete], Source={x:Static i18n:Lang.Tr}}" />
-                        </Button>
-                    </StackPanel>
+                    <ui:DropDownButton Grid.Column="1" VerticalAlignment="Top" ShowChevronArrow="False">
+                        <ui:DropDownButton.Content>
+                            <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.More}"
+                                            Content="{Binding [More], Source={x:Static i18n:Lang.Tr}}" />
+                        </ui:DropDownButton.Content>
+                        <ui:DropDownButton.Flyout>
+                            <ui:MenuFlyout Placement="Bottom">
+                                <MenuItem x:Name="DeployDaemonMenuItem" IsEnabled="False" Header="{Binding [Plugin_ExtensionCenter_DeployDaemon], Source={x:Static i18n:Lang.Tr}}" Click="DeployDaemon_Click">
+                                    <MenuItem.Icon>
+                                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Upload}" FontSize="16" />
+                                    </MenuItem.Icon>
+                                </MenuItem>
+                                <MenuItem x:Name="EnableDaemonMenuItem" IsEnabled="False" Header="{Binding [Plugin_ExtensionCenter_EnableDaemon], Source={x:Static i18n:Lang.Tr}}" Click="EnableDaemon_Click">
+                                    <MenuItem.Icon>
+                                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Play}" FontSize="16" />
+                                    </MenuItem.Icon>
+                                </MenuItem>
+                                <MenuItem x:Name="DisableDaemonMenuItem" IsEnabled="False" Header="{Binding [Plugin_ExtensionCenter_DisableDaemon], Source={x:Static i18n:Lang.Tr}}" Click="DisableDaemon_Click">
+                                    <MenuItem.Icon>
+                                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Pause}" FontSize="16" />
+                                    </MenuItem.Icon>
+                                </MenuItem>
+                                <MenuItem x:Name="RequestDaemonRestartMenuItem" IsEnabled="False" Header="{Binding [Plugin_ExtensionCenter_RequestDaemonRestart], Source={x:Static i18n:Lang.Tr}}" Click="RequestDaemonRestart_Click">
+                                    <MenuItem.Icon>
+                                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Sync}" FontSize="16" />
+                                    </MenuItem.Icon>
+                                </MenuItem>
+                                <MenuItem x:Name="RemoveDaemonMenuItem" IsEnabled="False" Header="{Binding [Plugin_ExtensionCenter_RemoveDaemon], Source={x:Static i18n:Lang.Tr}}" Click="RemoveDaemon_Click">
+                                    <MenuItem.Icon>
+                                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Delete}" FontSize="16" />
+                                    </MenuItem.Icon>
+                                </MenuItem>
+                                <Separator />
+                                <MenuItem x:Name="RemoveClientMenuItem" IsEnabled="False" Header="{Binding [Delete], Source={x:Static i18n:Lang.Tr}}" Click="Remove_Click">
+                                    <MenuItem.Icon>
+                                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Delete}" FontSize="16" />
+                                    </MenuItem.Icon>
+                                </MenuItem>
+                            </ui:MenuFlyout>
+                        </ui:DropDownButton.Flyout>
+                    </ui:DropDownButton>
                 </Grid>
 
                 <TextBlock Grid.Row="1" x:Name="StatusText" Style="{StaticResource CaptionTextBlock}"

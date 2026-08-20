@@ -238,6 +238,7 @@ namespace MCServerLauncher.WPF.View.Pages
             if (!_isBoxSelecting)
             {
                 _hasPendingBoxSelection = false;
+                SyncSelection();
                 return;
             }
 
@@ -246,6 +247,7 @@ namespace MCServerLauncher.WPF.View.Pages
             _hasPendingBoxSelection = false;
             SelectionBox.Visibility = Visibility.Collapsed;
             InstanceCardGrid.ReleaseMouseCapture();
+            SyncSelection();
         }
 
         private void CardListView_LostMouseCapture(object sender, MouseEventArgs e)
@@ -266,6 +268,7 @@ namespace MCServerLauncher.WPF.View.Pages
             foreach (var item in _initialSelection)
                 InstanceCardGrid.SelectedItems.Add(item);
             SelectionBox.Visibility = Visibility.Collapsed;
+            SyncSelection();
         }
 
         private void UpdateBoxSelection(Point viewportPoint)
@@ -345,6 +348,61 @@ namespace MCServerLauncher.WPF.View.Pages
 
         internal static double GetBoxScrollStep(double distance) =>
             distance <= 0 ? 0 : Math.Min(14, Math.Max(1, distance * 0.12));
+
+        private void SyncSelection()
+        {
+            _viewModel.SyncSelection(InstanceCardGrid.SelectedItems.Cast<InstanceCardModel>().ToArray());
+            UpdateBatchBar();
+        }
+
+        private void UpdateBatchBar()
+        {
+            BatchOperationBar.Visibility = _viewModel.IsBatchBarVisible ? Visibility.Visible : Visibility.Collapsed;
+            SelectedCountTextBlock.Text = string.Format(
+                Lang.Tr["SelectedCount"], _viewModel.SelectedCount);
+        }
+
+        private void SelectAllBatch_Click(object sender, RoutedEventArgs e)
+        {
+            InstanceCardGrid.SelectedItems.Clear();
+            foreach (var instance in _viewModel.FilteredInstances)
+                InstanceCardGrid.SelectedItems.Add(instance);
+            SyncSelection();
+        }
+
+        private async void BatchStart_Click(object sender, RoutedEventArgs e)
+        {
+            var selected = InstanceCardGrid.SelectedItems.Cast<InstanceCardModel>().ToArray();
+            if (selected.Length == 0) return;
+            await _viewModel.BatchStartAsync(selected);
+            InstanceCardGrid.SelectedItems.Clear();
+            SyncSelection();
+        }
+
+        private async void BatchStop_Click(object sender, RoutedEventArgs e)
+        {
+            var selected = InstanceCardGrid.SelectedItems.Cast<InstanceCardModel>().ToArray();
+            if (selected.Length == 0) return;
+            await _viewModel.BatchStopAsync(selected);
+            InstanceCardGrid.SelectedItems.Clear();
+            SyncSelection();
+        }
+
+        private async void BatchDelete_Click(object sender, RoutedEventArgs e)
+        {
+            var selected = InstanceCardGrid.SelectedItems.Cast<InstanceCardModel>().ToArray();
+            if (selected.Length == 0) return;
+            await _viewModel.BatchDeleteAsync(selected);
+            InstanceCardGrid.SelectedItems.Clear();
+            SyncSelection();
+        }
+
+        private void CancelSelectionBatch_Click(object sender, RoutedEventArgs e)
+        {
+            InstanceCardGrid.SelectedItems.Clear();
+            _viewModel.ClearSelection();
+            UpdateBatchBar();
+        }
 
         private static T? FindVisualParent<T>(DependencyObject? source) where T : DependencyObject
         {

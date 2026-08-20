@@ -168,12 +168,12 @@ public partial class PluginExtensionCenterPage
 
     private async Task RenderSelectedAsync(PluginClientExtensionCacheEntry entry)
     {
-        RemoveButton.IsEnabled = true;
-        DeployDaemonButton.IsEnabled = entry.DeploymentPlan.Daemon?.Plugin is not null;
-        EnableDaemonButton.IsEnabled = entry.DeploymentPlan.Daemon?.Plugin is not null;
-        DisableDaemonButton.IsEnabled = entry.DeploymentPlan.Daemon?.Plugin is not null;
-        RequestDaemonRestartButton.IsEnabled = entry.DeploymentPlan.Daemon?.Plugin is not null;
-        RemoveDaemonButton.IsEnabled = entry.DeploymentPlan.Daemon?.Plugin is not null;
+        RemoveClientMenuItem.IsEnabled = true;
+        DeployDaemonMenuItem.IsEnabled = entry.DeploymentPlan.Daemon?.Plugin is not null;
+        EnableDaemonMenuItem.IsEnabled = entry.DeploymentPlan.Daemon?.Plugin is not null;
+        DisableDaemonMenuItem.IsEnabled = entry.DeploymentPlan.Daemon?.Plugin is not null;
+        RequestDaemonRestartMenuItem.IsEnabled = entry.DeploymentPlan.Daemon?.Plugin is not null;
+        RemoveDaemonMenuItem.IsEnabled = entry.DeploymentPlan.Daemon?.Plugin is not null;
         var summary = PluginExtensionCenterService.Summarize(entry);
         SelectedTitle.Text = entry.Id;
         SelectedSubtitle.Text = string.Format(
@@ -226,12 +226,12 @@ public partial class PluginExtensionCenterPage
 
     private void ClearSelection()
     {
-        RemoveButton.IsEnabled = false;
-        DeployDaemonButton.IsEnabled = false;
-        EnableDaemonButton.IsEnabled = false;
-        DisableDaemonButton.IsEnabled = false;
-        RequestDaemonRestartButton.IsEnabled = false;
-        RemoveDaemonButton.IsEnabled = false;
+        RemoveClientMenuItem.IsEnabled = false;
+        DeployDaemonMenuItem.IsEnabled = false;
+        EnableDaemonMenuItem.IsEnabled = false;
+        DisableDaemonMenuItem.IsEnabled = false;
+        RequestDaemonRestartMenuItem.IsEnabled = false;
+        RemoveDaemonMenuItem.IsEnabled = false;
         SelectedTitle.Text = Lang.Tr["Plugin_ExtensionCenter_NoSelection"];
         SelectedSubtitle.Text = string.Empty;
         RenderHost.Content = null;
@@ -663,19 +663,19 @@ public partial class PluginExtensionCenterPage
     {
         if (ExtensionList.SelectedItem is not PluginExtensionCenterEntryViewModel selected || selected.Entry.DeploymentPlan.Daemon?.Plugin is null)
         {
-            DeployDaemonButton.IsEnabled = false;
-            EnableDaemonButton.IsEnabled = false;
-            DisableDaemonButton.IsEnabled = false;
-            RequestDaemonRestartButton.IsEnabled = false;
-            RemoveDaemonButton.IsEnabled = false;
+            DeployDaemonMenuItem.IsEnabled = false;
+            EnableDaemonMenuItem.IsEnabled = false;
+            DisableDaemonMenuItem.IsEnabled = false;
+            RequestDaemonRestartMenuItem.IsEnabled = false;
+            RemoveDaemonMenuItem.IsEnabled = false;
             return;
         }
 
-        DeployDaemonButton.IsEnabled = enabled;
-        EnableDaemonButton.IsEnabled = enabled;
-        DisableDaemonButton.IsEnabled = enabled;
-        RequestDaemonRestartButton.IsEnabled = enabled;
-        RemoveDaemonButton.IsEnabled = enabled;
+        DeployDaemonMenuItem.IsEnabled = enabled;
+        EnableDaemonMenuItem.IsEnabled = enabled;
+        DisableDaemonMenuItem.IsEnabled = enabled;
+        RequestDaemonRestartMenuItem.IsEnabled = enabled;
+        RemoveDaemonMenuItem.IsEnabled = enabled;
     }
 
     private static async Task UploadFileToDaemonAsync(

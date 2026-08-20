@@ -177,6 +177,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
@@ -188,7 +189,43 @@
         <TextBlock Grid.Row="1" Grid.Column="0" Style="{StaticResource MinititleTextBlock}"
                    Text="{Binding [DaemonManagerTip], Source={x:Static i18n:Lang.Tr}}"
                    VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,10,0,0" />
-        <Grid Grid.Row="2" Margin="0,12,35,0">
+
+        <!-- 批量操作栏：多选后显示 -->
+        <Border Grid.Row="2" Grid.Column="0" Margin="0,12,35,0" x:Name="BatchOperationBar"
+                Background="{DynamicResource SystemControlBackgroundAccentBrush}"
+                CornerRadius="4" Padding="15,8" Visibility="Collapsed">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" x:Name="SelectedCountTextBlock"
+                           Foreground="White" FontWeight="SemiBold" VerticalAlignment="Center" />
+                <WrapPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Margin="0,0,8,0" Click="SelectAllBatch_Click">
+                        <Button.Content>
+                            <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.SelectAll}"
+                                            Content="{Binding [SelectAll], Source={x:Static i18n:Lang.Tr}}" />
+                        </Button.Content>
+                    </Button>
+                    <Button Margin="0,0,8,0" Click="BatchDelete_Click">
+                        <Button.Content>
+                            <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.Delete}"
+                                            Content="{Binding [Delete], Source={x:Static i18n:Lang.Tr}}" />
+                        </Button.Content>
+                    </Button>
+                    <Button Click="CancelSelectionBatch_Click">
+                        <Button.Content>
+                            <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.Cancel}"
+                                            Content="{Binding [Cancel], Source={x:Static i18n:Lang.Tr}}" />
+                        </Button.Content>
+                    </Button>
+                </WrapPanel>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="3" Grid.Column="0" Margin="0,12,35,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
@@ -209,7 +246,7 @@
                 </Button>
             </WrapPanel>
         </Grid>
-        <Grid Grid.Row="3" Grid.Column="0" Margin="0,10,35,0" ClipToBounds="True">
+        <Grid Grid.Row="4" Grid.Column="0" Margin="0,10,35,0" ClipToBounds="True">
             <ui:GridView x:Name="DaemonCardItemsControl"
                           ItemsSource="{Binding FilteredDaemons}"
                           VerticalAlignment="Stretch"
