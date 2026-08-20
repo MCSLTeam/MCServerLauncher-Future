@@ -5,147 +5,286 @@
          xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
          xmlns:ui="http://schemas.inkore.net/lib/ui/wpf/modern"
          xmlns:i18n="clr-namespace:MCServerLauncher.WPF.Modules"
+         xmlns:models="clr-namespace:MCServerLauncher.WPF.View.Pages"
          mc:Ignorable="d"
-         d:DesignHeight="450" d:DesignWidth="800"
+         d:DesignHeight="600" d:DesignWidth="900"
          Title="PluginExtensionCenterPage">
-    <Grid Margin="35,0,35,35">
+    <Grid Margin="35,35,35,0">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="340" />
-            <ColumnDefinition Width="16" />
-            <ColumnDefinition Width="*" />
-        </Grid.ColumnDefinitions>
 
-        <Grid Grid.Row="0" Grid.ColumnSpan="3">
+        <Grid Grid.Row="0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <StackPanel Grid.Column="0">
                 <TextBlock Style="{StaticResource TitleTextBlock}"
-                           Text="{Binding [Plugin_ExtensionCenter_Title], Source={x:Static i18n:Lang.Tr}}"
-                           Margin="0,35,0,0" />
+                           Text="{Binding [Plugin_ExtensionCenter_Title], Source={x:Static i18n:Lang.Tr}}" />
                 <TextBlock Style="{StaticResource MinititleTextBlock}"
                            Text="{Binding [Plugin_ExtensionCenter_Subtitle], Source={x:Static i18n:Lang.Tr}}"
-                           TextWrapping="Wrap" Margin="0,10,10,0" />
+                           TextWrapping="Wrap" Margin="0,10,0,0" />
             </StackPanel>
-            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,35,0,0">
-                <Button Margin="0,0,8,0" Click="Refresh_Click">
+        </Grid>
+
+        <!-- 筛选栏 -->
+        <Grid Grid.Row="1" Margin="0,12,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <WrapPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Top">
+                <TextBox Width="240" MaxWidth="400" MinWidth="120" Margin="0,0,10,8"
+                         x:Name="SearchTextBox"
+                         Text="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         ui:ControlHelper.PlaceholderText="{Binding [Search], Source={x:Static i18n:Lang.Tr}}" />
+                <TextBlock Text="{Binding [Plugin_ExtensionCenter_MarketplaceUnavailable], Source={x:Static i18n:Lang.Tr}}"
+                           Style="{StaticResource CaptionTextBlock}" VerticalAlignment="Center" Margin="0,0,0,8"
+                           TextWrapping="Wrap" MaxWidth="360" />
+            </WrapPanel>
+            <WrapPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top">
+                <Button Margin="0,0,10,8" Click="Refresh_Click">
                     <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Sync}"
                                     Content="{Binding [Refresh], Source={x:Static i18n:Lang.Tr}}" />
                 </Button>
-                <Button Click="Install_Click">
+                <Button Margin="0,0,0,8" Click="Install_Click">
+                    <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Upload}"
+                                    Content="{Binding [Plugin_ExtensionCenter_Install], Source={x:Static i18n:Lang.Tr}}" />
+                </Button>
+            </WrapPanel>
+        </Grid>
+
+        <!-- 批量操作栏：多选后显示 -->
+        <Border Grid.Row="2" Margin="0,10,0,0" x:Name="BatchOperationBar"
+                Background="{DynamicResource SystemControlBackgroundAccentBrush}"
+                CornerRadius="4" Padding="15,8" Visibility="Collapsed">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" x:Name="SelectedCountTextBlock"
+                           Foreground="White" FontWeight="SemiBold" VerticalAlignment="Center" />
+                <WrapPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Margin="0,0,10,0" Click="SelectAllBatch_Click">
+                        <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.SelectAll}"
+                                        Content="{Binding [SelectAll], Source={x:Static i18n:Lang.Tr}}" />
+                    </Button>
+                    <Button Margin="0,0,10,0" Click="BatchInstallDaemon_Click">
+                        <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Upload}"
+                                        Content="{Binding [Plugin_ExtensionCenter_DeployDaemon], Source={x:Static i18n:Lang.Tr}}" />
+                    </Button>
+                    <Button Margin="0,0,10,0" Click="BatchRemove_Click">
+                        <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Delete}"
+                                        Content="{Binding [Delete], Source={x:Static i18n:Lang.Tr}}" />
+                    </Button>
+                    <Button Click="CancelSelectionBatch_Click">
+                        <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Cancel}"
+                                        Content="{Binding [Cancel], Source={x:Static i18n:Lang.Tr}}" />
+                    </Button>
+                </WrapPanel>
+            </Grid>
+        </Border>
+
+        <!-- 内容 -->
+        <Grid Grid.Row="3" Margin="0,12,0,0" ClipToBounds="True">
+            <!-- 卡片网格 -->
+            <Grid x:Name="ListViewRoot">
+                <ui:GridView x:Name="ExtensionGrid"
+                             ItemsSource="{Binding FilteredEntries}"
+                             VerticalAlignment="Stretch"
+                             ScrollViewer.VerticalScrollBarVisibility="Auto"
+                             SelectionMode="Extended"
+                             SelectionChanged="ExtensionGrid_SelectionChanged">
+                    <ui:GridView.ItemContainerStyle>
+                        <Style TargetType="ui:GridViewItem">
+                            <Setter Property="VerticalAlignment" Value="Stretch" />
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            <Setter Property="VerticalContentAlignment" Value="Stretch" />
+                        </Style>
+                    </ui:GridView.ItemContainerStyle>
+                    <ui:GridView.Resources>
+                        <DataTemplate DataType="{x:Type models:PluginExtensionCenterEntryViewModel}">
+                            <Border Style="{StaticResource StyledBorder}" VerticalAlignment="Stretch" MinHeight="150">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="*" />
+                                    </Grid.RowDefinitions>
+                                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="16,14,16,0">
+                                        <TextBlock Text="{Binding Id}" Style="{StaticResource SubtitleTextBlock}"
+                                                   TextTrimming="CharacterEllipsis" MaxWidth="230" VerticalAlignment="Center" />
+                                        <Border CornerRadius="10" Padding="8,2" Margin="10,0,0,0" VerticalAlignment="Center">
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="Background" Value="#FF107C10" />
+                                                </Style>
+                                            </Border.Style>
+                                            <TextBlock Text="{Binding KindBadge}" FontSize="12" FontWeight="SemiBold" Foreground="White" />
+                                        </Border>
+                                    </StackPanel>
+                                    <TextBlock Grid.Row="1" Text="{Binding MetaSummary}" Style="{StaticResource CaptionTextBlock}"
+                                               Margin="16,8,16,0" TextTrimming="CharacterEllipsis" />
+                                    <StackPanel Grid.Row="2" Margin="16,6,16,0" VerticalAlignment="Bottom">
+                                        <TextBlock Text="{Binding Summary}" Style="{StaticResource CaptionTextBlock}"
+                                                   TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="34" />
+                                        <ui:DropDownButton HorizontalAlignment="Right" Margin="0,8,0,12" ShowChevronArrow="False">
+                                            <ui:DropDownButton.Content>
+                                                <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.More}"
+                                                                Content="{Binding [More], Source={x:Static i18n:Lang.Tr}}" />
+                                            </ui:DropDownButton.Content>
+                                            <ui:DropDownButton.Flyout>
+                                                <ui:MenuFlyout Placement="Bottom">
+                                                    <MenuItem Header="{Binding [Plugin_ExtensionCenter_DeployDaemon], Source={x:Static i18n:Lang.Tr}}"
+                                                              Tag="{Binding}" Click="CardDeployDaemon_Click">
+                                                        <MenuItem.Icon>
+                                                            <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Upload}" FontSize="16" />
+                                                        </MenuItem.Icon>
+                                                    </MenuItem>
+                                                    <MenuItem Header="{Binding [Plugin_ExtensionCenter_EnableDaemon], Source={x:Static i18n:Lang.Tr}}"
+                                                              Tag="{Binding}" Click="CardEnableDaemon_Click">
+                                                        <MenuItem.Icon>
+                                                            <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Play}" FontSize="16" />
+                                                        </MenuItem.Icon>
+                                                    </MenuItem>
+                                                    <MenuItem Header="{Binding [Plugin_ExtensionCenter_DisableDaemon], Source={x:Static i18n:Lang.Tr}}"
+                                                              Tag="{Binding}" Click="CardDisableDaemon_Click">
+                                                        <MenuItem.Icon>
+                                                            <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Pause}" FontSize="16" />
+                                                        </MenuItem.Icon>
+                                                    </MenuItem>
+                                                    <MenuItem Header="{Binding [Plugin_ExtensionCenter_RequestDaemonRestart], Source={x:Static i18n:Lang.Tr}}"
+                                                              Tag="{Binding}" Click="CardRequestDaemonRestart_Click">
+                                                        <MenuItem.Icon>
+                                                            <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Sync}" FontSize="16" />
+                                                        </MenuItem.Icon>
+                                                    </MenuItem>
+                                                    <MenuItem Header="{Binding [Plugin_ExtensionCenter_RemoveDaemon], Source={x:Static i18n:Lang.Tr}}"
+                                                              Tag="{Binding}" Click="CardRemoveDaemon_Click">
+                                                        <MenuItem.Icon>
+                                                            <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Delete}" FontSize="16" />
+                                                        </MenuItem.Icon>
+                                                    </MenuItem>
+                                                    <Separator />
+                                                    <MenuItem Header="{Binding [Delete], Source={x:Static i18n:Lang.Tr}}"
+                                                              Tag="{Binding}" Click="CardRemoveClient_Click">
+                                                        <MenuItem.Icon>
+                                                            <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Delete}" FontSize="16" />
+                                                        </MenuItem.Icon>
+                                                    </MenuItem>
+                                                </ui:MenuFlyout>
+                                            </ui:DropDownButton.Flyout>
+                                        </ui:DropDownButton>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ui:GridView.Resources>
+                </ui:GridView>
+            </Grid>
+
+            <!-- 详情视图 -->
+            <Grid x:Name="DetailView" Visibility="Collapsed" Margin="0,0,0,0">
+                <Border Style="{StaticResource StyledBorder}" Padding="20">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <Grid Grid.Row="0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Button Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Top" Click="BackToList_Click">
+                                <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Back}"
+                                                Content="{Binding [Back], Source={x:Static i18n:Lang.Tr}}" />
+                            </Button>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock x:Name="SelectedTitle" Style="{StaticResource SubtitleTextBlock}" TextTrimming="CharacterEllipsis" />
+                                <TextBlock x:Name="SelectedSubtitle" Style="{StaticResource CaptionTextBlock}" TextWrapping="Wrap" Margin="0,4,10,0" />
+                            </StackPanel>
+                            <ui:DropDownButton Grid.Column="2" VerticalAlignment="Top" ShowChevronArrow="False">
+                                <ui:DropDownButton.Content>
+                                    <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.More}"
+                                                    Content="{Binding [More], Source={x:Static i18n:Lang.Tr}}" />
+                                </ui:DropDownButton.Content>
+                                <ui:DropDownButton.Flyout>
+                                    <ui:MenuFlyout Placement="Bottom">
+                                        <MenuItem x:Name="DeployDaemonMenuItem" IsEnabled="False"
+                                                  Header="{Binding [Plugin_ExtensionCenter_DeployDaemon], Source={x:Static i18n:Lang.Tr}}"
+                                                  Click="DeployDaemon_Click">
+                                            <MenuItem.Icon>
+                                                <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Upload}" FontSize="16" />
+                                            </MenuItem.Icon>
+                                        </MenuItem>
+                                        <MenuItem x:Name="EnableDaemonMenuItem" IsEnabled="False"
+                                                  Header="{Binding [Plugin_ExtensionCenter_EnableDaemon], Source={x:Static i18n:Lang.Tr}}"
+                                                  Click="EnableDaemon_Click">
+                                            <MenuItem.Icon>
+                                                <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Play}" FontSize="16" />
+                                            </MenuItem.Icon>
+                                        </MenuItem>
+                                        <MenuItem x:Name="DisableDaemonMenuItem" IsEnabled="False"
+                                                  Header="{Binding [Plugin_ExtensionCenter_DisableDaemon], Source={x:Static i18n:Lang.Tr}}"
+                                                  Click="DisableDaemon_Click">
+                                            <MenuItem.Icon>
+                                                <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Pause}" FontSize="16" />
+                                            </MenuItem.Icon>
+                                        </MenuItem>
+                                        <MenuItem x:Name="RequestDaemonRestartMenuItem" IsEnabled="False"
+                                                  Header="{Binding [Plugin_ExtensionCenter_RequestDaemonRestart], Source={x:Static i18n:Lang.Tr}}"
+                                                  Click="RequestDaemonRestart_Click">
+                                            <MenuItem.Icon>
+                                                <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Sync}" FontSize="16" />
+                                            </MenuItem.Icon>
+                                        </MenuItem>
+                                        <MenuItem x:Name="RemoveDaemonMenuItem" IsEnabled="False"
+                                                  Header="{Binding [Plugin_ExtensionCenter_RemoveDaemon], Source={x:Static i18n:Lang.Tr}}"
+                                                  Click="RemoveDaemon_Click">
+                                            <MenuItem.Icon>
+                                                <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Delete}" FontSize="16" />
+                                            </MenuItem.Icon>
+                                        </MenuItem>
+                                        <Separator />
+                                        <MenuItem x:Name="RemoveClientMenuItem" IsEnabled="False"
+                                                  Header="{Binding [Delete], Source={x:Static i18n:Lang.Tr}}"
+                                                  Click="Remove_Click">
+                                            <MenuItem.Icon>
+                                                <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Delete}" FontSize="16" />
+                                            </MenuItem.Icon>
+                                        </MenuItem>
+                                    </ui:MenuFlyout>
+                                </ui:DropDownButton.Flyout>
+                            </ui:DropDownButton>
+                        </Grid>
+                        <TextBlock Grid.Row="1" x:Name="StatusText" Style="{StaticResource CaptionTextBlock}"
+                                   TextWrapping="Wrap" Margin="0,12,0,12" />
+                        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                            <ContentControl x:Name="RenderHost" />
+                        </ScrollViewer>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!-- 空状态 -->
+            <StackPanel x:Name="EmptyState" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <TextBlock Style="{StaticResource SubtitleTextBlock}"
+                           Text="{Binding [Plugin_ExtensionCenter_Empty], Source={x:Static i18n:Lang.Tr}}"
+                           HorizontalAlignment="Center" Opacity="0.8" />
+                <Button Margin="0,14,0,0" HorizontalAlignment="Center" Click="Install_Click">
                     <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Upload}"
                                     Content="{Binding [Plugin_ExtensionCenter_Install], Source={x:Static i18n:Lang.Tr}}" />
                 </Button>
             </StackPanel>
         </Grid>
-
-        <Border Grid.Row="1" Grid.Column="0" Margin="0,20,0,0" Style="{StaticResource StyledBorder}" Padding="10">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="*" />
-                </Grid.RowDefinitions>
-                <TextBlock Grid.Row="0" Style="{StaticResource SubtitleTextBlock}"
-                           Text="{Binding [Plugin_ExtensionCenter_Installed], Source={x:Static i18n:Lang.Tr}}"
-                           Margin="0,0,0,10" />
-                <Border Grid.Row="1" Style="{StaticResource StyledBorder}" Padding="10" Margin="0,0,0,10" Opacity="0.72">
-                    <StackPanel>
-                        <Button IsEnabled="False" HorizontalAlignment="Left" Margin="0,0,0,6">
-                            <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Package}"
-                                            Content="{Binding [Plugin_ExtensionCenter_Marketplace], Source={x:Static i18n:Lang.Tr}}" />
-                        </Button>
-                        <TextBlock Style="{StaticResource CaptionTextBlock}"
-                                   Text="{Binding [Plugin_ExtensionCenter_MarketplaceUnavailable], Source={x:Static i18n:Lang.Tr}}"
-                                   TextWrapping="Wrap" />
-                    </StackPanel>
-                </Border>
-                <ListBox Grid.Row="2" x:Name="ExtensionList" ItemsSource="{Binding Entries}"
-                         SelectionChanged="ExtensionList_SelectionChanged"
-                         BorderThickness="0" Background="Transparent">
-                    <ListBox.ItemTemplate>
-                        <DataTemplate>
-                            <StackPanel Margin="4,6">
-                                <TextBlock Text="{Binding Id}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                                <TextBlock Text="{Binding Summary}" Opacity="0.72" FontSize="12" TextTrimming="CharacterEllipsis" />
-                            </StackPanel>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
-            </Grid>
-        </Border>
-
-        <Border Grid.Row="1" Grid.Column="2" Margin="0,20,0,0" Style="{StaticResource StyledBorder}" Padding="16">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="*" />
-                </Grid.RowDefinitions>
-
-                <Grid Grid.Row="0">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <StackPanel Grid.Column="0">
-                        <TextBlock x:Name="SelectedTitle" Style="{StaticResource SubtitleTextBlock}" />
-                        <TextBlock x:Name="SelectedSubtitle" Style="{StaticResource CaptionTextBlock}" TextWrapping="Wrap" Margin="0,4,10,0" />
-                    </StackPanel>
-                    <ui:DropDownButton Grid.Column="1" VerticalAlignment="Top" ShowChevronArrow="False">
-                        <ui:DropDownButton.Content>
-                            <ui:IconAndText IsTabStop="False" Icon="{x:Static ui:SegoeFluentIcons.More}"
-                                            Content="{Binding [More], Source={x:Static i18n:Lang.Tr}}" />
-                        </ui:DropDownButton.Content>
-                        <ui:DropDownButton.Flyout>
-                            <ui:MenuFlyout Placement="Bottom">
-                                <MenuItem x:Name="DeployDaemonMenuItem" IsEnabled="False" Header="{Binding [Plugin_ExtensionCenter_DeployDaemon], Source={x:Static i18n:Lang.Tr}}" Click="DeployDaemon_Click">
-                                    <MenuItem.Icon>
-                                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Upload}" FontSize="16" />
-                                    </MenuItem.Icon>
-                                </MenuItem>
-                                <MenuItem x:Name="EnableDaemonMenuItem" IsEnabled="False" Header="{Binding [Plugin_ExtensionCenter_EnableDaemon], Source={x:Static i18n:Lang.Tr}}" Click="EnableDaemon_Click">
-                                    <MenuItem.Icon>
-                                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Play}" FontSize="16" />
-                                    </MenuItem.Icon>
-                                </MenuItem>
-                                <MenuItem x:Name="DisableDaemonMenuItem" IsEnabled="False" Header="{Binding [Plugin_ExtensionCenter_DisableDaemon], Source={x:Static i18n:Lang.Tr}}" Click="DisableDaemon_Click">
-                                    <MenuItem.Icon>
-                                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Pause}" FontSize="16" />
-                                    </MenuItem.Icon>
-                                </MenuItem>
-                                <MenuItem x:Name="RequestDaemonRestartMenuItem" IsEnabled="False" Header="{Binding [Plugin_ExtensionCenter_RequestDaemonRestart], Source={x:Static i18n:Lang.Tr}}" Click="RequestDaemonRestart_Click">
-                                    <MenuItem.Icon>
-                                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Sync}" FontSize="16" />
-                                    </MenuItem.Icon>
-                                </MenuItem>
-                                <MenuItem x:Name="RemoveDaemonMenuItem" IsEnabled="False" Header="{Binding [Plugin_ExtensionCenter_RemoveDaemon], Source={x:Static i18n:Lang.Tr}}" Click="RemoveDaemon_Click">
-                                    <MenuItem.Icon>
-                                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Delete}" FontSize="16" />
-                                    </MenuItem.Icon>
-                                </MenuItem>
-                                <Separator />
-                                <MenuItem x:Name="RemoveClientMenuItem" IsEnabled="False" Header="{Binding [Delete], Source={x:Static i18n:Lang.Tr}}" Click="Remove_Click">
-                                    <MenuItem.Icon>
-                                        <ui:FontIcon Icon="{x:Static ui:SegoeFluentIcons.Delete}" FontSize="16" />
-                                    </MenuItem.Icon>
-                                </MenuItem>
-                            </ui:MenuFlyout>
-                        </ui:DropDownButton.Flyout>
-                    </ui:DropDownButton>
-                </Grid>
-
-                <TextBlock Grid.Row="1" x:Name="StatusText" Style="{StaticResource CaptionTextBlock}"
-                           TextWrapping="Wrap" Margin="0,12,0,12" />
-                <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                    <ContentControl x:Name="RenderHost" />
-                </ScrollViewer>
-            </Grid>
-        </Border>
     </Grid>
 </ui:Page>

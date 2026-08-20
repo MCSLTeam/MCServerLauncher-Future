@@ -29,11 +29,13 @@ public partial class PluginExtensionCenterPage
     private readonly List<IAsyncDisposable> _eventSubscriptions = [];
     private readonly HashSet<string> _subscribedEventNames = new(StringComparer.Ordinal);
     private DaemonClient.DaemonClient? _subscribedDaemon;
+    private PluginExtensionCenterEntryViewModel? _detailEntry;
 
     public PluginExtensionCenterPage()
     {
         InitializeComponent();
         DataContext = this;
+        SearchTextBox.TextChanged += (_, _) => ApplySearchFilter();
         IsVisibleChanged += (_, _) =>
         {
             if (IsVisible)
@@ -44,6 +46,31 @@ public partial class PluginExtensionCenterPage
     }
 
     public ObservableCollection<PluginExtensionCenterEntryViewModel> Entries { get; } = [];
+
+    public ObservableCollection<PluginExtensionCenterEntryViewModel> FilteredEntries { get; } = [];
+
+    private void ApplySearchFilter()
+    {
+        var query = SearchTextBox.Text.Trim();
+        RefreshFilteredEntries(query);
+    }
+
+    private void RefreshFilteredEntries(string query = "")
+    {
+        FilteredEntries.Clear();
+        IEnumerable<PluginExtensionCenterEntryViewModel> source = Entries;
+        if (!string.IsNullOrWhiteSpace(query))
+        {
+            source = source.Where(vm =>
+                vm.Id.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                vm.MetaSummary.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                vm.Summary.Contains(query, StringComparison.OrdinalIgnoreCase));
+        }
+
+        foreach (var vm in source)
+            FilteredEntries.Add(vm);
+        ExtensionGrid.SelectedItems.Clear();
+    }
 
     private void Refresh_Click(object sender, RoutedEventArgs e) => RestoreEntries();
 
@@ -86,9 +113,11 @@ public partial class PluginExtensionCenterPage
         StatusText.Text = Lang.Tr["Plugin_ExtensionCenter_InstallSuccess"];
     }
 
+    private PluginExtensionCenterEntryViewModel? CurrentDetail => _detailEntry;
+
     private void Remove_Click(object sender, RoutedEventArgs e)
     {
-        if (ExtensionList.SelectedItem is not PluginExtensionCenterEntryViewModel selected)
+        if (CurrentDetail is not { } selected)
             return;
 
         var removed = _service.Uninstall(selected.Entry.Id);
@@ -96,11 +125,12 @@ public partial class PluginExtensionCenterPage
         StatusText.Text = removed
             ? Lang.Tr["Plugin_ExtensionCenter_RemoveSuccess"]
             : Lang.Tr["Plugin_ExtensionCenter_RemoveMissing"];
+        ShowList();
     }
 
     private async void DeployDaemon_Click(object sender, RoutedEventArgs e)
     {
-        if (ExtensionList.SelectedItem is not PluginExtensionCenterEntryViewModel selected)
+        if (CurrentDetail is not { } selected)
             return;
 
         await DeployDaemonBundleAsync(selected.Entry).ConfigureAwait(false);
@@ -108,7 +138,7 @@ public partial class PluginExtensionCenterPage
 
     private async void EnableDaemon_Click(object sender, RoutedEventArgs e)
     {
-        if (ExtensionList.SelectedItem is not PluginExtensionCenterEntryViewModel selected)
+        if (CurrentDetail is not { } selected)
             return;
 
         await SetDaemonBundleEnabledAsync(selected.Entry, enabled: true).ConfigureAwait(false);
@@ -116,7 +146,7 @@ public partial class PluginExtensionCenterPage
 
     private async void DisableDaemon_Click(object sender, RoutedEventArgs e)
     {
-        if (ExtensionList.SelectedItem is not PluginExtensionCenterEntryViewModel selected)
+        if (CurrentDetail is not { } selected)
             return;
 
         await SetDaemonBundleEnabledAsync(selected.Entry, enabled: false).ConfigureAwait(false);
@@ -124,7 +154,7 @@ public partial class PluginExtensionCenterPage
 
     private async void RequestDaemonRestart_Click(object sender, RoutedEventArgs e)
     {
-        if (ExtensionList.SelectedItem is not PluginExtensionCenterEntryViewModel selected)
+        if (CurrentDetail is not { } selected)
             return;
 
         await RequestDaemonShutdownAsync(selected.Entry).ConfigureAwait(false);
@@ -132,18 +162,33 @@ public partial class PluginExtensionCenterPage
 
     private async void RemoveDaemon_Click(object sender, RoutedEventArgs e)
     {
-        if (ExtensionList.SelectedItem is not PluginExtensionCenterEntryViewModel selected)
+        if (CurrentDetail is not { } selected)
             return;
 
         await RemoveDaemonBundleAsync(selected.Entry).ConfigureAwait(false);
     }
 
-    private void ExtensionList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    private void ExtensionGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (ExtensionList.SelectedItem is PluginExtensionCenterEntryViewModel selected)
-            _ = RenderSelectedAsync(selected.Entry);
+        var selected = ExtensionGrid.SelectedItems.Cast<PluginExtensionCenterEntryViewModel>().ToArray();
+        if (selected.Length == 1)
+        {
+            ShowDetail(selected[0]);
+        }
+        else if (selected.Length > 1)
+        {
+            ShowBatchBar(selected);
+        }
         else
-            ClearSelection();
+        {
+            ShowList();
+        }
+    }
+
+    private void BackToList_Click(object sender, RoutedEventArgs e)
+    {
+        ExtensionGrid.SelectedItems.Clear();
+        ShowList();
     }
 
     private void RestoreEntries(string? selectedId = null)
@@ -155,15 +200,182 @@ public partial class PluginExtensionCenterPage
 
         PruneStateSnapshots();
         _ = RefreshDaemonEventSubscriptionsAsync();
+        RefreshFilteredEntries(SearchTextBox.Text.Trim());
 
         if (Entries.Count == 0)
         {
-            ClearSelection();
+            ShowEmpty();
             StatusText.Text = Lang.Tr["Plugin_ExtensionCenter_Empty"];
             return;
         }
 
-        ExtensionList.SelectedItem = Entries.FirstOrDefault(entry => entry.Id == selectedId) ?? Entries[0];
+        var target = _detailEntry is not null && Entries.Any(vm => vm.Id == _detailEntry.Id)
+            ? Entries.First(vm => vm.Id == _detailEntry.Id)
+            : Entries.FirstOrDefault(vm => vm.Id == selectedId);
+        if (target is not null)
+            ShowDetail(target);
+        else
+            ShowList();
+    }
+
+    private void ShowDetail(PluginExtensionCenterEntryViewModel vm)
+    {
+        _detailEntry = vm;
+        ExtensionGrid.SelectedItems.Clear();
+        ExtensionGrid.SelectedItems.Add(vm);
+        ListViewRoot.Visibility = Visibility.Collapsed;
+        DetailView.Visibility = Visibility.Visible;
+        EmptyState.Visibility = Visibility.Collapsed;
+        BatchOperationBar.Visibility = Visibility.Collapsed;
+        UpdateDetailMenuEnabled(vm);
+        _ = RenderSelectedAsync(vm.Entry);
+    }
+
+    private void ShowList()
+    {
+        _detailEntry = null;
+        ExtensionGrid.SelectedItems.Clear();
+        DetailView.Visibility = Visibility.Collapsed;
+        BatchOperationBar.Visibility = Visibility.Collapsed;
+        if (FilteredEntries.Count == 0)
+            ShowEmpty();
+        else
+        {
+            ListViewRoot.Visibility = Visibility.Visible;
+            EmptyState.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private void ShowEmpty()
+    {
+        _detailEntry = null;
+        ExtensionGrid.SelectedItems.Clear();
+        DetailView.Visibility = Visibility.Collapsed;
+        BatchOperationBar.Visibility = Visibility.Collapsed;
+        ListViewRoot.Visibility = Visibility.Collapsed;
+        EmptyState.Visibility = Visibility.Visible;
+    }
+
+    private void ShowBatchBar(IReadOnlyList<PluginExtensionCenterEntryViewModel> selected)
+    {
+        _detailEntry = null;
+        DetailView.Visibility = Visibility.Collapsed;
+        ListViewRoot.Visibility = Visibility.Visible;
+        EmptyState.Visibility = Visibility.Collapsed;
+        SelectedCountTextBlock.Text = string.Format(Lang.Tr["SelectedCount"], selected.Count);
+        BatchOperationBar.Visibility = Visibility.Visible;
+    }
+
+    private void UpdateDetailMenuEnabled(PluginExtensionCenterEntryViewModel vm)
+    {
+        RemoveClientMenuItem.IsEnabled = true;
+        var hasDaemon = vm.Entry.DeploymentPlan.Daemon?.Plugin is not null;
+        DeployDaemonMenuItem.IsEnabled = hasDaemon;
+        EnableDaemonMenuItem.IsEnabled = hasDaemon;
+        DisableDaemonMenuItem.IsEnabled = hasDaemon;
+        RequestDaemonRestartMenuItem.IsEnabled = hasDaemon;
+        RemoveDaemonMenuItem.IsEnabled = hasDaemon;
+    }
+
+    private void SelectAllBatch_Click(object sender, RoutedEventArgs e)
+    {
+        ExtensionGrid.SelectedItems.Clear();
+        foreach (var vm in FilteredEntries)
+            ExtensionGrid.SelectedItems.Add(vm);
+        ShowBatchBar(FilteredEntries.ToArray());
+    }
+
+    private void CancelSelectionBatch_Click(object sender, RoutedEventArgs e)
+    {
+        ExtensionGrid.SelectedItems.Clear();
+        ShowList();
+    }
+
+    private async void BatchInstallDaemon_Click(object sender, RoutedEventArgs e)
+    {
+        var selected = ExtensionGrid.SelectedItems.Cast<PluginExtensionCenterEntryViewModel>()
+            .Where(vm => vm.Entry.DeploymentPlan.Daemon?.Plugin is not null)
+            .ToArray();
+        if (selected.Length == 0)
+            return;
+
+        var success = 0;
+        var fail = 0;
+        foreach (var vm in selected)
+        {
+            try
+            {
+                await DeployDaemonBundleAsync(vm.Entry).ConfigureAwait(false);
+                success++;
+            }
+            catch
+            {
+                fail++;
+            }
+        }
+
+        StatusText.Text = string.Format(Lang.Tr["BatchOperationResult"], success, fail);
+        ExtensionGrid.SelectedItems.Clear();
+        ShowList();
+    }
+
+    private void BatchRemove_Click(object sender, RoutedEventArgs e)
+    {
+        var selected = ExtensionGrid.SelectedItems.Cast<PluginExtensionCenterEntryViewModel>().ToArray();
+        var success = 0;
+        var fail = 0;
+        foreach (var vm in selected)
+        {
+            if (_service.Uninstall(vm.Entry.Id))
+                success++;
+            else
+                fail++;
+        }
+
+        RestoreEntries();
+        StatusText.Text = string.Format(Lang.Tr["BatchOperationResult"], success, fail);
+        ShowList();
+    }
+
+    private async void CardDeployDaemon_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem { Tag: PluginExtensionCenterEntryViewModel vm })
+            await DeployDaemonBundleAsync(vm.Entry).ConfigureAwait(false);
+    }
+
+    private async void CardEnableDaemon_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem { Tag: PluginExtensionCenterEntryViewModel vm })
+            await SetDaemonBundleEnabledAsync(vm.Entry, enabled: true).ConfigureAwait(false);
+    }
+
+    private async void CardDisableDaemon_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem { Tag: PluginExtensionCenterEntryViewModel vm })
+            await SetDaemonBundleEnabledAsync(vm.Entry, enabled: false).ConfigureAwait(false);
+    }
+
+    private async void CardRequestDaemonRestart_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem { Tag: PluginExtensionCenterEntryViewModel vm })
+            await RequestDaemonShutdownAsync(vm.Entry).ConfigureAwait(false);
+    }
+
+    private async void CardRemoveDaemon_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem { Tag: PluginExtensionCenterEntryViewModel vm })
+            await RemoveDaemonBundleAsync(vm.Entry).ConfigureAwait(false);
+    }
+
+    private void CardRemoveClient_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuItem { Tag: PluginExtensionCenterEntryViewModel vm })
+            return;
+        if (_service.Uninstall(vm.Entry.Id))
+            StatusText.Text = Lang.Tr["Plugin_ExtensionCenter_RemoveSuccess"];
+        else
+            StatusText.Text = Lang.Tr["Plugin_ExtensionCenter_RemoveMissing"];
+        RestoreEntries();
     }
 
     private async Task RenderSelectedAsync(PluginClientExtensionCacheEntry entry)
@@ -222,19 +434,6 @@ public partial class PluginExtensionCenterPage
             RenderHost.Content = null;
             StatusText.Text = exception.Message;
         }
-    }
-
-    private void ClearSelection()
-    {
-        RemoveClientMenuItem.IsEnabled = false;
-        DeployDaemonMenuItem.IsEnabled = false;
-        EnableDaemonMenuItem.IsEnabled = false;
-        DisableDaemonMenuItem.IsEnabled = false;
-        RequestDaemonRestartMenuItem.IsEnabled = false;
-        RemoveDaemonMenuItem.IsEnabled = false;
-        SelectedTitle.Text = Lang.Tr["Plugin_ExtensionCenter_NoSelection"];
-        SelectedSubtitle.Text = string.Empty;
-        RenderHost.Content = null;
     }
 
     private PluginClientExtensionRuntimeHost CreateRuntimeHost()
@@ -421,7 +620,7 @@ public partial class PluginExtensionCenterPage
                     return;
                 _stateSnapshots[entry.Id] = next.Snapshot;
                 StatusText.Text = status;
-                if (ExtensionList.SelectedItem is PluginExtensionCenterEntryViewModel selected && selected.Id == entry.Id)
+                if (_detailEntry is { } selected && selected.Id == entry.Id)
                     await RenderSelectedAsync(entry);
             });
             return;
@@ -661,7 +860,7 @@ public partial class PluginExtensionCenterPage
 
     private void SetDeploymentButtons(bool enabled)
     {
-        if (ExtensionList.SelectedItem is not PluginExtensionCenterEntryViewModel selected || selected.Entry.DeploymentPlan.Daemon?.Plugin is null)
+        if (_detailEntry is null || _detailEntry.Entry.DeploymentPlan.Daemon?.Plugin is null)
         {
             DeployDaemonMenuItem.IsEnabled = false;
             EnableDaemonMenuItem.IsEnabled = false;
@@ -997,11 +1196,31 @@ public sealed class PluginExtensionCenterEntryViewModel
             summary.HasUi ? "UI" : Lang.Tr["Plugin_ExtensionCenter_AssetsOnly"],
             summary.Commands.Count,
             summary.Resources.Count);
+        HasUi = summary.HasUi;
+        CommandsCount = summary.Commands.Count;
+        ResourcesCount = summary.Resources.Count;
+        HasDaemonPayload = entry.DeploymentPlan.Daemon?.Plugin is not null;
     }
 
     public PluginClientExtensionCacheEntry Entry { get; }
 
     public string Id => Entry.Id;
 
+    public string Version => Entry.Version;
+
     public string Summary { get; }
+
+    public bool HasUi { get; }
+
+    public bool HasDaemonPayload { get; }
+
+    public int CommandsCount { get; }
+
+    public int ResourcesCount { get; }
+
+    public string KindBadge => HasUi
+        ? Lang.Tr["Plugin_ExtensionCenter_AssetsHasUi"]
+        : Lang.Tr["Plugin_ExtensionCenter_AssetsOnly"];
+
+    public string MetaSummary => $"v{Version} · {CommandsCount} {Lang.Tr["Plugin_ExtensionCenter_MetaCommands"]} · {ResourcesCount} {Lang.Tr["Plugin_ExtensionCenter_MetaResources"]}";
 }
