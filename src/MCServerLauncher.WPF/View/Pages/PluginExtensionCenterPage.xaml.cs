@@ -30,6 +30,7 @@ public partial class PluginExtensionCenterPage
     private readonly HashSet<string> _subscribedEventNames = new(StringComparer.Ordinal);
     private DaemonClient.DaemonClient? _subscribedDaemon;
     private PluginExtensionCenterEntryViewModel? _detailEntry;
+    private int _targetFilterIndex;
 
     public PluginExtensionCenterPage()
     {
@@ -55,10 +56,29 @@ public partial class PluginExtensionCenterPage
         RefreshFilteredEntries(query);
     }
 
+    private void TargetFilterCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (TargetFilterCombo.SelectedIndex < 0)
+            return;
+        _targetFilterIndex = TargetFilterCombo.SelectedIndex;
+        RefreshFilteredEntries(SearchTextBox.Text.Trim());
+    }
+
     private void RefreshFilteredEntries(string query = "")
     {
         FilteredEntries.Clear();
         IEnumerable<PluginExtensionCenterEntryViewModel> source = Entries;
+
+        // 目标过滤：0=全部 1=本机 2=服务器
+        if (_targetFilterIndex == 1)
+        {
+            source = source.Where(vm => vm.ScopeKind is PluginExtensionScopeKind.ClientOnly or PluginExtensionScopeKind.Both);
+        }
+        else if (_targetFilterIndex == 2)
+        {
+            source = source.Where(vm => vm.ScopeKind is PluginExtensionScopeKind.ServerOnly or PluginExtensionScopeKind.Both);
+        }
+
         if (!string.IsNullOrWhiteSpace(query))
         {
             source = source.Where(vm =>
@@ -388,12 +408,17 @@ public partial class PluginExtensionCenterPage
         RemoveDaemonMenuItem.IsEnabled = entry.DeploymentPlan.Daemon?.Plugin is not null;
         var summary = PluginExtensionCenterService.Summarize(entry);
         SelectedTitle.Text = entry.Id;
+        var scopeKind = _detailEntry is not null
+            ? _detailEntry
+            : new PluginExtensionCenterEntryViewModel(entry);
         SelectedSubtitle.Text = string.Format(
             Lang.Tr["Plugin_ExtensionCenter_SelectedSummary"],
             entry.Version,
             summary.Commands.Count,
             summary.Resources.Count,
-            summary.HostCapabilities.Count);
+            summary.HostCapabilities.Count)
+            + Environment.NewLine
+            + $"{scopeKind.ScopeKindText} · {scopeKind.ScopeKindDescription}";
 
         if (entry.UiSchema is null)
         {
@@ -1184,6 +1209,13 @@ public partial class PluginExtensionCenterPage
     }
 }
 
+public enum PluginExtensionScopeKind
+{
+    ClientOnly,
+    ServerOnly,
+    Both
+}
+
 public sealed class PluginExtensionCenterEntryViewModel
 {
     public PluginExtensionCenterEntryViewModel(PluginClientExtensionCacheEntry entry)
@@ -1200,6 +1232,7 @@ public sealed class PluginExtensionCenterEntryViewModel
         CommandsCount = summary.Commands.Count;
         ResourcesCount = summary.Resources.Count;
         HasDaemonPayload = entry.DeploymentPlan.Daemon?.Plugin is not null;
+        ScopeKind = ResolveScopeKind(entry);
     }
 
     public PluginClientExtensionCacheEntry Entry { get; }
@@ -1218,9 +1251,46 @@ public sealed class PluginExtensionCenterEntryViewModel
 
     public int ResourcesCount { get; }
 
+    public PluginExtensionScopeKind ScopeKind { get; }
+
+    public string ScopeKindTag => ScopeKind switch
+    {
+        PluginExtensionScopeKind.ClientOnly => "client",
+        PluginExtensionScopeKind.ServerOnly => "server",
+        _ => "both",
+    };
+
+    public string ScopeKindText => ScopeKind switch
+    {
+        PluginExtensionScopeKind.ClientOnly => Lang.Tr["Plugin_ExtensionCenter_ScopeKindClientOnly"],
+        PluginExtensionScopeKind.ServerOnly => Lang.Tr["Plugin_ExtensionCenter_ScopeKindServerOnly"],
+        _ => Lang.Tr["Plugin_ExtensionCenter_ScopeKindBoth"],
+    };
+
+    public string ScopeKindDescription => ScopeKind switch
+    {
+        PluginExtensionScopeKind.ClientOnly => Lang.Tr["Plugin_ExtensionCenter_ScopeKindClientOnlyDesc"],
+        PluginExtensionScopeKind.ServerOnly => Lang.Tr["Plugin_ExtensionCenter_ScopeKindServerOnlyDesc"],
+        _ => Lang.Tr["Plugin_ExtensionCenter_ScopeKindBothDesc"],
+    };
+
     public string KindBadge => HasUi
         ? Lang.Tr["Plugin_ExtensionCenter_AssetsHasUi"]
         : Lang.Tr["Plugin_ExtensionCenter_AssetsOnly"];
 
     public string MetaSummary => $"v{Version} · {CommandsCount} {Lang.Tr["Plugin_ExtensionCenter_MetaCommands"]} · {ResourcesCount} {Lang.Tr["Plugin_ExtensionCenter_MetaResources"]}";
+
+    private static PluginExtensionScopeKind ResolveScopeKind(PluginClientExtensionCacheEntry entry)
+    {
+        var scopes = entry.DeploymentPlan.Scopes;
+        var hasClient = scopes.Contains("client", StringComparer.Ordinal) || scopes.Contains("Client", StringComparer.Ordinal);
+        var hasServer = scopes.Contains("daemon", StringComparer.Ordinal) || scopes.Contains("Daemon", StringComparer.Ordinal)
+            || entry.DeploymentPlan.Daemon?.Plugin is not null;
+        return (hasClient, hasServer) switch
+        {
+            (true, true) => PluginExtensionScopeKind.Both,
+            (true, false) => PluginExtensionScopeKind.ClientOnly,
+            _ => PluginExtensionScopeKind.ServerOnly,
+        };
+    }
 }
