@@ -159,6 +159,108 @@ public partial class PluginExtensionCenterPage
     private static string MarketplaceRegistryUrl =>
         SettingsManager.Get?.App?.PluginRegistryUrl ?? "http://127.0.0.1:8741";
 
+    public ObservableCollection<PluginMarketplaceUpdateViewModel> MarketplaceUpdateItems { get; } = [];
+
+    private async void MarketplaceCheckUpdates_Click(object sender, RoutedEventArgs e)
+    {
+        var url = MarketplaceUrlBox.Text.Trim();
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            MarketplaceStatus.Text = Lang.Tr["Plugin_ExtensionCenter_MarketplaceError"];
+            return;
+        }
+
+        MarketplaceUpdateItems.Clear();
+        MarketplaceList.Visibility = Visibility.Collapsed;
+        UpdatesList.Visibility = Visibility.Visible;
+        MarketplaceStatus.Text = string.Empty;
+
+        var entries = _service.List();
+        if (entries.Count == 0)
+        {
+            MarketplaceStatus.Text = Lang.Tr["Plugin_ExtensionCenter_MarketplaceNoInstalled"];
+            return;
+        }
+
+        try
+        {
+            var client = new PluginRegistryClient(url);
+            _marketplaceClient = client;
+            foreach (var entry in entries)
+            {
+                var info = await client.GetUpdatesAsync(entry.Id, entry.Version).ConfigureAwait(true);
+                if (info?.UpdateAvailable == true && !string.IsNullOrWhiteSpace(info.LatestVersion))
+                {
+                    MarketplaceUpdateItems.Add(new PluginMarketplaceUpdateViewModel(
+                        entry.Id,
+                        entry.Version,
+                        info.LatestVersion,
+                        info.Changelog));
+                }
+            }
+
+            if (MarketplaceUpdateItems.Count == 0)
+                MarketplaceStatus.Text = Lang.Tr["Plugin_ExtensionCenter_MarketplaceNoUpdates"];
+        }
+        catch (Exception exception) when (exception is PluginRegistryException or System.Net.Http.HttpRequestException or System.Threading.Tasks.TaskCanceledException)
+        {
+            MarketplaceStatus.Text = Lang.Tr["Plugin_ExtensionCenter_MarketplaceError"] + " " + exception.Message;
+            MarketplaceList.Visibility = Visibility.Visible;
+            UpdatesList.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private async void MarketplaceUpdate_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as Button)?.Tag is not PluginMarketplaceUpdateViewModel update)
+            return;
+        await InstallMarketplaceUpdateAsync(update);
+    }
+
+    private async Task InstallMarketplaceUpdateAsync(PluginMarketplaceUpdateViewModel update)
+    {
+        var client = _marketplaceClient;
+        if (client is null)
+            return;
+
+        MarketplaceStatus.Text = string.Empty;
+        try
+        {
+            var bytes = await client.DownloadVersionAsync(update.Id, update.LatestVersion).ConfigureAwait(true);
+            var reviewResult = _service.ReviewPackageBytes(bytes, $"{update.Id}-{update.LatestVersion}.mpx");
+            if (!reviewResult.Ok || reviewResult.Review is null)
+            {
+                MarketplaceStatus.Text = reviewResult.Diagnostics.Count > 0
+                    ? string.Join(Environment.NewLine, reviewResult.Diagnostics.Take(6).Select(diagnostic => $"{diagnostic.Path}: {diagnostic.Message}"))
+                    : $"{reviewResult.Code}: {reviewResult.Message}";
+                return;
+            }
+
+            if (!ConfirmInstall(reviewResult.Review, $"{update.Id}-{update.LatestVersion}.mpx"))
+            {
+                MarketplaceStatus.Text = Lang.Tr["Plugin_ExtensionCenter_InstallCancelled"];
+                return;
+            }
+
+            var result = _service.InstallReviewedPackage(reviewResult.Review);
+            if (!result.Ok)
+            {
+                MarketplaceStatus.Text = result.Diagnostics.Count > 0
+                    ? string.Join(Environment.NewLine, result.Diagnostics.Take(6).Select(diagnostic => $"{diagnostic.Path}: {diagnostic.Message}"))
+                    : $"{result.Code}: {result.Message}";
+                return;
+            }
+
+            MarketplaceUpdateItems.Remove(update);
+            RestoreEntries(result.Entry?.Id);
+            StatusText.Text = Lang.Tr["Plugin_ExtensionCenter_MarketplaceInstalled"];
+        }
+        catch (Exception exception) when (exception is PluginRegistryException or System.Net.Http.HttpRequestException or System.Threading.Tasks.TaskCanceledException)
+        {
+            MarketplaceStatus.Text = Lang.Tr["Plugin_ExtensionCenter_MarketplaceError"] + " " + exception.Message;
+        }
+    }
+
     private void MarketplaceToggle_Click(object sender, RoutedEventArgs e)
     {
         if (MarketplaceToggle.IsChecked == true)
@@ -181,6 +283,7 @@ public partial class PluginExtensionCenterPage
         BatchOperationBar.Visibility = Visibility.Collapsed;
         ListViewRoot.Visibility = Visibility.Collapsed;
         EmptyState.Visibility = Visibility.Collapsed;
+        TrustRootsRoot.Visibility = Visibility.Collapsed;
         MarketplaceRoot.Visibility = Visibility.Visible;
 
         MarketplaceUrlBox.Text = MarketplaceRegistryUrl;
@@ -317,6 +420,79 @@ public partial class PluginExtensionCenterPage
         }
     }
 
+    private void TrustRootsToggle_Click(object sender, RoutedEventArgs e)
+    {
+        if (TrustRootsToggle.IsChecked == true)
+        {
+            ShowTrustRoots();
+        }
+        else
+        {
+            TrustRootsRoot.Visibility = Visibility.Collapsed;
+            if (MarketplaceToggle.IsChecked == true)
+                ShowMarketplace();
+            else if (Entries.Count == 0)
+                ShowEmpty();
+            else
+                ShowList();
+        }
+    }
+
+    private void ShowTrustRoots()
+    {
+        _detailEntry = null;
+        ExtensionGrid.SelectedItems.Clear();
+        DetailView.Visibility = Visibility.Collapsed;
+        BatchOperationBar.Visibility = Visibility.Collapsed;
+        ListViewRoot.Visibility = Visibility.Collapsed;
+        EmptyState.Visibility = Visibility.Collapsed;
+        MarketplaceRoot.Visibility = Visibility.Collapsed;
+        TrustRootsRoot.Visibility = Visibility.Visible;
+        RefreshTrustRoots();
+    }
+
+    private void RefreshTrustRoots()
+    {
+        TrustRootsList.ItemsSource = null;
+        TrustRootsList.ItemsSource = _service.TrustRoots.List()
+            .Select(root => new PluginTrustRootViewModel(root))
+            .ToArray();
+        TrustRootStatus.Text = string.Empty;
+    }
+
+    private void TrustRootAdd_Click(object sender, RoutedEventArgs e)
+    {
+        var publisher = TrustRootPublisherBox.Text.Trim();
+        var keyId = TrustRootKeyIdBox.Text.Trim();
+        var spkiBase64 = TrustRootSpkiBox.Text.Trim().Replace("\n", "").Replace(" ", "");
+        byte[] spki;
+        try
+        {
+            spki = Convert.FromBase64String(spkiBase64);
+        }
+        catch (Exception exception) when (exception is FormatException or ArgumentNullException)
+        {
+            TrustRootStatus.Text = Lang.Tr["Plugin_ExtensionCenter_TrustRootInvalid"];
+            return;
+        }
+
+        _service.TrustRoots.Add(publisher, keyId, spki);
+        TrustRootPublisherBox.Clear();
+        TrustRootKeyIdBox.Clear();
+        TrustRootSpkiBox.Clear();
+        TrustRootStatus.Text = Lang.Tr["Plugin_ExtensionCenter_TrustRootAdded"];
+        RefreshTrustRoots();
+    }
+
+    private void TrustRootRemove_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as Button)?.Tag is not PluginTrustRootViewModel viewModel)
+            return;
+        _service.TrustRoots.Remove(viewModel.Publisher, viewModel.Fingerprint);
+        TrustRootStatus.Text = Lang.Tr["Plugin_ExtensionCenter_TrustRootRemoved"];
+        RefreshTrustRoots();
+    }
+
     private async void DeployDaemon_Click(object sender, RoutedEventArgs e)
     {
         if (CurrentDetail is not { } selected)
@@ -417,6 +593,7 @@ public partial class PluginExtensionCenterPage
         EmptyState.Visibility = Visibility.Collapsed;
         BatchOperationBar.Visibility = Visibility.Collapsed;
         MarketplaceRoot.Visibility = Visibility.Collapsed;
+        TrustRootsRoot.Visibility = Visibility.Collapsed;
         UpdateDetailMenuEnabled(vm);
         _ = RenderSelectedAsync(vm.Entry);
     }
@@ -428,6 +605,7 @@ public partial class PluginExtensionCenterPage
         DetailView.Visibility = Visibility.Collapsed;
         BatchOperationBar.Visibility = Visibility.Collapsed;
         MarketplaceRoot.Visibility = Visibility.Collapsed;
+        TrustRootsRoot.Visibility = Visibility.Collapsed;
         if (FilteredEntries.Count == 0)
             ShowEmpty();
         else
@@ -446,6 +624,7 @@ public partial class PluginExtensionCenterPage
         ListViewRoot.Visibility = Visibility.Collapsed;
         EmptyState.Visibility = Visibility.Visible;
         MarketplaceRoot.Visibility = Visibility.Collapsed;
+        TrustRootsRoot.Visibility = Visibility.Collapsed;
     }
 
     private void ShowBatchBar(IReadOnlyList<PluginExtensionCenterEntryViewModel> selected)
@@ -1496,4 +1675,41 @@ public sealed class PluginMarketplaceItemViewModel
     public string? LatestVersion { get; }
 
     public string Meta { get; }
+}
+
+
+public sealed class PluginTrustRootViewModel
+{
+    public PluginTrustRootViewModel(PluginTrustRoot root)
+    {
+        Publisher = root.Publisher;
+        KeyId = root.KeyId;
+        Fingerprint = root.PublicKeySha256;
+    }
+
+    public string Publisher { get; }
+
+    public string KeyId { get; }
+
+    public string Fingerprint { get; }
+}
+
+
+public sealed class PluginMarketplaceUpdateViewModel
+{
+    public PluginMarketplaceUpdateViewModel(string id, string currentVersion, string latestVersion, string? changelog)
+    {
+        Id = id;
+        CurrentVersion = currentVersion;
+        LatestVersion = latestVersion;
+        Changelog = changelog;
+    }
+
+    public string Id { get; }
+
+    public string CurrentVersion { get; }
+
+    public string LatestVersion { get; }
+
+    public string? Changelog { get; }
 }

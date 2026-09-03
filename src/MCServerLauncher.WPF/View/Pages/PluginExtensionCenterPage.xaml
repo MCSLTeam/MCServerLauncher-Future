@@ -60,6 +60,11 @@
                     <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Globe}"
                                     Content="{Binding [Plugin_ExtensionCenter_Marketplace], Source={x:Static i18n:Lang.Tr}}" />
                 </ToggleButton>
+                <ToggleButton x:Name="TrustRootsToggle" Margin="0,0,10,8" Click="TrustRootsToggle_Click"
+                              IsChecked="False">
+                    <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Shield}"
+                                    Content="{Binding [Plugin_ExtensionCenter_TrustRoots], Source={x:Static i18n:Lang.Tr}}" />
+                </ToggleButton>
                 <Button Margin="0,0,0,8" Click="Install_Click">
                     <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Upload}"
                                     Content="{Binding [Plugin_ExtensionCenter_Install], Source={x:Static i18n:Lang.Tr}}" />
@@ -306,6 +311,56 @@
                 </Button>
             </StackPanel>
 
+            <!-- 信任根视图 -->
+            <Grid x:Name="TrustRootsRoot" Visibility="Collapsed" Margin="0,0,20,0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" Style="{StaticResource CaptionTextBlock}" TextWrapping="Wrap" Margin="0,0,0,10"
+                           Text="{Binding [Plugin_ExtensionCenter_TrustRootsHint], Source={x:Static i18n:Lang.Tr}}" />
+                <Grid Grid.Row="1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <ListView Grid.Column="0" x:Name="TrustRootsList" ScrollViewer.VerticalScrollBarVisibility="Auto">
+                        <ListView.ItemTemplate>
+                            <DataTemplate DataType="{x:Type models:PluginTrustRootViewModel}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Publisher}" FontWeight="SemiBold" Margin="0,0,10,0" />
+                                        <TextBlock Text="{Binding KeyId}" Style="{StaticResource CaptionTextBlock}" Margin="0,0,10,0" />
+                                        <TextBlock Text="{Binding Fingerprint}" Style="{StaticResource CaptionTextBlock}" FontFamily="Consolas" />
+                                    </StackPanel>
+                                    <Button Grid.Column="1" Content="{Binding [Delete], Source={x:Static i18n:Lang.Tr}}"
+                                            Tag="{Binding}" Click="TrustRootRemove_Click" />
+                                </Grid>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                    <StackPanel Grid.Column="1" Width="380" Margin="20,0,0,0">
+                        <TextBlock Style="{StaticResource CaptionTextBlock}" Margin="0,0,0,6"
+                                   Text="{Binding [Plugin_ExtensionCenter_TrustRootAdd], Source={x:Static i18n:Lang.Tr}}" />
+                        <TextBox x:Name="TrustRootPublisherBox" Margin="0,0,0,6"
+                                 ui:ControlHelper.PlaceholderText="{Binding [Plugin_ExtensionCenter_TrustRootPublisher], Source={x:Static i18n:Lang.Tr}}" />
+                        <TextBox x:Name="TrustRootKeyIdBox" Margin="0,0,0,6"
+                                 ui:ControlHelper.PlaceholderText="{Binding [Plugin_ExtensionCenter_TrustRootKeyId], Source={x:Static i18n:Lang.Tr}}" />
+                        <TextBox x:Name="TrustRootSpkiBox" MinHeight="90" AcceptsReturn="True" TextWrapping="Wrap" Margin="0,0,0,6"
+                                 ui:ControlHelper.PlaceholderText="{Binding [Plugin_ExtensionCenter_TrustRootSpki], Source={x:Static i18n:Lang.Tr}}" />
+                        <TextBlock x:Name="TrustRootStatus" Style="{StaticResource CaptionTextBlock}" TextWrapping="Wrap" Margin="0,0,0,6" />
+                        <Button HorizontalAlignment="Left" Click="TrustRootAdd_Click">
+                            <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Add}"
+                                            Content="{Binding [Plugin_ExtensionCenter_TrustRootAdd], Source={x:Static i18n:Lang.Tr}}" />
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Grid>
+
             <!-- 插件市场视图 -->
             <Grid x:Name="MarketplaceRoot" Visibility="Collapsed">
                 <Grid.RowDefinitions>
@@ -325,16 +380,22 @@
                              VerticalAlignment="Center" />
                     <TextBox Grid.Column="2" x:Name="MarketplaceSearchBox" Width="220" MaxWidth="260" Margin="0,0,10,0"
                              ui:ControlHelper.PlaceholderText="{Binding [Search], Source={x:Static i18n:Lang.Tr}}" />
-                    <Button Grid.Column="3" Click="MarketplaceSearch_Click">
+                    <Button Grid.Column="3" Margin="0,0,10,0" Click="MarketplaceSearch_Click">
                         <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Search}"
                                         Content="{Binding [Plugin_ExtensionCenter_MarketplaceSearch], Source={x:Static i18n:Lang.Tr}}" />
+                    </Button>
+                    <Button Grid.Column="4" Click="MarketplaceCheckUpdates_Click">
+                        <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Sync}"
+                                        Content="{Binding [Plugin_ExtensionCenter_MarketplaceCheckUpdates], Source={x:Static i18n:Lang.Tr}}" />
                     </Button>
                 </Grid>
                 <Grid Grid.Row="1">
                     <ListView x:Name="MarketplaceList"
                               ItemsSource="{Binding MarketplaceItems}"
                               SelectionChanged="MarketplaceList_SelectionChanged"
-                              ScrollViewer.VerticalScrollBarVisibility="Auto">
+                              ScrollViewer.VerticalScrollBarVisibility="Auto"
+                              Visibility="Visible">
+
                         <ListView.ItemContainerStyle>
                             <Style TargetType="ListViewItem">
                                 <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -356,6 +417,31 @@
                                     </StackPanel>
                                     <Button Grid.Column="1" Content="{Binding [Plugin_ExtensionCenter_MarketplaceInstall], Source={x:Static i18n:Lang.Tr}}"
                                             Tag="{Binding}" Click="MarketplaceInstall_Click" />
+                                </Grid>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                    <ListView x:Name="UpdatesList" Visibility="Collapsed"
+                              ItemsSource="{Binding MarketplaceUpdateItems}"
+                              ScrollViewer.VerticalScrollBarVisibility="Auto">
+                        <ListView.ItemTemplate>
+                            <DataTemplate DataType="{x:Type models:PluginMarketplaceUpdateViewModel}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Id}" FontWeight="SemiBold" Margin="0,0,10,0"
+                                                   TextTrimming="CharacterEllipsis" MaxWidth="260" />
+                                        <TextBlock Style="{StaticResource CaptionTextBlock}" VerticalAlignment="Center">
+                                            <Run Text="{Binding CurrentVersion}" /> → <Run Text="{Binding LatestVersion}" FontWeight="SemiBold" />
+                                        </TextBlock>
+                                    </StackPanel>
+                                    <Button Grid.Column="1" Tag="{Binding}" Click="MarketplaceUpdate_Click">
+                                        <ui:IconAndText Icon="{x:Static ui:SegoeFluentIcons.Download}"
+                                                        Content="{Binding [Plugin_ExtensionCenter_MarketplaceUpdate], Source={x:Static i18n:Lang.Tr}}" />
+                                    </Button>
                                 </Grid>
                             </DataTemplate>
                         </ListView.ItemTemplate>

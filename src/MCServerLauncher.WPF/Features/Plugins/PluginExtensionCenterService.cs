@@ -49,12 +49,16 @@ public sealed record PluginExtensionCenterInstallResult(
 public sealed class PluginExtensionCenterService
 {
     private readonly PluginClientExtensionManager _manager;
+    private readonly PluginTrustRootStore _trustRoots;
 
-    public PluginExtensionCenterService(string? cacheRoot = null)
+    public PluginExtensionCenterService(string? cacheRoot = null, PluginTrustRootStore? trustRoots = null)
     {
         var root = cacheRoot ?? DefaultCacheRoot;
         _manager = new PluginClientExtensionManager(new PluginClientExtensionCacheStore(root));
+        _trustRoots = trustRoots ?? new PluginTrustRootStore();
     }
+
+    public PluginTrustRootStore TrustRoots => _trustRoots;
 
     public static string DefaultCacheRoot =>
         Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", "Plugins", "ClientExtensions");
@@ -87,7 +91,10 @@ public sealed class PluginExtensionCenterService
     public PluginExtensionCenterPackageReviewResult ReviewPackageBytes(byte[] bytes, string sourceName)
     {
         ArgumentNullException.ThrowIfNull(bytes);
-        var validation = PluginMpxPackageValidator.Validate(bytes);
+        var validation = PluginMpxPackageValidator.Validate(bytes, new PluginMpxPackageValidatorOptions
+        {
+            TrustedPublishers = _trustRoots.ToValidatorOptions(),
+        });
         if (!validation.Ok || validation.Package is null)
             return PluginExtensionCenterPackageReviewResult.ValidationFailed(validation.Diagnostics);
 

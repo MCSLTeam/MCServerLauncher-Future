@@ -29,6 +29,15 @@ public sealed record PluginRegistryVersionSummary(
     bool Signed,
     string DownloadUrl);
 
+/// <summary>Registry REST DTO: update discovery result.</summary>
+public sealed record PluginRegistryUpdateInfo(
+    bool UpdateAvailable,
+    string? CurrentVersion,
+    string? LatestVersion,
+    string? Changelog,
+    string DownloadUrl,
+    string? LatestPublishedAt);
+
 /// <summary>Registry REST DTO: plugin detail.</summary>
 public sealed record PluginRegistryPluginDetail(
     string Id,
@@ -141,6 +150,33 @@ public sealed class PluginRegistryClient
             GetTarget(plugin, "client"),
             GetTarget(plugin, "daemon"),
             versions);
+    }
+
+    public async Task<PluginRegistryUpdateInfo?> GetUpdatesAsync(
+        string id,
+        string fromVersion,
+        CancellationToken cancellationToken = default)
+    {
+        using var response = await _http
+            .GetAsync(
+                $"{BaseUrl}/api/v1/plugins/{Uri.EscapeDataString(id)}/updates?from={Uri.EscapeDataString(fromVersion)}",
+                cancellationToken)
+            .ConfigureAwait(false);
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            return null;
+        await EnsureSuccessAsync(response).ConfigureAwait(false);
+
+        using var document = await JsonDocument.ParseAsync(
+            await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false),
+            cancellationToken: cancellationToken).ConfigureAwait(false);
+        var element = document.RootElement;
+        return new PluginRegistryUpdateInfo(
+            GetBool(element, "updateAvailable"),
+            GetNullableString(element, "currentVersion"),
+            GetNullableString(element, "latestVersion"),
+            GetNullableString(element, "changelog"),
+            GetString(element, "downloadUrl"),
+            GetNullableString(element, "latestPublishedAt"));
     }
 
     public async Task<byte[]> DownloadVersionAsync(
