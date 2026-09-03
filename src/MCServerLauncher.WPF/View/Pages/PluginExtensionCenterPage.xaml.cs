@@ -152,6 +152,171 @@ public partial class PluginExtensionCenterPage
         ShowList();
     }
 
+    public ObservableCollection<PluginMarketplaceItemViewModel> MarketplaceItems { get; } = [];
+
+    private PluginRegistryClient? _marketplaceClient;
+
+    private static string MarketplaceRegistryUrl =>
+        SettingsManager.Get?.App?.PluginRegistryUrl ?? "http://127.0.0.1:8741";
+
+    private void MarketplaceToggle_Click(object sender, RoutedEventArgs e)
+    {
+        if (MarketplaceToggle.IsChecked == true)
+            ShowMarketplace();
+        else
+        {
+            MarketplaceRoot.Visibility = Visibility.Collapsed;
+            if (Entries.Count == 0)
+                ShowEmpty();
+            else
+                ShowList();
+        }
+    }
+
+    private void ShowMarketplace()
+    {
+        _detailEntry = null;
+        ExtensionGrid.SelectedItems.Clear();
+        DetailView.Visibility = Visibility.Collapsed;
+        BatchOperationBar.Visibility = Visibility.Collapsed;
+        ListViewRoot.Visibility = Visibility.Collapsed;
+        EmptyState.Visibility = Visibility.Collapsed;
+        MarketplaceRoot.Visibility = Visibility.Visible;
+
+        MarketplaceUrlBox.Text = MarketplaceRegistryUrl;
+        if (MarketplaceItems.Count == 0)
+            MarketplaceSearch_Click(this, new RoutedEventArgs());
+    }
+
+    private async void MarketplaceSearch_Click(object sender, RoutedEventArgs e)
+    {
+        var url = MarketplaceUrlBox.Text.Trim();
+        if (string.IsNullOrWhiteSpace(url))
+            return;
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) ||
+            (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
+        {
+            MarketplaceStatus.Text = Lang.Tr["Plugin_ExtensionCenter_MarketplaceError"] + " " + url;
+            return;
+        }
+
+        SettingsManager.SaveSetting("App.PluginRegistryUrl", url);
+        var query = MarketplaceSearchBox.Text.Trim();
+        MarketplaceStatus.Text = string.Empty;
+        MarketplaceItems.Clear();
+
+        try
+        {
+            var client = new PluginRegistryClient(url);
+            _marketplaceClient = client;
+            var plugins = await client.ListPluginsAsync(query).ConfigureAwait(true);
+            foreach (var plugin in plugins)
+                MarketplaceItems.Add(new PluginMarketplaceItemViewModel(plugin));
+
+            if (MarketplaceItems.Count == 0)
+                MarketplaceStatus.Text = Lang.Tr["Plugin_ExtensionCenter_MarketplaceEmpty"];
+        }
+        catch (Exception exception) when (exception is PluginRegistryException or System.Net.Http.HttpRequestException or System.Threading.Tasks.TaskCanceledException)
+        {
+            MarketplaceStatus.Text = Lang.Tr["Plugin_ExtensionCenter_MarketplaceError"] + " " + exception.Message;
+        }
+    }
+
+    private void MarketplaceList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        MarketplaceStatus.Text = string.Empty;
+    }
+
+    private async void MarketplaceInstall_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as Button)?.Tag is not PluginMarketplaceItemViewModel item)
+            return;
+        await InstallMarketplaceItemAsync(item, item.LatestVersion);
+    }
+
+    /// <summary>
+    /// Handles a `mcsl://install/&lt;id&gt;[/&lt;version&gt;]` deep link: opens the
+    /// marketplace, finds the package and starts the install review flow.
+    /// </summary>
+    public async void HandleDeepLink(Features.Plugins.McslDeepLinkPayload payload)
+    {
+        if (!string.Equals(payload.Kind, "install", StringComparison.OrdinalIgnoreCase))
+            return;
+        if (!MarketplaceToggle.IsChecked.HasValue || MarketplaceToggle.IsChecked.Value != true)
+            MarketplaceToggle.IsChecked = true;
+        ShowMarketplace();
+        MarketplaceSearchBox.Text = payload.PackageId;
+        MarketplaceSearch_Click(this, new RoutedEventArgs());
+        // Wait for the search results, then pick the matching package.
+        for (var attempt = 0; attempt < 40; attempt += 1)
+        {
+            await Task.Delay(100);
+            var match = MarketplaceItems.FirstOrDefault(item =>
+                string.Equals(item.Id, payload.PackageId, StringComparison.OrdinalIgnoreCase));
+            if (match is not null)
+            {
+                await InstallMarketplaceItemAsync(match, payload.Version);
+                return;
+            }
+        }
+        MarketplaceStatus.Text = string.Format(
+            Lang.Tr["Plugin_ExtensionCenter_MarketplaceError"] + " {0}",
+            payload.PackageId);
+    }
+
+    private async Task InstallMarketplaceItemAsync(PluginMarketplaceItemViewModel item, string? version)
+    {
+        var client = _marketplaceClient;
+        if (client is null)
+            return;
+
+        version ??= item.LatestVersion;
+        if (string.IsNullOrWhiteSpace(version))
+        {
+            MarketplaceStatus.Text = Lang.Tr["Plugin_ExtensionCenter_MarketplaceError"];
+            return;
+        }
+
+        MarketplaceStatus.Text = string.Empty;
+        try
+        {
+            var bytes = await client.DownloadVersionAsync(item.Id, version).ConfigureAwait(true);
+            var reviewResult = _service.ReviewPackageBytes(bytes, $"{item.Id}-{version}.mpx");
+            if (!reviewResult.Ok || reviewResult.Review is null)
+            {
+                MarketplaceStatus.Text = reviewResult.Diagnostics.Count > 0
+                    ? string.Join(Environment.NewLine, reviewResult.Diagnostics.Take(6).Select(diagnostic => $"{diagnostic.Path}: {diagnostic.Message}"))
+                    : $"{reviewResult.Code}: {reviewResult.Message}";
+                return;
+            }
+
+            if (!ConfirmInstall(reviewResult.Review, $"{item.Id}-{version}.mpx"))
+            {
+                MarketplaceStatus.Text = Lang.Tr["Plugin_ExtensionCenter_InstallCancelled"];
+                return;
+            }
+
+            var result = _service.InstallReviewedPackage(reviewResult.Review);
+            if (!result.Ok)
+            {
+                MarketplaceStatus.Text = result.Diagnostics.Count > 0
+                    ? string.Join(Environment.NewLine, result.Diagnostics.Take(6).Select(diagnostic => $"{diagnostic.Path}: {diagnostic.Message}"))
+                    : $"{result.Code}: {result.Message}";
+                return;
+            }
+
+            RestoreEntries(result.Entry?.Id);
+            MarketplaceToggle.IsChecked = false;
+            MarketplaceRoot.Visibility = Visibility.Collapsed;
+            ShowList();
+            StatusText.Text = Lang.Tr["Plugin_ExtensionCenter_MarketplaceInstalled"];
+        }
+        catch (Exception exception) when (exception is PluginRegistryException or System.Net.Http.HttpRequestException or System.Threading.Tasks.TaskCanceledException)
+        {
+            MarketplaceStatus.Text = Lang.Tr["Plugin_ExtensionCenter_MarketplaceError"] + " " + exception.Message;
+        }
+    }
+
     private async void DeployDaemon_Click(object sender, RoutedEventArgs e)
     {
         if (CurrentDetail is not { } selected)
@@ -251,6 +416,7 @@ public partial class PluginExtensionCenterPage
         DetailView.Visibility = Visibility.Visible;
         EmptyState.Visibility = Visibility.Collapsed;
         BatchOperationBar.Visibility = Visibility.Collapsed;
+        MarketplaceRoot.Visibility = Visibility.Collapsed;
         UpdateDetailMenuEnabled(vm);
         _ = RenderSelectedAsync(vm.Entry);
     }
@@ -261,6 +427,7 @@ public partial class PluginExtensionCenterPage
         ExtensionGrid.SelectedItems.Clear();
         DetailView.Visibility = Visibility.Collapsed;
         BatchOperationBar.Visibility = Visibility.Collapsed;
+        MarketplaceRoot.Visibility = Visibility.Collapsed;
         if (FilteredEntries.Count == 0)
             ShowEmpty();
         else
@@ -278,6 +445,7 @@ public partial class PluginExtensionCenterPage
         BatchOperationBar.Visibility = Visibility.Collapsed;
         ListViewRoot.Visibility = Visibility.Collapsed;
         EmptyState.Visibility = Visibility.Visible;
+        MarketplaceRoot.Visibility = Visibility.Collapsed;
     }
 
     private void ShowBatchBar(IReadOnlyList<PluginExtensionCenterEntryViewModel> selected)
@@ -1297,4 +1465,35 @@ public sealed class PluginExtensionCenterEntryViewModel
             _ => PluginExtensionScopeKind.ServerOnly,
         };
     }
+}
+
+public sealed class PluginMarketplaceItemViewModel
+{
+    public PluginMarketplaceItemViewModel(PluginRegistryPluginSummary plugin)
+    {
+        Id = plugin.Id;
+        DisplayName = plugin.DisplayName;
+        Summary = plugin.Summary;
+        LatestVersion = plugin.LatestVersion;
+        var badges = new List<string>();
+        if (plugin.TargetsClient)
+            badges.Add(Lang.Tr["Plugin_ExtensionCenter_MarketplaceClientBadge"]);
+        if (plugin.TargetsDaemon)
+            badges.Add(Lang.Tr["Plugin_ExtensionCenter_MarketplaceDaemonBadge"]);
+        Meta = string.Format(
+            Lang.Tr["Plugin_ExtensionCenter_MarketplaceListSummary"],
+            badges.Count > 0 ? string.Join("+", badges) : Lang.Tr["Plugin_ExtensionCenter_AssetsOnly"],
+            plugin.LatestVersion ?? "?",
+            plugin.Downloads);
+    }
+
+    public string Id { get; }
+
+    public string DisplayName { get; }
+
+    public string Summary { get; }
+
+    public string? LatestVersion { get; }
+
+    public string Meta { get; }
 }

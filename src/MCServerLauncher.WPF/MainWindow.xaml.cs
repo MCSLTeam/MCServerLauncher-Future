@@ -129,6 +129,12 @@ namespace MCServerLauncher.WPF
                     break;
                 case not null when navPageType == typeof(PluginExtensionCenterPage):
                     CurrentPage.Navigate(_pluginExtensionCenter);
+                    if (Features.Plugins.McslDeepLink.Pending is { } deepLink &&
+                        _pluginExtensionCenter is View.Pages.PluginExtensionCenterPage extensionCenter)
+                    {
+                        extensionCenter.HandleDeepLink(deepLink);
+                        Features.Plugins.McslDeepLink.Pending = null;
+                    }
                     break;
                 case not null when navPageType == typeof(HelpPage):
                     CurrentPage.Navigate(_help);

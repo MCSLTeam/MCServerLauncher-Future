@@ -80,12 +80,19 @@ public sealed class PluginExtensionCenterService
             return PluginExtensionCenterPackageReviewResult.Failure("package_read_failed", exception.Message);
         }
 
+        return ReviewPackageBytes(bytes, packagePath);
+    }
+
+    /// <summary>Review an in-memory package (e.g. downloaded from the registry).</summary>
+    public PluginExtensionCenterPackageReviewResult ReviewPackageBytes(byte[] bytes, string sourceName)
+    {
+        ArgumentNullException.ThrowIfNull(bytes);
         var validation = PluginMpxPackageValidator.Validate(bytes);
         if (!validation.Ok || validation.Package is null)
             return PluginExtensionCenterPackageReviewResult.ValidationFailed(validation.Diagnostics);
 
         return PluginExtensionCenterPackageReviewResult.Success(
-            new PluginExtensionCenterPackageReview(packagePath, bytes, validation.Package, _manager.BuildManifestDrift(validation.Package)));
+            new PluginExtensionCenterPackageReview(sourceName, bytes, validation.Package, _manager.BuildManifestDrift(validation.Package)));
     }
 
     public PluginExtensionCenterInstallResult InstallPackage(string packagePath)

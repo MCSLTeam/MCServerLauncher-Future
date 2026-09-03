@@ -1,0 +1,49 @@
+name: publish-schemas
+
+# Publishes the public JSON schemas to GitHub Pages so the URLs used in
+# manifests ($schema / schema const) are stable:
+#   https://mcsl-team.github.io/schemas/mcsl-extension-1.0.schema.json
+#   https://mcsl-team.github.io/schemas/mcsl-extension-protocol-1.0.schema.json
+#   https://mcsl-team.github.io/schemas/mcsl-extension-signature-1.0.schema.json
+#   https://mcsl-team.github.io/schemas/mcsl-plugin-2.0.schema.json
+
+on:
+  push:
+    branches: [master]
+    paths: ["schemas/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Stage schemas for Pages
+        run: |
+          mkdir -p /tmp/schemas-site
+          cp schemas/*.json /tmp/schemas-site/
+          cat > /tmp/schemas-site/index.html <<'EOF'
+          <!doctype html><meta charset="utf-8"><title>MCSL Future schemas</title>
+          <h1>MCSL Future — public JSON schemas</h1>
+          <ul>
+            <li><a href="mcsl-extension-1.0.schema.json">mcsl-extension-1.0.schema.json</a></li>
+            <li><a href="mcsl-extension-protocol-1.0.schema.json">mcsl-extension-protocol-1.0.schema.json</a></li>
+            <li><a href="mcsl-extension-signature-1.0.schema.json">mcsl-extension-signature-1.0.schema.json</a></li>
+            <li><a href="mcsl-plugin-2.0.schema.json">mcsl-plugin-2.0.schema.json</a></li>
+          </ul>
+          EOF
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: /tmp/schemas-site
+      - id: deploy
+        uses: actions/deploy-pages@v4

@@ -87,6 +87,10 @@ namespace MCServerLauncher.WPF
                 Environment.Exit(0);
             }
 
+            Features.Plugins.McslDeepLink.RegisterProtocol();
+            Features.Plugins.McslDeepLink.Pending =
+                Features.Plugins.McslDeepLink.TryParse(e.Args.Length > 0 ? e.Args[0] : null);
+
             base.OnStartup(e);
         }
 

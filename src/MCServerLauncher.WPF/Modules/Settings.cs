@@ -63,7 +63,8 @@ namespace MCServerLauncher.WPF.Modules
                         AutoCheckUpdate = true,
                         IsFontInstalled = false,
                         IsAppEulaAccepted = false,
-                        IsFirstSetupFinished = false
+                        IsFirstSetupFinished = false,
+                        PluginRegistryUrl = "http://127.0.0.1:8741"
                     }
                 };
                 File.WriteAllText(
@@ -181,6 +182,7 @@ namespace MCServerLauncher.WPF.Modules
             public bool IsAppEulaAccepted { get; set; }
             public bool IsFirstSetupFinished { get; set; }
             public Dictionary<string, bool> HideTips { get; set; } = new();
+            public string? PluginRegistryUrl { get; set; }
         }
 
         public class Settings
