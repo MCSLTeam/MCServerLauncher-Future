@@ -393,6 +393,13 @@ public partial class PluginExtensionCenterPage
                 return;
             }
 
+            // Resolve transitive dependencies first (auto-installed after
+            // offline validation, mirroring the Web client).
+            var visited = new HashSet<string>(StringComparer.Ordinal) { item.Id };
+            var dependencyInstall = await InstallDependenciesAsync(client, reviewResult.Review.Package.Dependencies, visited).ConfigureAwait(true);
+            if (!dependencyInstall)
+                return;
+
             if (!ConfirmInstall(reviewResult.Review, $"{item.Id}-{version}.mpx"))
             {
                 MarketplaceStatus.Text = Lang.Tr["Plugin_ExtensionCenter_InstallCancelled"];
@@ -418,6 +425,64 @@ public partial class PluginExtensionCenterPage
         {
             MarketplaceStatus.Text = Lang.Tr["Plugin_ExtensionCenter_MarketplaceError"] + " " + exception.Message;
         }
+    }
+
+    /// <summary>
+    /// Recursively download + validate + install declared dependencies
+    /// (dependencies-first). Already-installed packages are skipped;
+    /// version conflicts and cycles are reported instead of looping.
+    /// </summary>
+    private async Task<bool> InstallDependenciesAsync(
+        PluginRegistryClient client,
+        IReadOnlyList<PluginMpxExtensionDependency> dependencies,
+        HashSet<string> visited)
+    {
+        foreach (var dependency in dependencies)
+        {
+            if (!visited.Add(dependency.Id))
+                continue; // cycle or duplicate edge
+
+            var installed = _service.List();
+            if (installed.Any(entry => StringComparer.Ordinal.Equals(entry.Id, dependency.Id)))
+                continue;
+
+            byte[] bytes;
+            try
+            {
+                bytes = await client.DownloadVersionAsync(dependency.Id, dependency.Version).ConfigureAwait(true);
+            }
+            catch (Exception exception) when (exception is PluginRegistryException or System.Net.Http.HttpRequestException or System.Threading.Tasks.TaskCanceledException)
+            {
+                MarketplaceStatus.Text = Lang.Tr["Plugin_ExtensionCenter_MarketplaceError"] + " " + exception.Message;
+                return false;
+            }
+
+            var reviewResult = _service.ReviewPackageBytes(bytes, $"{dependency.Id}-{dependency.Version}.mpx");
+            if (!reviewResult.Ok || reviewResult.Review is null)
+            {
+                MarketplaceStatus.Text = string.Format(
+                    Lang.Tr["Plugin_ExtensionCenter_MarketplaceDependencyFailed"],
+                    dependency.Id,
+                    reviewResult.Diagnostics.Count > 0
+                        ? string.Join(Environment.NewLine, reviewResult.Diagnostics.Take(4).Select(diagnostic => $"{diagnostic.Path}: {diagnostic.Message}"))
+                        : $"{reviewResult.Code}: {reviewResult.Message}");
+                return false;
+            }
+
+            if (!await InstallDependenciesAsync(client, reviewResult.Review.Package.Dependencies, visited).ConfigureAwait(true))
+                return false;
+
+            var result = _service.InstallReviewedPackage(reviewResult.Review);
+            if (!result.Ok)
+            {
+                MarketplaceStatus.Text = string.Format(
+                    Lang.Tr["Plugin_ExtensionCenter_MarketplaceDependencyFailed"],
+                    dependency.Id,
+                    $"{result.Code}: {result.Message}");
+                return false;
+            }
+        }
+        return true;
     }
 
     private void TrustRootsToggle_Click(object sender, RoutedEventArgs e)
