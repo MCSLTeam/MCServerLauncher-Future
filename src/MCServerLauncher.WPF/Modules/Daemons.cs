@@ -34,22 +34,14 @@ namespace MCServerLauncher.WPF.Modules
                 if (File.Exists(DaemonsPath))
                 {
                     Log.Information("[Set] Found daemon list, reading");
-                    Get =
-                        JsonSerializer.Deserialize<List<Constants.DaemonConfigModel>>(File.ReadAllText(DaemonsPath,
-                            Encoding.UTF8));
-                    if (Get is null) {
-                        Get = new List<Constants.DaemonConfigModel>();
-                    }
+                    Get = JsonSerializer.Deserialize<List<Constants.DaemonConfigModel>>(
+                        File.ReadAllText(DaemonsPath, Encoding.UTF8)) ?? [];
                 }
                 else
                 {
                     Log.Information("[Set] Daemon list not found, creating");
-                    List<string> newList = new();
-                    File.WriteAllText(
-                        DaemonsPath,
-                        JsonSerializer.Serialize(newList, new JsonSerializerOptions { WriteIndented = true }),
-                        Encoding.UTF8
-                    );
+                    Get = [];
+                    SaveDaemonList();
                 }
             }
         }
@@ -73,6 +65,7 @@ namespace MCServerLauncher.WPF.Modules
         {
             lock (QueueLock)
             {
+                Get ??= [];
                 File.WriteAllText(
                     DaemonsPath,
                     JsonSerializer.Serialize(Get, new JsonSerializerOptions { WriteIndented = true }),
