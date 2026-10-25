@@ -4,7 +4,7 @@ English | [中文](https://github.com/MCSLTeam/MCServerLauncher-Future/blob/mast
 This repository only includes sources of the Daemon and the WPF Desktop Launcher. If you want to know more about the web
 frontend or Tauri launcher, just click [here](https://github.com/MCSLTeam/MCServerLauncher-Future-Web).
 
-[![GPLv3](https://img.shields.io/badge/License-GPLv3-blue?color=#4ec820)](LICENSE)
+[![Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue?color=#4ec820)](LICENSE)
 ![Platform Windows | macOS | Linux](https://img.shields.io/badge/Platform-Windows%20|%20Linux%20|%20macOS-blue?color=#4ec820)
 
 ## Feature
@@ -66,7 +66,7 @@ QQ Group 2: [1025218881](https://qm.qq.com/q/ljxb0XpSEi)
 ## Open Source License
 
 This project is distributed under
-the [GNU General Public License Version 3.0](https://github.com/MCSLTeam/MCServerLauncher-Future/blob/master/LICENSE).
+the [Apache License, Version 2.0](LICENSE).
 
 ## Copyright
 

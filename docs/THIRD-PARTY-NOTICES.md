@@ -1,6 +1,6 @@
 # Third-Party Notices And License Inventory
 
-MCServerLauncher Future is GPL-3.0-only. The following direct runtime and SDK dependencies are kept in their own license terms; source and package notices remain with the corresponding package.
+MCServerLauncher Future is licensed under Apache-2.0. The following direct runtime and SDK dependencies are kept in their own license terms; source and package notices remain with the corresponding package.
 
 | Package | Version | License | Scope | Upstream |
 |---|---:|---|---|---|

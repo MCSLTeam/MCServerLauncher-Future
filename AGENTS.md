@@ -21,7 +21,7 @@ MCServerLauncher-Future is a C#/.NET application suite for managing Minecraft se
 - Language/runtime: C# 14, .NET 10.0
 - UI framework: WPF with `iNKORE.UI.WPF.Modern`
 - Architecture: WPF client uses the daemon client remote application implementation over the sole `/api/v2` TouchSocket WebSocket JSON-RPC endpoint plus versioned binary frames
-- License: GPLv3
+- License: Apache-2.0
 - Team: MCSLTeam
 - Copyright: 2022-2026 MCSLTeam
 

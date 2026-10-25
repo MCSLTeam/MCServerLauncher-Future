@@ -11,7 +11,7 @@
         <PackageVersion>0.2.0.0</PackageVersion>
         <Authors>MCSLTeam</Authors>
         <Description>Shared wire contracts and serialization models for MCServerLauncher Future.</Description>
-        <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
+        <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <PackageProjectUrl>https://github.com/MCSLTeam/MCServerLauncher-Future</PackageProjectUrl>
         <RepositoryUrl>https://github.com/MCSLTeam/MCServerLauncher-Future.git</RepositoryUrl>
@@ -29,5 +29,7 @@
 
     <ItemGroup>
         <None Include="..\..\README.md" Pack="true" PackagePath="README.md" />
+        <None Include="..\..\LICENSE" Pack="true" PackagePath="" />
+        <None Include="..\..\NOTICE" Pack="true" PackagePath="" />
     </ItemGroup>
 </Project>

@@ -3,7 +3,7 @@
 </br>
 此仓库仅包含 <u>**守护进程** 和 **WPF桌面启动器**</u> 的源码。若想了解更多关于 <u>**网页面板** 和 **Tauri 启动器**</u> 的信息，请点击[这里](https://github.com/MCSLTeam/MCServerLauncher-Future-Web)。
 
-[![GPLv3](https://img.shields.io/badge/License-GPLv3-blue?color=#4ec820)](LICENSE)
+[![Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue?color=#4ec820)](LICENSE)
 ![平台 Windows | macOS | Linux](https://img.shields.io/badge/Platform-Windows%20|%20Linux%20|%20macOS-blue?color=#4ec820)
 
 ## 特色
@@ -56,7 +56,7 @@ QQ群2：[1025218881](https://qm.qq.com/q/V2blZlJOee)
 
 ## 开源许可证
 
-本项目采用 [GNU General Public License Version 3.0](https://github.com/MCSLTeam/MCServerLauncher-Future/blob/master/LICENSE) 进行分发。
+本项目采用 [Apache License, Version 2.0](LICENSE) 进行分发。
 
 ## 版权
 

@@ -103,7 +103,9 @@ public sealed class PackageContractTests
             var metadata = nuspec.Descendants(ns + "metadata").Single();
             var license = metadata.Element(ns + "license");
             Assert.Equal("expression", (string?)license?.Attribute("type"));
-            Assert.Equal("GPL-3.0-only", license?.Value);
+            Assert.Equal("Apache-2.0", license?.Value);
+            Assert.Contains(package.Entries, entry => entry.FullName == "LICENSE");
+            Assert.Contains(package.Entries, entry => entry.FullName == "NOTICE");
             Assert.Equal("https://github.com/MCSLTeam/MCServerLauncher-Future", (string?)metadata.Element(ns + "projectUrl"));
             Assert.Equal("MCSLTeam", (string?)metadata.Element(ns + "authors"));
         }
@@ -156,7 +158,9 @@ public sealed class PackageContractTests
             Assert.Equal("0.2.0", (string?)metadata.Element(ns + "version"));
             Assert.Equal("MCSLTeam", (string?)metadata.Element(ns + "authors"));
             Assert.Equal("https://github.com/MCSLTeam/MCServerLauncher-Future", (string?)metadata.Element(ns + "projectUrl"));
-            Assert.Equal("GPL-3.0-only", metadata.Element(ns + "license")?.Value);
+            Assert.Equal("Apache-2.0", metadata.Element(ns + "license")?.Value);
+            Assert.Contains(package.Entries, entry => entry.FullName == "LICENSE");
+            Assert.Contains(package.Entries, entry => entry.FullName == "NOTICE");
             Assert.Contains(package.Entries, entry => entry.FullName == "README.md");
             Assert.Contains(package.Entries, entry => entry.FullName == "lib/net10.0/MCServerLauncher.Common.dll");
         }
@@ -217,6 +221,9 @@ public sealed class PackageContractTests
 
             var metadata = nuspec.Descendants(ns + "metadata").Single();
             Assert.Equal("MCServerLauncher.Daemon.Plugin.Sdk", (string?)metadata.Element(ns + "id"));
+            Assert.Equal("Apache-2.0", metadata.Element(ns + "license")?.Value);
+            Assert.Contains(package.Entries, entry => entry.FullName == "LICENSE");
+            Assert.Contains(package.Entries, entry => entry.FullName == "NOTICE");
             Assert.Equal("1.0.0", (string?)metadata.Element(ns + "version"));
             Assert.Contains(package.Entries, entry => entry.FullName == "lib/net10.0/MCServerLauncher.Daemon.Plugin.Sdk.dll");
             Assert.Contains(package.Entries, entry => entry.FullName == "README.md");
