@@ -63,13 +63,12 @@ foreach ($removedPath in $removedPaths) {
     Assert-PathAbsent $removedPath
 }
 
-$solutionMatches = @(Invoke-RgSearch @('-n', 'MCServerLauncher\.Daemon\.Generators|7CC6FA63-C9AE-4D25-B551-433AEFD3DBE4', 'MCServerLauncher.slnx'))
+$solutionMatches = @(Invoke-RgSearch @('-n', 'MCServerLauncher\.Daemon\.Generators|7CC6FA63-C9AE-4D25-B551-433AEFD3DBE4', (Join-Path $repoRoot 'MCServerLauncher.slnx')))
 if ($solutionMatches.Count -ne 0) {
     throw "V1 deletion gate failed: the generator remains in the solution.`n$($solutionMatches -join [Environment]::NewLine)"
 }
 
 $runtimePattern = @(
-    '/api/v1',
     '\bActionType\b',
     '\bActionRequest\b',
     '\bActionResponse\b',
@@ -107,6 +106,29 @@ $searchTargets = @(
     'README_ZH.md'
 ) | Where-Object { Test-Path -LiteralPath (Join-Path $repoRoot $_) }
 
+# The WPF registry client calls a separate service's versioned plugins API.
+# Keep endpoint detection there, but permit only the Registry's plugins route.
+# All legacy type checks still cover this file without exceptions.
+$registryClientPath = 'src/MCServerLauncher.WPF/Features/Plugins/PluginRegistryClient.cs'
+$registryEndpointSearchArguments = @(
+    '-n',
+    '--pcre2',
+    '/api/v1(?!/plugins(?:/|[?]|["'']|$))',
+    $registryClientPath
+)
+
+$endpointSearchArguments = @(
+    '-n',
+    '--hidden',
+    '--glob', '!**/bin/**',
+    '--glob', '!**/obj/**',
+    '--glob', '!benchmarks/baselines/v1.json',
+    '--glob', '!tests/MCServerLauncher.ProtocolTests/Fixtures/Rpc/**',
+    '--glob', '!tools/VerifyNoV1Runtime.ps1',
+    '--glob', "!$registryClientPath",
+    '/api/v1'
+) + $searchTargets
+
 $searchArguments = @(
     '-n',
     '--hidden',
@@ -120,7 +142,10 @@ $searchArguments = @(
 
 Push-Location $repoRoot
 try {
-    $runtimeMatches = @(Invoke-RgSearch $searchArguments)
+    $runtimeMatches = @(Invoke-RgSearch $endpointSearchArguments) + @(Invoke-RgSearch $searchArguments)
+    if (Test-Path -LiteralPath $registryClientPath) {
+        $runtimeMatches += @(Invoke-RgSearch $registryEndpointSearchArguments)
+    }
 }
 finally {
     Pop-Location

@@ -10,6 +10,27 @@ permissions:
   contents: read
 
 jobs:
+  v1-deletion-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install ripgrep
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ripgrep
+
+      - name: Test V1 deletion gate against isolated fixtures
+        run: python3 tools/tests/test_verify_no_v1_runtime.py
+
+      - name: Reject V1 daemon runtime references
+        run: pwsh -NoProfile -File tools/VerifyNoV1Runtime.ps1
+
   protocol-tests:
     runs-on: windows-latest
     # Backstop only. The blame collector below should name the stuck test first;
@@ -19,6 +40,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -30,6 +53,9 @@ jobs:
 
       - name: Build solution (Release)
         run: dotnet build MCServerLauncher.slnx -c Release --no-restore
+
+      - name: Verify generated protocol documentation
+        run: dotnet run --project tools/MCServerLauncher.ProtocolDocs/MCServerLauncher.ProtocolDocs.csproj -c Release --no-build -- --check
 
       - name: Run protocol tests (Release)
         run: dotnet test tests/MCServerLauncher.ProtocolTests/MCServerLauncher.ProtocolTests.csproj -c Release --no-build --logger "console;verbosity=detailed" --blame-hang --blame-hang-timeout 8m --blame-hang-dump-type mini --results-directory TestResults
