@@ -112,10 +112,12 @@ MCServerLauncher-Future/
 
 ### `MCServerLauncher.DaemonClient`
 
-- Target: `net10.0`.
+- Target: `net10.0`; packable NuGet boundary (`MCServerLauncher.DaemonClient`, `PackageVersion` 1.0.0).
 - Implements the same application contracts as the local daemon over JSON-RPC V2.
 - Owns connection readiness, typed RPC calls, typed subscriptions, immutable instance-catalog mirroring, reconnect/resync behavior, and binary transfer sessions.
+- Pins `MCServerLauncher.Common` and `MCServerLauncher.Daemon.API` to exact versions in its nuspec so a consumer cannot resolve a newer, incompatible contract assembly; `PackageContractTests.PackedDaemonClientArtifactIsIndependentlyConsumable` asserts it.
 - Do not expose `ActionType`, `EventType`, legacy packets, raw method strings, or fallback envelope parsing.
+- Do not add a reference to `MCServerLauncher.Daemon`; the client consumes contracts, not the implementation. `PublicPackageBoundaryTests.DaemonClientReferencesOnlyCommonAndDaemonApi` enforces this.
 
 ### `MCServerLauncher.Daemon.API`
 
@@ -138,9 +140,11 @@ MCServerLauncher-Future/
 - Every project reaching the generator must leave `TargetFramework` undefined for it. The generator is single-targeted, so the SDK builds it with that property removed, and the solution builds it as a member the same way; a reach path that adds the property produces a second MSBuild project instance writing the same `obj/` and `bin/`, which fails intermittently as `CS0006`, `CS2012`, `MSB3713` or `MSB3030`. Do not add `SetTargetFramework` to a `ProjectReference` pointing at it, and do not pass `TargetFramework` from an `<MSBuild>` task. `ProjectConfigurationTests.PluginGenerator_IsReachedWithTheSameGlobalPropertiesFromEveryProject` fails if either appears.
 
 ### Tests And Benchmarks
-
 - `tests/MCServerLauncher.ProtocolTests/`: integration and protocol behavior tests.
+- `tests/MCServerLauncher.Daemon.ApiTests/`: package, public-API baseline, and ABI surface tests.
 - `benchmarks/MCServerLauncher.Benchmarks/`: BenchmarkDotNet baselines for allocation, transport, and serialization-sensitive work.
+- `tests/MCServerLauncher.ProtocolTests/Configuration/PublicPackageBoundaryTests.cs` encodes the product-split rule: no product project may reference a path outside this repository or a `Mcsl.Platform*` package, and Common/Daemon.API/DaemonClient must not reference the daemon or a private assembly. It also fails when a new product project appears without being added to its known-assembly list, so extend that list deliberately rather than deleting the check.
+- `tools/tests/test_verify_no_v1_runtime.py` exercises the V1 deletion gate against isolated fixtures; run it with `MCSL_PWSH` pointing at a `pwsh` binary when PowerShell is not on `PATH`.
 
 ## Task Routing
 

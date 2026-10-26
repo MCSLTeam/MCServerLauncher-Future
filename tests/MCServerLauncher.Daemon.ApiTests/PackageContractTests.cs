@@ -244,6 +244,80 @@ public sealed class PackageContractTests
     }
 
     [Fact]
+    public async Task PackedDaemonClientArtifactIsIndependentlyConsumable()
+    {
+        var repositoryRoot = FindRepositoryRoot();
+        var packageOutput = Path.Combine(Path.GetTempPath(), $"mcsl-daemon-client-package-{Guid.NewGuid():N}");
+
+        try
+        {
+            Directory.CreateDirectory(packageOutput);
+            var projectPath = Path.Combine(
+                repositoryRoot,
+                "src",
+                "MCServerLauncher.DaemonClient",
+                "MCServerLauncher.DaemonClient.csproj");
+
+            var packResult = await RunDotNetAsync(
+                repositoryRoot,
+                "pack",
+                projectPath,
+                "--configuration",
+                "Release",
+                "--output",
+                packageOutput,
+                "/m:1");
+
+            Assert.True(packResult.ExitCode == 0, $"dotnet pack failed:{Environment.NewLine}{packResult.Output}");
+
+            var packagePath = Assert.Single(Directory.GetFiles(packageOutput, "MCServerLauncher.DaemonClient.*.nupkg"));
+            using var package = ZipFile.OpenRead(packagePath);
+
+            var nuspecEntry = Assert.Single(package.Entries, entry => entry.FullName.EndsWith(".nuspec", StringComparison.Ordinal));
+            using var nuspecStream = nuspecEntry.Open();
+            var nuspec = XDocument.Load(nuspecStream);
+            var ns = nuspec.Root?.Name.Namespace ?? throw new InvalidOperationException("The packed nuspec had no root element.");
+
+            var dependencies = nuspec
+                .Descendants(ns + "dependency")
+                .ToDictionary(
+                    element => (string?)element.Attribute("id") ?? throw new InvalidOperationException("A dependency had no id."),
+                    element => (string?)element.Attribute("version") ?? throw new InvalidOperationException("A dependency had no version."),
+                    StringComparer.Ordinal);
+
+            // A consumer must get the exact contract release line the client was built against.
+            // A minimum range would let NuGet resolve a newer, incompatible contract assembly.
+            Assert.Equal("[0.2.0]", dependencies["MCServerLauncher.Common"]);
+            Assert.Equal("[1.0.0]", dependencies["MCServerLauncher.Daemon.API"]);
+
+            // The client is a consumer of the contracts: it must not ship or depend on the daemon.
+            Assert.DoesNotContain(dependencies.Keys, id => id == "MCServerLauncher.Daemon");
+            Assert.DoesNotContain(package.Entries, entry => entry.FullName.EndsWith("MCServerLauncher.Daemon.dll", StringComparison.Ordinal));
+
+            var metadata = nuspec.Descendants(ns + "metadata").Single();
+            Assert.Equal("MCServerLauncher.DaemonClient", (string?)metadata.Element(ns + "id"));
+            Assert.Equal("1.0.0", (string?)metadata.Element(ns + "version"));
+            Assert.Equal("Apache-2.0", metadata.Element(ns + "license")?.Value);
+            Assert.Equal("MCSLTeam", (string?)metadata.Element(ns + "authors"));
+            Assert.Equal("https://github.com/MCSLTeam/MCServerLauncher-Future", (string?)metadata.Element(ns + "projectUrl"));
+            Assert.NotNull(metadata.Element(ns + "description"));
+
+            // Distribution obligations: the package must carry its own license material.
+            Assert.Contains(package.Entries, entry => entry.FullName == "LICENSE");
+            Assert.Contains(package.Entries, entry => entry.FullName == "NOTICE");
+            Assert.Contains(package.Entries, entry => entry.FullName == "README.md");
+            Assert.Contains(package.Entries, entry => entry.FullName == "lib/net10.0/MCServerLauncher.DaemonClient.dll");
+        }
+        finally
+        {
+            if (Directory.Exists(packageOutput))
+            {
+                Directory.Delete(packageOutput, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
     public void RestoreGraphContainsOnlyTheApprovedDaemonApiPackageClosure()
     {
         var assetsPath = Path.Combine(

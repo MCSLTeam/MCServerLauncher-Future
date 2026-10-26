@@ -5,6 +5,25 @@
         <LangVersion>14</LangVersion>
         <Nullable>enable</Nullable>
         <OutputType>Library</OutputType>
+        <IsPackable>true</IsPackable>
+        <PackageId>MCServerLauncher.DaemonClient</PackageId>
+        <PackageVersion>1.0.0</PackageVersion>
+        <Authors>MCSLTeam</Authors>
+        <Description>V2 client for MCServerLauncher Future daemons: JSON-RPC connection, typed events, and binary file/console transfer.</Description>
+        <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageProjectUrl>https://github.com/MCSLTeam/MCServerLauncher-Future</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/MCSLTeam/MCServerLauncher-Future.git</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PackageTags>mcsl;daemon;client;json-rpc</PackageTags>
+        <EnablePackageValidation>true</EnablePackageValidation>
+        <EnableStrictModeForBaselineValidation>true</EnableStrictModeForBaselineValidation>
+    </PropertyGroup>
+
+    <!-- A release pipeline can opt into ApiCompat against the last published package. -->
+    <PropertyGroup Condition="'$(MCSL_PACKAGE_VALIDATION_BASELINE_VERSION)' != ''">
+        <PackageValidationBaselineName>$(PackageId)</PackageValidationBaselineName>
+        <PackageValidationBaselineVersion>$(MCSL_PACKAGE_VALIDATION_BASELINE_VERSION)</PackageValidationBaselineVersion>
     </PropertyGroup>
 
     <ItemGroup>
@@ -22,5 +41,25 @@
       <ProjectReference Include="..\MCServerLauncher.Common\MCServerLauncher.Common.csproj" />
       <ProjectReference Include="..\MCServerLauncher.Daemon.API\MCServerLauncher.Daemon.API.csproj" />
     </ItemGroup>
+
+    <ItemGroup>
+        <None Include="..\..\README.md" Pack="true" PackagePath="README.md" />
+        <None Include="..\..\LICENSE" Pack="true" PackagePath="" />
+        <None Include="..\..\NOTICE" Pack="true" PackagePath="" />
+    </ItemGroup>
+
+    <!--
+      Common and Daemon.API are part of the client ABI and release line, so pin their generated
+      dependency ranges exactly, matching how Daemon.API pins Common. Without this, NuGet emits a
+      minimum range and a consumer can silently resolve a newer, incompatible contract assembly.
+    -->
+    <Target Name="PinDaemonClientProjectReferenceVersions" AfterTargets="_GetProjectReferenceVersions" BeforeTargets="GenerateNuspec">
+        <ItemGroup>
+            <_ProjectReferencesWithVersions Update="@(_ProjectReferencesWithVersions)"
+                                            Condition="'%(_ProjectReferencesWithVersions.Filename)' == 'MCServerLauncher.Common' Or '%(_ProjectReferencesWithVersions.Filename)' == 'MCServerLauncher.Daemon.API'">
+                <ProjectVersion>[%(_ProjectReferencesWithVersions.ProjectVersion)]</ProjectVersion>
+            </_ProjectReferencesWithVersions>
+        </ItemGroup>
+    </Target>
 
 </Project>
