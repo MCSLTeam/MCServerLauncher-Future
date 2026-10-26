@@ -33,7 +33,7 @@ internal static class ConsoleHostFactory
 
         if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS() || OperatingSystem.IsFreeBSD())
         {
-            var host = UnixPtyConsoleHost.CreateViaForkPty(startInfo, columns, rows);
+            var host = UnixPtyConsoleHost.Create(startInfo, columns, rows);
             return (host.Process, host, UsesExternalProcessLifecycle: true);
         }
 
